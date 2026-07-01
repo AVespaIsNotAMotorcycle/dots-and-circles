@@ -101,7 +101,13 @@ def collapse_channels(pixel):
 
     total_value = channel_1 + channel_2 + channel_3
     average = total_value / 3
-    if average > 0.9: return int(0)
+
+    # 1 is white
+    # 0 is black
+    # anything between is grey
+    # sensitivity is the cutoff for coercing a grey pixel to black
+    sensitivity = 0.5
+    if average > sensitivity: return int(0)
     else: return int(1)
 
 def simplify_array(array):
