@@ -28,7 +28,8 @@ def load_image(line_index):
     image_string = line_json["image"]
     return pixel_string_to_array(image_string)
 
-def mark_center_line(image_array, color_code = 2):
+'''
+def center_line_boundaries(image_array):
     L_BUFFER = 1
     R_BUFFER = 0
     starts = []
@@ -69,8 +70,83 @@ def mark_center_line(image_array, color_code = 2):
     if len(starts) == 0: return image_array
     if len(ends) == 0: return image_array
 
-    median_start = statistics.median(starts)
-    median_end = statistics.median(ends)
+    median_start = int(statistics.median(starts))
+    median_end = int(statistics.median(ends))
+    return median_start, median_end
+'''
+
+def split_into_rows(image_array):
+    image = []
+    for row_index in range(HEIGHT):
+        row_start = row_index * WIDTH
+        row_end = row_start + WIDTH
+        row = image_array[row_start:row_end]
+        image.append(row)
+    return image
+
+def average_dark_pixels(image_array):
+    rows = split_into_rows(image_array)
+
+    total_dark_pixels = 0
+    total_dark_rows = 0
+
+    for row in rows:
+        is_dark = False
+        for pixel in row:
+            if pixel != 0:
+                is_dark = True
+                total_dark_pixels += 1
+        if is_dark:
+            total_dark_rows += 1
+
+    return total_dark_pixels / total_dark_rows
+
+def horizontal_word_boundaries(image_array):
+    rows = split_into_rows(image_array)
+    start = 350
+    end = 0
+    for index, row in enumerate(rows):
+        if 1 in row:
+            if index < start: start = index
+            if index > end: end = index
+    return start, end
+
+def center_line_boundaries(image_array):
+    start_row, end_row = horizontal_word_boundaries(image_array)
+    top_buffer = 10
+    bottom_buffer = 25
+
+    length = end_row - start_row
+    pixels_per_row = average_dark_pixels(image_array)
+    print(pixels_per_row, length)
+
+    columns = {}
+    for row_index in range(HEIGHT):
+        if row_index < start_row + top_buffer: continue
+        if row_index > end_row - bottom_buffer: continue
+        row_start = row_index * WIDTH
+        row_end = row_start + WIDTH
+        row = image_array[row_start:row_end]
+        for index, pixel in enumerate(row):
+            if index not in columns.keys():
+                columns[index] = 0
+            if pixel != 0: columns[index] += 1
+    ranked = sorted(columns, key=columns.get, reverse=True)
+
+    highest_count = columns[ranked[0]]
+    cutoff = max(int(highest_count * 0.35), 5)
+
+    darkest_columns = []
+
+    for column in ranked:
+        if columns[column] < highest_count - cutoff: break
+        if column + 1 not in darkest_columns and column - 1 not in columns: break
+        darkest_columns.append(column)
+    darkest_columns = sorted(darkest_columns)
+    return darkest_columns[0], darkest_columns[len(darkest_columns) - 1]
+
+def mark_center_line(image_array, color_code = 2):
+    median_start, median_end = center_line_boundaries(image_array)
 
     marked = image_array.copy()
     for row_index in range(HEIGHT):
@@ -85,8 +161,28 @@ def mark_center_line(image_array, color_code = 2):
             marked[x + y] = color_code
     return marked
 
+def remove_row_center_line(row, start, end):
+    extends_beyod = row[start - 1] != 0 or row[end + 1] != 0
+    if extends_beyod: return row
+
+    center = row[start:end+1]
+    invert = []
+    for pixel in center:
+        if pixel == 1: invert.append(2)
+        else: invert.append(3)
+    centerless_row = row[0:start] + invert + row[end+1:]
+    return centerless_row
+
 def remove_center_line(image_array):
-    return mark_center_line(image_array, 0)
+    centerless_image = []
+    median_start, median_end = center_line_boundaries(image_array)
+    for row_index in range(HEIGHT):
+        row_start = row_index * WIDTH
+        row_end = row_start + WIDTH
+        row = image_array[row_start:row_end]
+        centerless_row = remove_row_center_line(row, median_start, median_end)
+        centerless_image += centerless_row
+    return centerless_image
 
 def render(image_array, width = WIDTH):
     image = Image.new(mode = "RGB", size = (width, HEIGHT), color = (255, 255, 255))
@@ -237,12 +333,26 @@ def compress(image_array, remove_center_line = True):
     compressed = split_halves(image_array, boundaries)
     return compressed
 
+def identify_marks(image):
+    # render(image)
+    no_line = remove_center_line(image)
+    render(no_line)
+    # marks = split_marks(no_line)
+
 if __name__=="__main__":
     NUM_ENTRIES = 51358
-    index = random.randrange(NUM_ENTRIES)
-    # index = 36927
-    print(index)
-    image_array = load_image(index)
-    compressed = compress(image_array)
-    render(image_array)
-    render(compressed, JOINT_COMPRESSED_WIDTH)
+    '''
+    for i in range(5):
+    '''
+    for index in [28732, 22713, 43951, 28667, 28075, 774, 37422, 24916, 7308, 26000, 20601, 44630, 21918]:
+        # index = random.randrange(NUM_ENTRIES)
+        # print(index)
+        if index in [20601, 7308]: print(index, 'BAD')
+        else: print(index)
+        try:
+            image_array = load_image(index)
+            identify_marks(image_array)
+        except:
+            continue
+    # compressed = compress(image_array)
+    # render(compressed, JOINT_COMPRESSED_WIDTH)
