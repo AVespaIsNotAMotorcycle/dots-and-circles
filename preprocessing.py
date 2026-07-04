@@ -344,15 +344,81 @@ def compress(image_array, remove_center_line = True):
     compressed = split_halves(image_array, boundaries)
     return compressed
 
+def identify_mark(image_array, starting_pixel):
+    print('Identifying mark that includes pixel with index', starting_pixel)
+    pixels_in_mark = []
+    pixels_to_ignore = []
+    frontier = [starting_pixel]
+
+    while len(frontier) > 0:
+        pixel = frontier.pop(0)
+        print('Inspecting pixel with index', pixel)
+        pixels_in_mark.append(pixel)
+        neighbors = [pixel - WIDTH - 1, # top-left
+                     pixel - WIDTH,     # top-center
+                     pixel - WIDTH + 1, # top-right
+                     pixel - 1,         # left
+                     pixel + 1,         # right
+                     pixel + WIDTH - 1, # bottom-left
+                     pixel + WIDTH,     # bottom-center
+                     pixel + WIDTH + 1] # bottom-right
+        print(neighbors)
+        for neighbor in neighbors:
+            print('-------------\n', neighbor, image_array[neighbor])
+            if neighbor in pixels_to_ignore:
+                print('Neighbor in pixels_to_ignore')
+                continue
+            if neighbor < 0:
+                print('Neighbor index too low')
+                pixels_to_ignore.append(neighbor)
+                continue
+            if neighbor >= WIDTH * HEIGHT:
+                print('Neighbor index too high')
+                pixels_to_ignore.append(neighbor)
+                continue
+            if neighbor in pixels_in_mark:
+                print('Neighbor already in mark')
+                pixels_to_ignore.append(neighbor)
+                continue
+            if image_array[neighbor] == 0:
+                print('Neighbor pixel is white')
+                pixels_to_ignore.append(neighbor)
+                continue
+            print('Adding ' + neighbor + ' to frontier')
+            frontier.append(neighbor)
+
+    return pixels_in_mark
+
+def render_mark(mark):
+    image_array = [0] * WIDTH * HEIGHT
+    for pixel in mark:
+        image_array[pixel] = 1
+    render(image_array)
+
+def split_marks(image_array):
+    marks = []
+    pixels_already_claimed = []
+
+    for index, color in enumerate(image_array):
+        if color == 0: continue
+        if index in pixels_already_claimed: continue
+        pixels_in_mark = identify_mark(image_array, index)
+        marks.append(pixels_in_mark)
+        for pixel in pixels_in_mark: pixels_already_claimed.append(pixel)
+
+    for mark in marks:
+        render_mark(mark)
+
 def identify_marks(image):
     # render(image)
     no_line = remove_center_line(image)
     render(no_line)
-    # marks = split_marks(no_line)
+    marks = split_marks(no_line)
 
 if __name__=="__main__":
     NUM_ENTRIES = 51358
-    for index in range(5):
+    for i in range(1):
+        index = random.randrange(NUM_ENTRIES)
         print(index)
         try:
             image_array = load_image(index)
