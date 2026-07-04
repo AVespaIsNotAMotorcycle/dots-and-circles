@@ -111,14 +111,18 @@ def horizontal_word_boundaries(image_array):
             if index > end: end = index
     return start, end
 
+def get_buffers(image_array):
+    start_row, end_row = horizontal_word_boundaries(image_array)
+    length = end_row - start_row
+
+    top_buffer = min(length * 0.1, 10)
+    bottom_buffer = min(length * 0.25, 25)
+
+    return top_buffer, bottom_buffer
+
 def center_line_boundaries(image_array):
     start_row, end_row = horizontal_word_boundaries(image_array)
-    top_buffer = 10
-    bottom_buffer = 25
-
-    length = end_row - start_row
-    pixels_per_row = average_dark_pixels(image_array)
-    print(pixels_per_row, length)
+    top_buffer, bottom_buffer = get_buffers(image_array)
 
     columns = {}
     for row_index in range(HEIGHT):
@@ -134,7 +138,8 @@ def center_line_boundaries(image_array):
     ranked = sorted(columns, key=columns.get, reverse=True)
 
     highest_count = columns[ranked[0]]
-    cutoff = max(int(highest_count * 0.35), 5)
+    arbitrary_range = 3
+    cutoff = max(int(highest_count * 0.35), arbitrary_range)
 
     darkest_columns = []
 
@@ -175,13 +180,19 @@ def remove_row_center_line(row, start, end):
 
 def remove_center_line(image_array):
     centerless_image = []
-    median_start, median_end = center_line_boundaries(image_array)
+    center_line_start, center_line_end = center_line_boundaries(image_array)
+
+    start_row, end_row = horizontal_word_boundaries(image_array)
+
     for row_index in range(HEIGHT):
         row_start = row_index * WIDTH
         row_end = row_start + WIDTH
         row = image_array[row_start:row_end]
-        centerless_row = remove_row_center_line(row, median_start, median_end)
-        centerless_image += centerless_row
+        if row_index >= end_row - 10:
+            centerless_image += row
+        else:
+            centerless_row = remove_row_center_line(row, center_line_start, center_line_end)
+            centerless_image += centerless_row
     return centerless_image
 
 def render(image_array, width = WIDTH):
@@ -341,18 +352,10 @@ def identify_marks(image):
 
 if __name__=="__main__":
     NUM_ENTRIES = 51358
-    '''
-    for i in range(5):
-    '''
-    for index in [28732, 22713, 43951, 28667, 28075, 774, 37422, 24916, 7308, 26000, 20601, 44630, 21918]:
-        # index = random.randrange(NUM_ENTRIES)
-        # print(index)
-        if index in [20601, 7308]: print(index, 'BAD')
-        else: print(index)
+    for index in range(5):
+        print(index)
         try:
             image_array = load_image(index)
             identify_marks(image_array)
         except:
             continue
-    # compressed = compress(image_array)
-    # render(compressed, JOINT_COMPRESSED_WIDTH)
