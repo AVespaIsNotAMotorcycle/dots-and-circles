@@ -166,19 +166,22 @@ def mark_center_line(image_array, color_code = 2):
             marked[x + y] = color_code
     return marked
 
-def remove_row_center_line(row, start, end):
+def remove_row_center_line(row, start, end, highlight=False):
     extends_beyod = row[start - 1] != 0 or row[end + 1] != 0
     if extends_beyod: return row
 
     center = row[start:end+1]
     invert = []
     for pixel in center:
+        if not highlight:
+            invert.append(0)
+            continue
         if pixel == 1: invert.append(2)
         else: invert.append(3)
     centerless_row = row[0:start] + invert + row[end+1:]
     return centerless_row
 
-def remove_center_line(image_array):
+def remove_center_line(image_array, highlight=False):
     centerless_image = []
     center_line_start, center_line_end = center_line_boundaries(image_array)
 
@@ -191,7 +194,7 @@ def remove_center_line(image_array):
         if row_index >= end_row - 10:
             centerless_image += row
         else:
-            centerless_row = remove_row_center_line(row, center_line_start, center_line_end)
+            centerless_row = remove_row_center_line(row, center_line_start, center_line_end, highlight)
             centerless_image += centerless_row
     return centerless_image
 
@@ -345,14 +348,27 @@ def compress(image_array, remove_center_line = True):
     return compressed
 
 def identify_mark(image_array, starting_pixel):
-    print('Identifying mark that includes pixel with index', starting_pixel)
     pixels_in_mark = []
     pixels_to_ignore = []
     frontier = [starting_pixel]
 
     while len(frontier) > 0:
         pixel = frontier.pop(0)
-        print('Inspecting pixel with index', pixel)
+        if pixel in pixels_to_ignore:
+            continue
+        if pixel < 0:
+            pixels_to_ignore.append(pixel)
+            continue
+        if pixel >= WIDTH * HEIGHT:
+            pixels_to_ignore.append(pixel)
+            continue
+        if pixel in pixels_in_mark:
+            pixels_to_ignore.append(pixel)
+            continue
+        if image_array[pixel] == 0:
+            pixels_to_ignore.append(pixel)
+            continue
+        frontier.append(pixel)
         pixels_in_mark.append(pixel)
         neighbors = [pixel - WIDTH - 1, # top-left
                      pixel - WIDTH,     # top-center
@@ -362,30 +378,7 @@ def identify_mark(image_array, starting_pixel):
                      pixel + WIDTH - 1, # bottom-left
                      pixel + WIDTH,     # bottom-center
                      pixel + WIDTH + 1] # bottom-right
-        print(neighbors)
-        for neighbor in neighbors:
-            print('-------------\n', neighbor, image_array[neighbor])
-            if neighbor in pixels_to_ignore:
-                print('Neighbor in pixels_to_ignore')
-                continue
-            if neighbor < 0:
-                print('Neighbor index too low')
-                pixels_to_ignore.append(neighbor)
-                continue
-            if neighbor >= WIDTH * HEIGHT:
-                print('Neighbor index too high')
-                pixels_to_ignore.append(neighbor)
-                continue
-            if neighbor in pixels_in_mark:
-                print('Neighbor already in mark')
-                pixels_to_ignore.append(neighbor)
-                continue
-            if image_array[neighbor] == 0:
-                print('Neighbor pixel is white')
-                pixels_to_ignore.append(neighbor)
-                continue
-            print('Adding ' + neighbor + ' to frontier')
-            frontier.append(neighbor)
+        for neighbor in neighbors: frontier.append(neighbor)
 
     return pixels_in_mark
 
@@ -420,8 +413,6 @@ if __name__=="__main__":
     for i in range(1):
         index = random.randrange(NUM_ENTRIES)
         print(index)
-        try:
-            image_array = load_image(index)
-            identify_marks(image_array)
-        except:
-            continue
+        image_array = load_image(index)
+        render(remove_center_line(image_array, True))
+        identify_marks(image_array)
