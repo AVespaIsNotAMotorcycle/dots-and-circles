@@ -2,6 +2,8 @@ from PIL import Image, ImageDraw, ImageFont
 import json
 import random
 import statistics
+import math
+import matplotlib.pyplot as plt
 
 from utils import pixel_string_to_array
 
@@ -83,6 +85,14 @@ def split_into_rows(image_array):
         row = image_array[row_start:row_end]
         image.append(row)
     return image
+
+def index_to_cartesian(index):
+    x = index % WIDTH
+    y = HEIGHT - (math.floor(index / WIDTH))
+    return (x, y)
+
+def column_of_index(index):
+    return index % WIDTH
 
 def average_dark_pixels(image_array):
     rows = split_into_rows(image_array)
@@ -196,7 +206,7 @@ def remove_center_line(image_array, highlight=False):
         else:
             centerless_row = remove_row_center_line(row, center_line_start, center_line_end, highlight)
             centerless_image += centerless_row
-    return centerless_image
+    return centerless_image, [center_line_start, center_line_end]
 
 def render(image_array, width = WIDTH):
     image = Image.new(mode = "RGB", size = (width, HEIGHT), color = (255, 255, 255))
@@ -347,6 +357,17 @@ def compress(image_array, remove_center_line = True):
     compressed = split_halves(image_array, boundaries)
     return compressed
 
+def get_neighbors(pixel):
+    neighbors = [pixel - WIDTH - 1, # top-left
+                 pixel - WIDTH,     # top-center
+                 pixel - WIDTH + 1, # top-right
+                 pixel - 1,         # left
+                 pixel + 1,         # right
+                 pixel + WIDTH - 1, # bottom-left
+                 pixel + WIDTH,     # bottom-center
+                 pixel + WIDTH + 1] # bottom-right
+    return neighbors
+
 def identify_mark(image_array, starting_pixel):
     pixels_in_mark = []
     pixels_to_ignore = []
@@ -370,14 +391,7 @@ def identify_mark(image_array, starting_pixel):
             continue
         frontier.append(pixel)
         pixels_in_mark.append(pixel)
-        neighbors = [pixel - WIDTH - 1, # top-left
-                     pixel - WIDTH,     # top-center
-                     pixel - WIDTH + 1, # top-right
-                     pixel - 1,         # left
-                     pixel + 1,         # right
-                     pixel + WIDTH - 1, # bottom-left
-                     pixel + WIDTH,     # bottom-center
-                     pixel + WIDTH + 1] # bottom-right
+        neighbors = get_neighbors(pixel)
         for neighbor in neighbors: frontier.append(neighbor)
 
     return pixels_in_mark
@@ -399,14 +413,61 @@ def split_marks(image_array):
         marks.append(pixels_in_mark)
         for pixel in pixels_in_mark: pixels_already_claimed.append(pixel)
 
-    for mark in marks:
-        render_mark(mark)
+    return marks
+
+def is_left(mark, center_line_boundaries):
+    center_start = center_line_boundaries[0]
+    for index in mark:
+        if column_of_index(index) < center_start:
+            return True
+    return False
+def is_center(mark, center_line_boundaries):
+    center_start = center_line_boundaries[0]
+    center_end = center_line_boundaries[1]
+    for index in mark:
+        if column_of_index(index) < center_start: continue
+        if column_of_index(index) > center_end: continue
+        return True
+    return False
+def is_right(mark, center_line_boundaries):
+    center_end = center_line_boundaries[1]
+    for index in mark:
+        if column_of_index(index) > center_end:
+            return True
+    return False
+
+def fit_curve(mark):
+    xs = []
+    ys = []
+    for index in mark:
+        coords = index_to_cartesian(index)
+        xs.append(coords[0])
+        ys.append(coords[1])
+
+    return []
+
+def describe_mark(mark, center_line_boundaries):
+    description = [is_left(mark, center_line_boundaries),
+                   is_center(mark, center_line_boundaries),
+                   is_right(mark, center_line_boundaries),
+                  ]
+    curve = fit_curve(mark)
+    for detail in curve: description.append(detail)
+    return description
 
 def identify_marks(image):
     # render(image)
-    no_line = remove_center_line(image)
+    no_line, center_line_boundaries = remove_center_line(image)
     render(no_line)
     marks = split_marks(no_line)
+
+    descriptions = []
+    for index, mark in enumerate(marks):
+        descriptions.append(describe_mark(mark, center_line_boundaries))
+        if index == 0:
+            render_mark(mark)
+            print(descriptions[-1])
+    return descriptions
 
 if __name__=="__main__":
     NUM_ENTRIES = 51358
@@ -414,5 +475,8 @@ if __name__=="__main__":
         index = random.randrange(NUM_ENTRIES)
         print(index)
         image_array = load_image(index)
-        render(remove_center_line(image_array, True))
+
+        marked, _ = remove_center_line(image_array, True)
+        render(marked)
+
         identify_marks(image_array)
