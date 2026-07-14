@@ -4,6 +4,7 @@ import random
 import statistics
 import math
 import matplotlib.pyplot as plt
+import scipy
 
 from utils import pixel_string_to_array
 
@@ -436,13 +437,57 @@ def is_right(mark, center_line_boundaries):
             return True
     return False
 
+def linear(x, m, b):
+    return (m * x) + b
+
+def quadratic(x, a, b, c):
+    return (a * x * x) + (b * x) + c
+
+def hyperbolic(x, a, b, c, d):
+    return (a * x ** 3) + (b * x ** 2) + (c * x) + d
+
 def fit_curve(mark):
     xs = []
     ys = []
     for index in mark:
         coords = index_to_cartesian(index)
-        xs.append(coords[0])
-        ys.append(coords[1])
+        rotated_x = HEIGHT - coords[1]
+        rotated_y = coords[0]
+        xs.append(rotated_x)
+        ys.append(rotated_y)
+
+    unique_xs = list(set(xs))
+    unique_xs.sort()
+
+    lin_fit = scipy.optimize.curve_fit(linear, xs, ys)
+    qua_fit = scipy.optimize.curve_fit(quadratic, xs, ys)
+    hyp_fit = scipy.optimize.curve_fit(hyperbolic, xs, ys)
+
+    lin_ys = []
+    for x in unique_xs:
+        m, b = lin_fit[0]
+        lin_ys.append(linear(x, m, b))
+
+    qua_ys = []
+    for x in unique_xs:
+        a, b, c = qua_fit[0]
+        qua_ys.append(quadratic(x, a, b, c))
+
+    hyp_ys = []
+    for x in unique_xs:
+        a, b, c, d = hyp_fit[0]
+        hyp_ys.append(hyperbolic(x, a, b, c, d))
+
+    plt.figure()
+    plt.plot(xs, ys, 'bo')
+    plt.plot(unique_xs, lin_ys, 'r-')
+    plt.plot(unique_xs, qua_ys, 'y-')
+    plt.plot(unique_xs, hyp_ys, 'g-')
+
+    print('Linear covariance:', lin_fit[1])
+    print('Quadratic covariance:', qua_fit[1])
+    print('Hyperbolic covariance:', hyp_fit[1])
+    plt.show()
 
     return []
 
