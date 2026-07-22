@@ -5,6 +5,7 @@ from numpy.random import randn
 
 # from utils import ALPHABET, WORD_MAX_CHARACTERS, WIDTH, HEIGHT, OUTPUT_LAYER_SIZE
 import utils
+from preprocessing import image_string_to_marks
 from rnn import RNN
 
 '''
@@ -29,6 +30,7 @@ def getTrainingData(start = 0, end = -1):
     return lines
 
 def formatImage(image_string):
+    '''
     image_array = np.zeros((utils.HEIGHT, utils.WIDTH, 1))
     for row_index in range(utils.HEIGHT):
         start = row_index * utils.WIDTH
@@ -37,6 +39,8 @@ def formatImage(image_string):
         for col_index, char in enumerate(row):
             image_array[row_index][col_index] = 1 if char == '1' else 0
     return image_array
+    '''
+    return image_string_to_marks(image_string)
 
 def wordToArray(input_word):
     word = input_word.strip().ljust(utils.WORD_MAX_CHARACTERS, ' ')
@@ -118,7 +122,7 @@ def probsToWord(probs):
         for char in row: maxxed.append(char)
     return maxxed
 
-rnn = RNN(utils.WIDTH, utils.OUTPUT_LAYER_SIZE)
+rnn = RNN(utils.INPUT_LAYER_SIZE, utils.OUTPUT_LAYER_SIZE, 256)
 logs = []
 
 def processData(data, backprop=True, print_logs=False):
@@ -177,7 +181,7 @@ for epoch in range(1000):
 
     train_data = data[start:division]
     test_data = data[division:end]
-    train_loss, train_acc = processData(train_data)
+    train_loss, train_acc = processData(train_data, True, True)
 
     if epoch % 100 == 99:
         print('--- Epoch %d' % (epoch + 1))

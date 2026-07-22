@@ -5,6 +5,7 @@ import statistics
 import math
 import matplotlib.pyplot as plt
 import scipy
+import numpy as np
 
 from utils import pixel_string_to_array
 
@@ -506,7 +507,6 @@ def describe_mark(mark, center_line_boundaries):
 
 def identify_marks(image):
     no_line, center_line_boundaries = remove_center_line(image)
-    render(no_line)
     marks = split_marks(no_line)
     images = []
 
@@ -514,6 +514,19 @@ def identify_marks(image):
         images.append(mark_to_image_array(mark))
 
     return images
+
+def mark_to_vector(mark):
+    vector = np.zeros([len(mark), 1])
+    for index, pixel in enumerate(mark):
+        vector[index] = pixel
+    return vector
+
+def image_string_to_marks(image_string):
+    image_array = pixel_string_to_array(image_string)
+    marks = identify_marks(image_array)
+    vectors = []
+    for mark in marks: vectors.append(mark_to_vector(mark))
+    return vectors
 
 if __name__=="__main__":
     NUM_ENTRIES = 51358

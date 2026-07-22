@@ -14,7 +14,7 @@ class RNN:
 
     def forward(self, inputs):
         # inputs is an array of vectors with shape (input_size, 1)
-        # each vector represents a row of pixels in an image
+        # each vector represents a pixel in an image of dimensions utils.WIDTH * utils.HEIGHT
         # each pixel is either 0 (white) or 1 (black)
         h = np.zeros((self.Whh.shape[0], 1))
 
