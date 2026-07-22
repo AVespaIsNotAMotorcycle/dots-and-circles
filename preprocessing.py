@@ -397,10 +397,14 @@ def identify_mark(image_array, starting_pixel):
 
     return pixels_in_mark
 
-def render_mark(mark):
+def mark_to_image_array(mark):
     image_array = [0] * WIDTH * HEIGHT
     for pixel in mark:
         image_array[pixel] = 1
+    return image_array
+
+def render_mark(mark):
+    image_array = mark_to_image_array(mark)
     render(image_array)
 
 def split_marks(image_array):
@@ -484,9 +488,9 @@ def fit_curve(mark):
     plt.plot(unique_xs, qua_ys, 'y-')
     plt.plot(unique_xs, hyp_ys, 'g-')
 
-    print('Linear covariance:', lin_fit[1])
-    print('Quadratic covariance:', qua_fit[1])
-    print('Hyperbolic covariance:', hyp_fit[1])
+    print('Linear covariance:\n', lin_fit[1])
+    print('Quadratic covariance:\n', qua_fit[1])
+    print('Hyperbolic covariance:\n', hyp_fit[1])
     plt.show()
 
     return []
@@ -501,18 +505,15 @@ def describe_mark(mark, center_line_boundaries):
     return description
 
 def identify_marks(image):
-    # render(image)
     no_line, center_line_boundaries = remove_center_line(image)
     render(no_line)
     marks = split_marks(no_line)
+    images = []
 
-    descriptions = []
-    for index, mark in enumerate(marks):
-        descriptions.append(describe_mark(mark, center_line_boundaries))
-        if index == 0:
-            render_mark(mark)
-            print(descriptions[-1])
-    return descriptions
+    for mark in marks:
+        images.append(mark_to_image_array(mark))
+
+    return images
 
 if __name__=="__main__":
     NUM_ENTRIES = 51358
@@ -524,4 +525,5 @@ if __name__=="__main__":
         marked, _ = remove_center_line(image_array, True)
         render(marked)
 
-        identify_marks(image_array)
+        marks = identify_marks(image_array)
+        for mark in marks: render(mark)
