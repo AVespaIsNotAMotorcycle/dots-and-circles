@@ -3,18 +3,9 @@ import json
 import numpy as np
 from numpy.random import randn
 
-# from utils import ALPHABET, WORD_MAX_CHARACTERS, WIDTH, HEIGHT, OUTPUT_LAYER_SIZE
 import utils
 from preprocessing import image_string_to_marks
 from rnn import RNN
-
-'''
-vocab = list(set([w for text in train_data.keys() for w in text.split(' ')]))
-vocab_size = len(vocab)
-
-word_to_idx = { w: i for i, w in enumerate(vocab) }
-idx_to_word = { i: w for i, w in enumerate(vocab) }
-'''
 
 def getTrainingData(start = 0, end = -1):
     file = open("training_data.json", "r")
@@ -30,16 +21,6 @@ def getTrainingData(start = 0, end = -1):
     return lines
 
 def formatImage(image_string):
-    '''
-    image_array = np.zeros((utils.HEIGHT, utils.WIDTH, 1))
-    for row_index in range(utils.HEIGHT):
-        start = row_index * utils.WIDTH
-        end = start + utils.WIDTH
-        row = image_string[start:end]
-        for col_index, char in enumerate(row):
-            image_array[row_index][col_index] = 1 if char == '1' else 0
-    return image_array
-    '''
     return image_string_to_marks(image_string)
 
 def wordToArray(input_word):
@@ -70,16 +51,6 @@ def arrayToWord(array):
         letter = utils.ALPHABET[letter_index]
         word += letter
     return word.strip()
-
-'''
-def createInputs(text):
-    inputs = []
-    for w in text.split(' '):
-        v = np.zeros((vocab_size, 1))
-        v[word_to_idx[w]] = 1
-        inputs.append(v)
-    return inputs
-'''
 
 def softmax(array):
     return np.exp(array) / sum(np.exp(array))
