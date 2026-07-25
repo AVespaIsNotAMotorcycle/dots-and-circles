@@ -8,17 +8,17 @@ import sys
 width = 50
 height = 350
 
-FONTS = ["XM_BiaoHei.ttf",
-         "XM_GuFeng.ttf",
-         "XM_LiuYe.ttf",
-         "XM_ShuKai.ttf",
-         "XM_WenJian.ttf",
-         "XM_WenQin.ttf",
-         "XM_XingShu.ttf",
-         "XM_YaBai.ttf",
-         "XM_YingBi.ttf",
-         "XM_ZhengBai.ttf",
-         "XM_ZhengHei.ttf"]
+FONTS = ["fonts/XM_BiaoHei.ttf",
+         "fonts/XM_GuFeng.ttf",
+         "fonts/XM_LiuYe.ttf",
+         "fonts/XM_ShuKai.ttf",
+         "fonts/XM_WenJian.ttf",
+         "fonts/XM_WenQin.ttf",
+         "fonts/XM_XingShu.ttf",
+         "fonts/XM_YaBai.ttf",
+         "fonts/XM_YingBi.ttf",
+         "fonts/XM_ZhengBai.ttf",
+         "fonts/XM_ZhengHei.ttf"]
 
 def is_mongolian(char):
     block = unicodedata.name(char).split()[0]
@@ -88,11 +88,10 @@ def generate_random_image():
     entries = read_corpus()
     index = random.randrange(len(entries))
     entry = json.loads(entries[index])
-    abkai = split_string(entry['r'])
+    print(entry)
     words = split_string(entry['m'])
     for word in words:
         generate_images(word, random.randrange(len(FONTS)))
-    print(words, abkai)
 
 def collapse_channels(pixel):
     channel_1 = pixel[0] / 255
@@ -253,3 +252,4 @@ def find_all_unique_characters():
         print(char, unicodedata.name(char))
 
 generate_training_data(int(sys.argv[1]), int(sys.argv[2]))
+# generate_random_image()
