@@ -88,10 +88,12 @@ def generate_random_image():
     entries = read_corpus()
     index = random.randrange(len(entries))
     entry = json.loads(entries[index])
-    print(entry)
-    words = split_string(entry['m'])
-    for word in words:
-        generate_images(word, random.randrange(len(FONTS)))
+    manchu = entry['m'].split()
+    abkai = entry['r'].split()
+    index = random.randrange(len(manchu))
+    print(manchu[index], abkai[index])
+    image = generate_images(manchu[index], random.randrange(len(FONTS)))[0]
+    image.show()
 
 def collapse_channels(pixel):
     channel_1 = pixel[0] / 255
@@ -251,5 +253,5 @@ def find_all_unique_characters():
     for char in characters:
         print(char, unicodedata.name(char))
 
-generate_training_data(int(sys.argv[1]), int(sys.argv[2]))
-# generate_random_image()
+# generate_training_data(int(sys.argv[1]), int(sys.argv[2]))
+generate_random_image()
