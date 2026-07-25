@@ -30,6 +30,7 @@ def load_image(line_index):
     line_json = json.loads(line)
 
     image_string = line_json["image"]
+    print(line_json["word"])
     return pixel_string_to_array(image_string)
 
 '''
@@ -534,9 +535,10 @@ if __name__=="__main__":
         index = random.randrange(NUM_ENTRIES)
         print(index)
         image_array = load_image(index)
+        render(image_array)
 
         marked, _ = remove_center_line(image_array, True)
-        render(marked)
+        # render(marked)
 
         marks = identify_marks(image_array)
-        for mark in marks: render(mark)
+        # for mark in marks: render(mark)

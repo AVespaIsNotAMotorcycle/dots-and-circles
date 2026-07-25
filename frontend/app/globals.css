@@ -24,3 +24,52 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@font-face {
+  font-family: manchu1;
+  src: url('/XM_BiaoHei.ttf');
+}
+
+figure {
+	display: flex;
+}
+
+.manchu-text {
+	padding: 10px;
+	font-family: manchu1;
+	font-size: 1.9rem;
+	writing-mode: vertical-lr;
+}
+
+button {
+	border: 2px solid var(--color-foreground);
+	margin: 0 0.5rem;
+	padding: 0.5rem;
+	height: fit-content;
+	border-radius: 5px;
+	transition-property: background-color color;
+	transition-duration: 0.2s;
+}
+button:hover,
+button:focus {
+	background-color: var(--color-foreground);
+	color: var(--color-background);
+	cursor: pointer;
+}
+
+figure {
+	position: relative;
+}
+div.slices {
+	position: absolute;
+	width: 50px;
+	height: 330px;
+	left: 0;
+	top: 10px
+}
+div.slice {
+	width: 50px;
+	height: 5px;
+}
+div.slice:nth-child(even) { background-color: rgba(255, 0, 0, 0.2); }
+div.slice:nth-child(odd) { background-color: rgba(0, 0, 255, 0.2); }
