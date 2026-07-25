@@ -65,11 +65,27 @@ div.slices {
 	width: 50px;
 	height: 330px;
 	left: 0;
-	top: 10px
+	top: 20px
 }
 div.slice {
-	width: 50px;
-	height: 5px;
+	width: 100px;
+	height: 10px;
 }
+
+figure {
+	margin: 0.5rem;
+}
+
+figure img {
+	width: 100px;
+	height: 700px;
+}
+figcaption.manchu-text {
+	margin-top: 10px;
+	font-size: 3.8rem;
+}
+
+figcaption > span:nth-child(even),
 div.slice:nth-child(even) { background-color: rgba(255, 0, 0, 0.2); }
+figcaption > span:nth-child(odd),
 div.slice:nth-child(odd) { background-color: rgba(0, 0, 255, 0.2); }

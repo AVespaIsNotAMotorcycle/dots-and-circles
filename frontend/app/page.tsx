@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState, useEffect } from 'react';
 
 function Slice({ start, end }) {
-	return <div style={{ height: `${end - start * 5}px`}} className="slice" />;
+	return <div style={{ height: `${(end - start) * 2}px`}} className="slice" />;
 }
 
 function Slices({ word, boundaries }) {
@@ -21,13 +21,26 @@ function Slices({ word, boundaries }) {
 	);
 }
 
+function Caption({ word }) {
+	return (
+		<figcaption className="manchu-text">
+    	{word.split('').map((letter, index) => (
+    		<span key={`${letter}-${index}`}>{letter}</span>
+    	))}
+		</figcaption>
+	);
+}
+
 export default function Home() {
 	const [word] = useState('ᠰᡳᠮᠨᡝᠪᡠᠮᠪᡳ')
 	const [sliceBoundaries, setSliceBoundaries] = useState([])
 
 	useEffect(() => {
+		const boundaries = [15,23,31,37,46,54,65,73,86,103];
+		/*
 		const boundaries = [];
 		word.split().forEach((letter, index) => { boundaries.push(index + 1); })
+		*/
 		setSliceBoundaries(boundaries);
 	}, [])
 
@@ -38,7 +51,7 @@ export default function Home() {
 				<figure>
 					<img src="tmpbun5si6r.PNG" />
 					<Slices word={word} boundaries={sliceBoundaries} />
-					<figcaption className="manchu-text">{word}</figcaption>
+					<Caption word={word} />
 				</figure>
       </main>
     </div>
