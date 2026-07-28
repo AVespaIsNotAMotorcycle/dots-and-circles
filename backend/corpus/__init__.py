@@ -2,11 +2,21 @@ import json
 import sqlite3
 import sys
 import unicodedata
+import os
 
-DB_NAME = "../manchu_transliteration.db"
+def get_real_path(file):
+    this_file_directory = os.path.dirname(os.path.realpath(__file__))
+    real_path = this_file_directory + '/' + file
+    return real_path
+
+def get_db_name():
+    DB_NAME = "../manchu_transliteration.db"
+    real_path_to_db = get_real_path(DB_NAME)
+    print(real_path_to_db)
+    return real_path_to_db
 
 def read_manchu_cake_db():
-    file = open("db.json", "r", encoding="utf-8")
+    file = open(get_real_path("./db.json"), "r", encoding="utf-8")
     entries = file.readlines()
     file.close()
     return entries
@@ -62,7 +72,7 @@ def print_percent(index, entries):
     sys.stdout.write('%s\r' % message)
 
 def create_corpus():
-    connection = sqlite3.connect(DB_NAME)
+    connection = sqlite3.connect(get_db_name())
     cursor = connection.cursor()
 
     drop_table(cursor)
@@ -78,7 +88,7 @@ def create_corpus():
     connection.close()
 
 def get_corpus_size():
-    connection = sqlite3.connect(DB_NAME)
+    connection = sqlite3.connect(get_db_name())
     cursor = connection.cursor()
     rows = cursor.execute("SELECT manchu, romanization FROM corpus ORDER BY romanization").fetchall()
     size = len(rows)
@@ -86,6 +96,14 @@ def get_corpus_size():
     return size
 
 def get_random_word():
+    connection = sqlite3.connect(get_db_name())
+    cursor = connection.cursor()
+    word_set = cursor.execute("SELECT  * FROM corpus ORDER BY RANDOM() LIMIT 1;").fetchone()
+    word_dict = { "manchu": word_set[0], "romanization": word_set[1] }
+    connection.close()
+    return word_dict
+
+def generate_new_lexigraph():
     return
 
 if __name__ == "__main__":
