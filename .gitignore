@@ -2,6 +2,8 @@ saved_ann.json
 training_data.json
 training_logs.json
 
+*.db
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
