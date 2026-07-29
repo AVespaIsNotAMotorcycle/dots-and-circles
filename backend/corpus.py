@@ -4,19 +4,12 @@ import sys
 import unicodedata
 import os
 
-def get_real_path(file):
-    this_file_directory = os.path.dirname(os.path.realpath(__file__))
-    real_path = this_file_directory + '/' + file
-    return real_path
-
 def get_db_name():
-    DB_NAME = "../manchu_transliteration.db"
-    real_path_to_db = get_real_path(DB_NAME)
-    print(real_path_to_db)
-    return real_path_to_db
+    DB_NAME = "./manchu_transliteration.db"
+    return DB_NAME
 
 def read_manchu_cake_db():
-    file = open(get_real_path("./db.json"), "r", encoding="utf-8")
+    file = open("./manchucake_db.json", "r", encoding="utf-8")
     entries = file.readlines()
     file.close()
     return entries
