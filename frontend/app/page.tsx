@@ -1,7 +1,31 @@
 'use client'
 
+import axios from 'axios';
+
 import Image from "next/image";
 import { useState, useEffect } from 'react';
+
+function LoadButton({ onLoad }) {
+	const [manchu, setManchu] = useState();
+	const [lexigraph, setLexigraph] = useState();
+
+	const onClick = () => {
+		axios.get('http://localhost:5000/corpus/random')
+			.then(({ data }) => {
+				setManchu(data.manchu);
+			});
+	};
+
+	useEffect(() => {
+		if (!manchu) { return; }
+		axios.get(`http://localhost:5000/lexigraphy/new/${manchu}`)
+			.then((lexigraph) => {
+				onLoad(manchu, lexigraph);
+			});
+	}, [manchu])
+
+	return <button type="button" onClick={onClick}>LOAD RANDOM WORD</button>;
+}
 
 function Slice({ start, end }) {
 	return <div style={{ height: `${(end - start) * 2}px`}} className="slice" />;
@@ -32,8 +56,14 @@ function Caption({ word }) {
 }
 
 export default function Home() {
-	const [word] = useState('ᠰᡳᠮᠨᡝᠪᡠᠮᠪᡳ')
+	const [word, setWord] = useState('ᠰᡳᠮᠨᡝᠪᡠᠮᠪᡳ')
 	const [sliceBoundaries, setSliceBoundaries] = useState([])
+	const [lexigraph, setLexigraph] = useState()
+
+	const updateWord = (newWord, newLexigraph) => {
+		setWord(newWord);
+		setLexigraph(newLexigraph);
+	}
 
 	useEffect(() => {
 		const boundaries = [15,23,31,37,46,54,65,73,86,103];
@@ -47,9 +77,9 @@ export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
 			<main>
-				<button type="button">LOAD RANDOM WORD</button>
+			  <LoadButton onLoad={updateWord} />
 				<figure>
-					<img src="tmpbun5si6r.PNG" />
+					<img src={lexigraph || "tmpbun5si6r.PNG"} />
 					<Slices word={word} boundaries={sliceBoundaries} />
 					<Caption word={word} />
 				</figure>
