@@ -98,10 +98,10 @@ function BoundarySetter({word, boundaries, setBoundaries}) {
 
 	if (boundaries.length !== word.length) return;
 	return (
-		<section>
+		<section className="boundary-setter">
 			{word.split('').map((letter, index) => (
 				<div key={`${letter}${index}`}>
-					<span>{letter}</span>
+					<span className="letter manchu-text">{letter}</span>
 					<label>
 						Margin:
 						<input
