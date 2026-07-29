@@ -18,20 +18,33 @@ function LoadButton({ setWord }) {
 	return <button type="button" onClick={onClick}>LOAD RANDOM WORD</button>;
 }
 
-function Slice({ start, end }) {
-	return <div style={{ height: `${(end - start) * 2}px`}} className="slice" />;
+function Slice({ margin, length }) {
+	return (
+		<div
+			style={{
+				marginTop: `${margin * 2}px`,
+				height: `${(length) * 2}px`,
+			}}
+			className="slice"
+		/>
+	);
 }
 
 function Slices({ word, boundaries }) {
+	console.log(boundaries);
+	if (boundaries.length !== word.length) return <div className="slices" />;
 	return (
 		<div className="slices">
-			{word.split('').map((letter, index) => (
-				<Slice
-					start={index === 0 ? 0 : boundaries[index - 1]}
-					end={boundaries[index]}
-					key={`${letter}-${index}`}
-				/>
-			))}
+			{word.split('').map((letter, index) => {
+				console.log(boundaries[index]);
+				return (
+					<Slice
+						margin={boundaries[index][0]}
+						length={boundaries[index][1]}
+						key={`${letter}-${index}`}
+					/>
+				);
+			})}
 		</div>
 	);
 }
@@ -68,6 +81,49 @@ function FontSelection({ font, setFont }) {
 	);
 }
 
+function BoundarySetter({word, boundaries, setBoundaries}) {
+	const setMargin = (index, value) => {
+		if (value < 1) return;
+		if (index < 0 || index > word.length) return;
+		const newBoundaries = [...boundaries];
+		newBoundaries[index][0] = value;
+		setBoundaries(newBoundaries);
+	}
+	const setLength = (index, value) => {
+		if (value < 1) return;
+		const newBoundaries = [...boundaries];
+		newBoundaries[index][1] = value;
+		setBoundaries(newBoundaries);
+	}
+
+	if (boundaries.length !== word.length) return;
+	return (
+		<section>
+			{word.split('').map((letter, index) => (
+				<div key={`${letter}${index}`}>
+					<span>{letter}</span>
+					<label>
+						Margin:
+						<input
+							type="number"
+							value={boundaries[index][0]}
+							onChange={({ target }) => { setMargin(index, target.value); }}
+						/>
+					</label>
+					<label>
+						Length:
+						<input
+							type="number"
+							value={boundaries[index][1]}
+							onChange={({ target }) => { setLength(index, target.value); }}
+						/>
+					</label>
+				</div>
+			))}
+		</section>
+	);
+}
+
 function Lexigraph({ word, font, boundaries }) {
 	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
 	return (
@@ -81,18 +137,22 @@ function Lexigraph({ word, font, boundaries }) {
 
 export default function Home() {
 	const [word, setWord] = useState('ᠰᡳᠮᠨᡝᠪᡠᠮᠪᡳ')
-	const [sliceBoundaries, setSliceBoundaries] = useState([])
+	const [boundaries, setBoundaries] = useState([])
 	const [lexigraph, setLexigraph] = useState()
 	const [font, setFont] = useState(0);
 
 	useEffect(() => {
-		const boundaries = [15,23,31,37,46,54,65,73,86,103];
-		/*
-		const boundaries = [];
-		word.split().forEach((letter, index) => { boundaries.push(index + 1); })
-		*/
-		setSliceBoundaries(boundaries);
-	}, [])
+		const newBoundaries = [];
+		const offset = 10;
+		const spacing = 10;
+		const gap = 1;
+		word.split('').forEach((letter, index) => {
+			const margin = index == 0 ? offset : gap;
+			const length = spacing;
+			newBoundaries.push([margin, length]);
+		})
+		setBoundaries(newBoundaries);
+	}, [word])
 
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -100,7 +160,8 @@ export default function Home() {
 			  <LoadButton setWord={setWord} />
 				<FontSelection font={font} setFont={setFont} />
 				<form>
-					<Lexigraph word={word} font={font} boundaries={sliceBoundaries} />
+					<BoundarySetter word={word} boundaries={boundaries} setBoundaries={setBoundaries} />
+					<Lexigraph word={word} font={font} boundaries={boundaries} />
 					<LexigraphWord word={word} font={font} />
 				</form>
       </main>
