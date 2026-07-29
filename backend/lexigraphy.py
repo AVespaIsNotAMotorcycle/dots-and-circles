@@ -1,3 +1,4 @@
+import random
 from PIL import Image, ImageDraw, ImageFont
 
 WIDTH = 50
@@ -14,6 +15,9 @@ FONTS = ["fonts/XM_BiaoHei.ttf",
          "fonts/XM_YingBi.ttf",
          "fonts/XM_ZhengBai.ttf",
          "fonts/XM_ZhengHei.ttf"]
+
+def get_random_font_index():
+    return random.randrange(len(FONTS))
 
 def get_font(font_index = 0):
     font_name = FONTS[font_index]
@@ -38,7 +42,7 @@ def rotate_image(horizontal_image):
     vertical_image = horizontal_image.rotate(-90).crop([left, top, right, bottom])
     return vertical_image
 
-def create_lexigraph(word, font_index = 0):
+def create_lexigraph(word, font_index = get_random_font_index()):
     font = get_font(font_index)
     horizontal_image = create_horizontal_image(word, font)
     vertical_image = rotate_image(horizontal_image)
