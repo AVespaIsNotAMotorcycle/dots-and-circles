@@ -16,6 +16,15 @@ FONTS = ["fonts/XM_BiaoHei.ttf",
          "fonts/XM_ZhengBai.ttf",
          "fonts/XM_ZhengHei.ttf"]
 
+def get_fonts_dict():
+    fonts_dict = {}
+    for index, fontname in enumerate(FONTS):
+        fonts_dict[str(index)] = fontname
+    return fonts_dict
+
+def get_font_filename(index):
+    return FONTS[index]
+
 def get_random_font_index():
     return random.randrange(len(FONTS))
 

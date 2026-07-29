@@ -1,11 +1,12 @@
 from flask import Flask, send_file
+from flask_cors import CORS
 import io
 
 import corpus
 import lexigraphy
 
 app = Flask(__name__)
-
+CORS(app)
 
 @app.route("/corpus/count")
 def get_corpus_count():
@@ -23,15 +24,24 @@ def get_random_word():
     '''
     return corpus.get_random_word()
 
-@app.route("/lexigraphy/new/<manchu>")
-def create_random_lexigraph(manchu):
+@app.route("/lexigraphy/fonts/dict")
+def get_fonts_dict():
+    return lexigraphy.get_fonts_dict()
+
+@app.route("/lexigraphy/fonts/<filename>")
+def get_font_file(filename):
+    return send_file('fonts/' + filename, mimetype="font/ttf")
+
+@app.route("/lexigraphy/new/<font>/<manchu>")
+def create_lexigraph(font, manchu):
     '''
     given:
     - manchu text
+    - index of a font
     returns:
-    - image of that text, generated with a random font
+    - image of that text
     '''
-    lexigraph = lexigraphy.create_lexigraph(manchu)
+    lexigraph = lexigraphy.create_lexigraph(manchu, int(font))
     image_io = io.BytesIO()
     lexigraph.save(image_io, 'PNG')
     image_io.seek(0)
