@@ -37,12 +37,11 @@ body {
 @font-face { font-family: manchu9; src: url('http://localhost:5000/lexigraphy/fonts/XM_ZhengBai.ttf'); }
 @font-face { font-family: manchu10; src: url('http://localhost:5000/lexigraphy/fonts/XM_ZhengHei.ttf'); }
 
-figure {
+form {
 	display: flex;
 }
 
 .manchu-text {
-	padding: 10px;
 	font-family: manchu1;
 	font-size: 1.9rem;
 	writing-mode: vertical-lr;
@@ -65,6 +64,12 @@ button:focus {
 	cursor: pointer;
 }
 
+form {
+	display: flex;
+	justify-content: space-around;
+	padding: 0.5rem;
+}
+
 figure {
 	position: relative;
 }
@@ -80,20 +85,25 @@ div.slice {
 	height: 10px;
 }
 
-figure {
-	margin: 0.5rem;
-}
-
 figure img {
 	width: 100px;
 	height: 700px;
 }
-figcaption.manchu-text {
-	margin-top: 10px;
+.lexigraph-word {
+	display: flex;
+	flex-direction: column;
+}
+
+.lexigraph-word .manchu-text {
+	margin-top: 20px;
 	font-size: 3.8rem;
 }
 
-figcaption > span:nth-child(even),
+.element-label {
+	text-align: center;
+}
+
+.lexigraph-word .manchu-text span:nth-child(even),
 div.slice:nth-child(even) { background-color: rgba(255, 0, 0, 0.2); }
-figcaption > span:nth-child(odd),
+.lexigraph-word .manchu-text span:nth-child(odd),
 div.slice:nth-child(odd) { background-color: rgba(0, 0, 255, 0.2); }

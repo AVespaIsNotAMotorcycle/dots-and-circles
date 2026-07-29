@@ -36,15 +36,18 @@ function Slices({ word, boundaries }) {
 	);
 }
 
-function Caption({ word, font }) {
+function LexigraphWord({ word, font }) {
 	const fontName = `manchu${font}`
 
 	return (
-		<figcaption className="manchu-text" style={{ fontFamily: fontName }}>
-    	{word.split('').map((letter, index) => (
-    		<span key={`${letter}-${index}`}>{letter}</span>
-    	))}
-		</figcaption>
+		<section className="lexigraph-word">
+			<span className="element-label">Text</span>
+  		<span className="manchu-text" style={{ fontFamily: fontName }}>
+      	{word.split('').map((letter, index) => (
+      		<span key={`${letter}-${index}`}>{letter}</span>
+      	))}
+  		</span>
+		</section>
 	);
 }
 
@@ -68,10 +71,11 @@ function FontSelection({ font, setFont }) {
 function Lexigraph({ word, font, boundaries }) {
 	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
 	return (
-		<>
+		<figure>
+			<figcaption className="element-label">Lexigraph</figcaption>
 			<img src={url} />
 			<Slices word={word} boundaries={boundaries} />
-		</>
+		</figure>
 	);
 }
 
@@ -95,10 +99,10 @@ export default function Home() {
 			<main>
 			  <LoadButton setWord={setWord} />
 				<FontSelection font={font} setFont={setFont} />
-				<figure>
+				<form>
 					<Lexigraph word={word} font={font} boundaries={sliceBoundaries} />
-					<Caption word={word} font={font} />
-				</figure>
+					<LexigraphWord word={word} font={font} />
+				</form>
       </main>
     </div>
   );
