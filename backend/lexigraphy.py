@@ -1,5 +1,7 @@
 import random
 import sqlite3
+import time
+import json
 from PIL import Image, ImageDraw, ImageFont
 
 from db import get_db_name
@@ -60,17 +62,20 @@ def create_lexigraph(word, font_index = get_random_font_index()):
     vertical_image = rotate_image(horizontal_image)
     return vertical_image
 
-def log_lexigraph(manchu, font, boundaries):
+def save_lexigraph(font, manchu, boundaries):
     timestamp = time.time()
-    data = [manchu, font, boundaries, timestamp]
+    data = [str(manchu), int(font), json.dumps(boundaries), str(timestamp)]
 
     connection = sqlite3.connect(get_db_name())
     cursor = connection.cursor()
 
-    cursor.executemany("INSERT INTO lexigraphy VALUES (?, ?, ?, ?)", [data])
+    success = True
+    try: cursor.executemany("INSERT INTO lexigraphy VALUES (?, ?, ?, ?)", [data])
+    except: success = False
 
     connection.commit()
     connection.close()
+    return success
 
 def drop_table(cursor):
     try: cursor.execute("DROP TABLE lexigraphy")

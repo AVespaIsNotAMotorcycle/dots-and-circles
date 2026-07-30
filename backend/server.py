@@ -47,11 +47,12 @@ def create_lexigraph(font, manchu):
     image_io.seek(0)
     return send_file(image_io, mimetype="image/png")
 
-@app.route("/lexigraphy/save/<font>/<manchu>")
+@app.route("/lexigraphy/save/<font>/<manchu>", methods=["PUT"])
 def save_lexigraph(font, manchu):
-    boundaries = request.args.get("boundaries")
-    lexigraphy.save(font, manchu, boundaries)
-    return 200
+    boundaries = request.get_json()["boundaries"]
+    success = lexigraphy.save_lexigraph(font, manchu, boundaries)
+    if success: return { "status": 200 }
+    else: return { "status": 500 }
 
 @app.route("/")
 def hello_world():

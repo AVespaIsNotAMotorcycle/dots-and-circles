@@ -136,11 +136,15 @@ function Lexigraph({ word, font, boundaries }) {
 }
 
 function SaveButton({ word, font, boundaries }) {
-	const onSubmit = () => {};
+	const onClick = () => {
+		axios.put(`${BACKEND}/lexigraphy/save/${font}/${word}`, { boundaries })
+			.then(() => { alert('Save succesful'); })
+			.catch(() => { alert('Save failed'); });
+	};
 	return (
 		<button
 			type="submit"
-			onSubmit={onSubmit}
+			onClick={onClick}
 		>
 			SAVE LEXIGRAPH
 		</button>
@@ -171,7 +175,7 @@ export default function Home() {
 			<main>
 			  <LoadButton setWord={setWord} />
 				<FontSelection font={font} setFont={setFont} />
-				<form>
+				<form onSubmit={(e) => { e.preventDefault(); }}>
 					<div className="form-fields">
   					<BoundarySetter word={word} boundaries={boundaries} setBoundaries={setBoundaries} />
   					<Lexigraph word={word} font={font} boundaries={boundaries} />
