@@ -2,6 +2,13 @@ import numpy as np
 import math
 import json
 
+ROW_LENGTH = 50
+NUMBER_OF_ROWS = 21
+INPUT_LAYER_SIZE = ROW_LENGTH * NUMBER_OF_ROWS
+
+ALPHABET = []
+OUTPUT_LAYER_SIZE = len(ALPHABET)
+
 class NeuralNetwork:
     LEARNING_RATE = 0.2
     _use_file = True
@@ -15,7 +22,7 @@ class NeuralNetwork:
     
     def __init__(self, num_hidden_nodes):
         print("Initializing neural network")
-        self.theta1 = self._rand_initialize_weights(400, num_hidden_nodes)
+        self.theta1 = self._rand_initialize_weights(INPUT_LAYER_SIZE, num_hidden_nodes)
         self.theta2 = self._rand_initialize_weights(num_hidden_nodes, 10)
         self.input_layer_bias = self._rand_initialize_weights(1, num_hidden_nodes)
         self.hidden_layer_bias = self._rand_initialize_weights(1, 10)
