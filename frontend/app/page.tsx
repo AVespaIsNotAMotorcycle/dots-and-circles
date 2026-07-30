@@ -135,6 +135,18 @@ function Lexigraph({ word, font, boundaries }) {
 	);
 }
 
+function SaveButton({ word, font, boundaries }) {
+	const onSubmit = () => {};
+	return (
+		<button
+			type="submit"
+			onSubmit={onSubmit}
+		>
+			SAVE LEXIGRAPH
+		</button>
+	)
+}
+
 export default function Home() {
 	const [word, setWord] = useState('ᠰᡳᠮᠨᡝᠪᡠᠮᠪᡳ')
 	const [boundaries, setBoundaries] = useState([])
@@ -160,9 +172,12 @@ export default function Home() {
 			  <LoadButton setWord={setWord} />
 				<FontSelection font={font} setFont={setFont} />
 				<form>
-					<BoundarySetter word={word} boundaries={boundaries} setBoundaries={setBoundaries} />
-					<Lexigraph word={word} font={font} boundaries={boundaries} />
-					<LexigraphWord word={word} font={font} />
+					<div className="form-fields">
+  					<BoundarySetter word={word} boundaries={boundaries} setBoundaries={setBoundaries} />
+  					<Lexigraph word={word} font={font} boundaries={boundaries} />
+  					<LexigraphWord word={word} font={font} />
+					</div>
+					<SaveButton word={word} font={font} boundaries={boundaries} />
 				</form>
       </main>
     </div>

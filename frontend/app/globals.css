@@ -66,6 +66,16 @@ button:focus {
 
 form {
 	display: flex;
+	flex-direction: column;
+}
+
+button[type="submit"] {
+	align-self: flex-end;
+	display: inline-block;
+}
+
+form > .form-fields {
+	display: flex;
 	justify-content: space-around;
 	padding: 0.5rem;
 }
