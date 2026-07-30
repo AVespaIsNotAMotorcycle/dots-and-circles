@@ -60,6 +60,18 @@ def create_lexigraph(word, font_index = get_random_font_index()):
     vertical_image = rotate_image(horizontal_image)
     return vertical_image
 
+def log_lexigraph(manchu, font, boundaries):
+    timestamp = time.time()
+    data = [manchu, font, boundaries, timestamp]
+
+    connection = sqlite3.connect(get_db_name())
+    cursor = connection.cursor()
+
+    cursor.executemany("INSERT INTO lexigraphy VALUES (?, ?, ?, ?)", [data])
+
+    connection.commit()
+    connection.close()
+
 def drop_table(cursor):
     try: cursor.execute("DROP TABLE lexigraphy")
     except: return

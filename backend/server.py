@@ -1,4 +1,4 @@
-from flask import Flask, send_file
+from flask import Flask, send_file, request
 from flask_cors import CORS
 import io
 
@@ -46,6 +46,12 @@ def create_lexigraph(font, manchu):
     lexigraph.save(image_io, 'PNG')
     image_io.seek(0)
     return send_file(image_io, mimetype="image/png")
+
+@app.route("/lexigraphy/save/<font>/<manchu>")
+def save_lexigraph(font, manchu):
+    boundaries = request.args.get("boundaries")
+    lexigraphy.save(font, manchu, boundaries)
+    return 200
 
 @app.route("/")
 def hello_world():
