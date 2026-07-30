@@ -1,5 +1,8 @@
 import random
+import sqlite3
 from PIL import Image, ImageDraw, ImageFont
+
+from db import get_db_name
 
 WIDTH = 50
 HEIGHT = 350
@@ -57,6 +60,27 @@ def create_lexigraph(word, font_index = get_random_font_index()):
     vertical_image = rotate_image(horizontal_image)
     return vertical_image
 
+def drop_table(cursor):
+    try: cursor.execute("DROP TABLE lexigraphy")
+    except: return
+
+def create_table(cursor):
+    columns = ",".join(["manchu TEXT NOT NULL",
+                        "font INTEGER NOT NULL",
+                        "boundaries TEXT NOT NULL",
+                        "timestamp INTEGER NOT NULL",
+                        "PRIMARY KEY(manchu, font)"])
+    cursor.execute("CREATE TABLE lexigraphy({0})".format(columns))
+
+def create_lexigraphy():
+    connection = sqlite3.connect(get_db_name())
+    cursor = connection.cursor()
+
+    drop_table(cursor)
+    create_table(cursor)
+
+    connection.commit()
+    connection.close()
+
 if __name__ == "__main__":
-    lexigraph = create_lexigraph("ᠰᡳᠮᠨᡝᠪᡠᠮᠪᡳ")
-    lexigraph.show()
+    create_lexigraphy()

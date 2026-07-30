@@ -4,9 +4,7 @@ import sys
 import unicodedata
 import os
 
-def get_db_name():
-    DB_NAME = "./manchu_transliteration.db"
-    return DB_NAME
+from db import get_db_name
 
 def read_manchu_cake_db():
     file = open("./manchucake_db.json", "r", encoding="utf-8")
@@ -50,7 +48,8 @@ def add_entry_to_corpus(entry_string, cursor):
     return
 
 def drop_table(cursor):
-    cursor.execute("DROP TABLE corpus")
+    try: cursor.execute("DROP TABLE corpus")
+    except: return
 
 def create_table(cursor):
     cursor.execute("CREATE TABLE corpus(manchu text NOT NULL PRIMARY KEY UNIQUE, romanization text)")
