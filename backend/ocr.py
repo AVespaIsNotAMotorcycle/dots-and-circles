@@ -126,21 +126,32 @@ class NeuralNetwork:
         self.input_layer_bias = [np.array(nn['b1'][0])]
         self.hidden_layer_bias = [np.array(nn['b2'][0])]
     
-    def predict(self, test):
-        predictions = self.forward_propogate(test)['predictions']
+    def predict(self, lexigraph_slice):
+        predictions = self.forward_propogate(lexigraph_slice)['predictions']
     
         highest_confidence = max(predictions)
         confidence_percent = int(highest_confidence * 100)
         prediction = predictions.index(highest_confidence)
-        print("Predicting digit is {0} with {1}% confidence".format(prediction, confidence_percent))
-        return { "digit": predictions.index(max(predictions)), "confidence": confidence_percent }
+        print("Predicting character is {0} with {1}% confidence".format(prediction, confidence_percent))
+        return { "character": predictions.index(max(predictions)), "confidence": confidence_percent }
 
+    ''' 
     def train_on_example(self, pixels, digit):
         prediction = self.predict(pixels)
         results = self.forward_propogate(pixels)
         self.back_propogate(pixels, results, digit)
         print("Actual digit is {0}".format(digit))
         return { "prediction": prediction['digit'], "actual": digit }
+    ''' 
+
+    def train_on_lexigraph(self, slices, row_labels):
+        predictions = []
+        for index, slices in enumerate(slices):
+            self.predict(slice)
+            actual = row_labels[index]
+        for index, prediction in enumerate(predictions):
+            self.back_propogate(slices[index], predictions, row_labels[index])
+        return predictions
 
     def train(self, training_data):
         predictions = []

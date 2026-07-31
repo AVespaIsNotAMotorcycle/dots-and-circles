@@ -55,8 +55,11 @@ def create_lexigraph(font, manchu):
 def save_lexigraph(font, manchu):
     boundaries = request.get_json()["boundaries"]
     success = lexigraphy.save_lexigraph(font, manchu, boundaries)
-    if success: return { "status": 200 }
-    else: return { "status": 500 }
+
+    slices, row_labels = lexigraphy.get_slices(font, manchu)
+    predictions = nn.train_on_lexigraph(slices, row_labels)
+
+    return predictions
 
 @app.route("/")
 def hello_world():
