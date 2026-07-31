@@ -6,6 +6,43 @@ import Image from "next/image";
 import { useState, useEffect } from 'react';
 
 const BACKEND = 'http://localhost:5000';
+const ALPHABET = {'ᡠ': '--letter-color-1',
+                  'ᡬ': '--letter-color-2',
+                  'ᡴ': '--letter-color-3',
+                  'ᡦ': '--letter-color-4',
+                  'ᡤ': '--letter-color-5',
+                  'ᡮ': '--letter-color-6',
+                  'ᠮ': '--letter-color-7',
+                  'ᠰ': '--letter-color-8',
+                  'ᠵ': '--letter-color-9',
+                  'ᠨ': '--letter-color-10',
+                  'ᡳ': '--letter-color-11',
+                  'ᡟ': '--letter-color-12',
+                  'ᠸ': '--letter-color-13',
+                  'ᡧ': '--letter-color-14',
+                  'ᡵ': '--letter-color-15',
+                  'ᠪ': '--letter-color-16',
+                  '᠈': '--letter-color-17',
+                  'ᠶ': '--letter-color-18',
+                  '᠉': '--letter-color-19',
+                  'ᠩ': '--letter-color-20',
+                  'ᠠ': '--letter-color-21',
+                  'ᠴ': '--letter-color-22',
+                  'ᠯ': '--letter-color-23',
+                  'ᡝ': '--letter-color-24',
+                  'ᡷ': '--letter-color-25',
+                  'ᡰ': '--letter-color-26',
+                  'ᡥ': '--letter-color-27',
+                  'ᠺ': '--letter-color-28',
+                  'ᠣ': '--letter-color-29',
+                  'ᡭ': '--letter-color-30',
+                  'ᡱ': '--letter-color-31',
+                  'ᡨ': '--letter-color-32',
+                  'ᡯ': '--letter-color-33',
+                  'ᡩ': '--letter-color-34',
+                  'ᡶ': '--letter-color-35',
+                  '\'᠋': '--letter-color-36',
+                  'ᡡ': '--letter-color-37'};
 
 function LoadButton({ setWord }) {
 	const onClick = () => {
@@ -151,6 +188,36 @@ function SaveButton({ word, font, boundaries }) {
 	)
 }
 
+const PLACEHOLDER_RESULTS = [['ᠺ', 0.9],
+                             ['ᠺ', 0.8],
+                             ['ᠺ', 0.7],
+                             ['ᠺ', 1.0],
+                             ['ᡳ', 0.2],
+                             ['ᡳ', 0.9],
+                             ['ᡳ', 0.6],
+                             ['ᠺ', 0.3],
+                             ['ᠺ', 0.4],
+                             ['ᠺ', 0.7],
+                             ['ᠺ', 0.9]];
+function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
+	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
+	return (
+		<div className="prediction">
+			<img src={url} />
+			{results.map(([letter, confidence], index) => (
+				<div
+					className="slice-letter-prediction"
+					style={{
+						top: `${(index * 2) + 20}px`,
+						width: `${20 + (confidence * 100)}px`,
+						background: `var(${ALPHABET[letter]})`,
+					}}
+				/>
+			))}
+		</div>
+	);
+}
+
 export default function Home() {
 	const [word, setWord] = useState('ᠰᡳᠮᠨᡝᠪᡠᠮᠪᡳ')
 	const [boundaries, setBoundaries] = useState([])
@@ -183,6 +250,7 @@ export default function Home() {
 					</div>
 					<SaveButton word={word} font={font} boundaries={boundaries} />
 				</form>
+				<OCRResults font={font} word={word} />
       </main>
     </div>
   );

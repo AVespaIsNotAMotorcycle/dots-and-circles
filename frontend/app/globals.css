@@ -19,6 +19,46 @@
   }
 }
 
+html {
+	--letter-color-1: #696969;
+  --letter-color-2: #dcdcdc;
+  --letter-color-3: #556b2f;
+  --letter-color-4: #8b000;
+  --letter-color-5: #808000;
+  --letter-color-6: #483d8b;
+  --letter-color-7: #008000;
+  --letter-color-8: #008080;
+  --letter-color-9: #4682b4;
+  --letter-color-10: #00008b;
+  --letter-color-11: #32cd32;
+  --letter-color-12: #7f007f;
+  --letter-color-13: #8fbc8f;
+  --letter-color-14: #d2b48c;
+  --letter-color-15: #ff0000;
+  --letter-color-16: #00ced1;
+  --letter-color-17: #ffa500;
+  --letter-color-18: #ffff00;
+  --letter-color-19: #c71585;
+  --letter-color-20: #00ff00;
+  --letter-color-21: #9400d3;
+  --letter-color-22: #dc143c;
+  --letter-color-23: #f4a460;
+  --letter-color-24: #9370db;
+  --letter-color-25: #0000ff;
+  --letter-color-26: #adff2f;
+  --letter-color-27: #ff00ff;
+  --letter-color-28: #1e90ff;
+  --letter-color-29: #db7093;
+  --letter-color-30: #f0e68c;
+  --letter-color-31: #fa8072;
+  --letter-color-32: #dda0dd;
+  --letter-color-33: #ee82ee;
+  --letter-color-34: #98fb98;
+  --letter-color-35: #87cefa;
+  --letter-color-36: #7fffd4;
+  --letter-color-37: #ffb6c1;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -95,6 +135,7 @@ div.slice {
 	height: 10px;
 }
 
+.prediction img,
 figure img {
 	width: 100px;
 	height: 700px;
@@ -135,4 +176,14 @@ div.slice:nth-child(odd) { background-color: rgba(0, 0, 255, 0.2); }
 	border-radius: 5px;
 	transition-property: background-color color;
 	transition-duration: 0.2s;
+}
+
+.prediction {
+	position: relative;
+}
+.slice-letter-prediction {
+	height: 2px;
+	position: absolute;
+	opacity: 0.5;
+	left: 90px;
 }
