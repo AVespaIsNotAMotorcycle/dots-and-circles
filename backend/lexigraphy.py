@@ -77,6 +77,17 @@ def save_lexigraph(font, manchu, boundaries):
     connection.close()
     return success
 
+def get_boundaries(font, manchu):
+    connection = sqlite3.connect(get_db_name())
+    cursor = connection.cursor()
+
+    command = "SELECT boundaries FROM lexigraphy WHERE font={0} AND manchu=\"{1}\"".format(font, manchu)
+    row = cursor.execute(command).fetchone()
+    connection.close()
+
+    if row == None: return None
+    else: return row[0]
+
 def drop_table(cursor):
     try: cursor.execute("DROP TABLE lexigraphy")
     except: return
