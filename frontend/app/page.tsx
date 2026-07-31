@@ -42,7 +42,9 @@ const ALPHABET = {'ᡠ': '--letter-color-1',
                   'ᡩ': '--letter-color-34',
                   'ᡶ': '--letter-color-35',
                   '\'᠋': '--letter-color-36',
-                  'ᡡ': '--letter-color-37'};
+                  'ᡡ': '--letter-color-37',
+									' ': 'white', // whitespace
+									'*': 'white'} // blank
 
 function LoadButton({ setWord }) {
 	const onClick = () => {
@@ -68,12 +70,10 @@ function Slice({ margin, length }) {
 }
 
 function Slices({ word, boundaries }) {
-	console.log(boundaries);
 	if (boundaries.length !== word.length) return <div className="slices" />;
 	return (
 		<div className="slices">
 			{word.split('').map((letter, index) => {
-				console.log(boundaries[index]);
 				return (
 					<Slice
 						margin={boundaries[index][0]}
@@ -172,11 +172,18 @@ function Lexigraph({ word, font, boundaries }) {
 	);
 }
 
-function SaveButton({ word, font, boundaries }) {
+function SaveButton({ word, font, boundaries, setResults }) {
 	const onClick = () => {
 		axios.put(`${BACKEND}/lexigraphy/save/${font}/${word}`, { boundaries })
-			.then(() => { alert('Save succesful'); })
-			.catch(() => { alert('Save failed'); });
+			.then((response) => {
+				console.log(response.data);
+				setResults(response.data);
+				alert('Save succesful');
+			})
+			.catch((error) => {
+				console.error(error);
+				alert('Save failed');
+			});
 	};
 	return (
 		<button
@@ -187,30 +194,18 @@ function SaveButton({ word, font, boundaries }) {
 		</button>
 	)
 }
-
-const PLACEHOLDER_RESULTS = [['ᠺ', 0.9],
-                             ['ᠺ', 0.8],
-                             ['ᠺ', 0.7],
-                             ['ᠺ', 1.0],
-                             ['ᡳ', 0.2],
-                             ['ᡳ', 0.9],
-                             ['ᡳ', 0.6],
-                             ['ᠺ', 0.3],
-                             ['ᠺ', 0.4],
-                             ['ᠺ', 0.7],
-                             ['ᠺ', 0.9]];
 function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
 	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
 	return (
 		<div className="prediction">
 			<img src={url} />
-			{results.map(([letter, confidence], index) => (
+			{results.map(({ character, confidence }, index) => (
 				<div
 					className="slice-letter-prediction"
 					style={{
-						top: `${(index * 2) + 20}px`,
-						width: `${20 + (confidence * 100)}px`,
-						background: `var(${ALPHABET[letter]})`,
+						top: `${(index * 2) + 18}px`,
+						width: `${20 + (confidence)}px`,
+						background: `var(${ALPHABET[Object.keys(ALPHABET)[character]]})`,
 					}}
 				/>
 			))}
@@ -223,6 +218,7 @@ export default function Home() {
 	const [boundaries, setBoundaries] = useState([])
 	const [lexigraph, setLexigraph] = useState()
 	const [font, setFont] = useState(0);
+	const [results, setResults] = useState([]);
 
 	useEffect(() => {
 		const newBoundaries = [];
@@ -248,9 +244,9 @@ export default function Home() {
   					<Lexigraph word={word} font={font} boundaries={boundaries} />
   					<LexigraphWord word={word} font={font} />
 					</div>
-					<SaveButton word={word} font={font} boundaries={boundaries} />
+					<SaveButton word={word} font={font} boundaries={boundaries} setResults={setResults} />
 				</form>
-				<OCRResults font={font} word={word} />
+				<OCRResults font={font} word={word} results={results} />
       </main>
     </div>
   );
