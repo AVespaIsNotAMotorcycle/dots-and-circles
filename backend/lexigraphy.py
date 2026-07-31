@@ -35,7 +35,7 @@ def get_random_font_index():
     return random.randrange(len(FONTS))
 
 def get_font(font_index = 0):
-    font_name = FONTS[font_index]
+    font_name = FONTS[int(font_index)]
     font = ImageFont.truetype(font_name, 30)
     return font
 
@@ -122,7 +122,6 @@ def slice_dimensions_to_rows(manchu, slice_dimensions):
 def get_slices(font, manchu):
     slice_dimensions = get_slice_dimensions(font, manchu)
     lexigraph = create_lexigraph(manchu, font)
-    # lexigraph.show()
     array = image_to_array(lexigraph)
     row_labels = slice_dimensions_to_rows(manchu, slice_dimensions)
 
@@ -131,7 +130,7 @@ def get_slices(font, manchu):
         start = i + 10
         end = start + 21
         slice = array[start:end]
-        slices.append(slice)
+        slices.append(slice.reshape(1, WIDTH * 21))
 
     return slices, row_labels
 
