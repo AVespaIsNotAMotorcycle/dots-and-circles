@@ -194,8 +194,27 @@ function SaveButton({ word, font, boundaries, setResults }) {
 		</button>
 	)
 }
+
+function parseResults(results) {
+	const characters = results.map(({ character }) => Object.keys(ALPHABET)[character]);
+	const reducedCharacters = [];
+	reducedCharacters.push(characters[0]);
+	for (var i = 0; i < characters.length; i += 1) {
+		const previous = i == 0 ? '*' : characters[i - 1];
+		const character = characters[i];
+		const next = i === characters.length ? '*' : characters[i + 1];
+
+		if (character === previous) continue;
+		if (previous === next) continue;
+		if (character !== previous && character !== next) continue;
+		reducedCharacters.push(character);
+	}
+	return reducedCharacters.filter((character) => character !== '*').join(' ');
+}
+
 function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
 	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
+	const parsed = parseResults(results);
 	return (
 		<div className="prediction">
 			<img src={url} />
@@ -209,6 +228,7 @@ function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
 					}}
 				/>
 			))}
+			<p className="manchu-text">{parsed}</p>
 		</div>
 	);
 }
