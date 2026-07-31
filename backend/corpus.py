@@ -28,6 +28,20 @@ def all_latin_characters(text):
         return False
     return True
 
+def characters_in_corpus():
+    connection = sqlite3.connect(get_db_name())
+    cursor = connection.cursor()
+
+    all_characters = []
+    rows = cursor.execute("SELECT manchu, romanization FROM corpus ORDER BY romanization")
+    for row in rows:
+        characters = list(row[0])
+        for character in characters: all_characters.append(character)
+    unique_characters = set(all_characters)
+    print(unique_characters)
+
+    connection.close()
+
 def add_entry_to_corpus(entry_string, cursor):
     entry = json.loads(entry_string)
     manchu = entry["m"].split()
@@ -99,5 +113,6 @@ def generate_new_lexigraph():
     return
 
 if __name__ == "__main__":
-    create_corpus()
-    print(get_corpus_size())
+    # create_corpus()
+    # print(get_corpus_size())
+    characters_in_corpus()
