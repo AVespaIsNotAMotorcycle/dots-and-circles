@@ -61,9 +61,9 @@ class NeuralNetwork:
     def __init__(self, num_hidden_nodes):
         print("Initializing neural network")
         self.theta1 = self._rand_initialize_weights(INPUT_LAYER_SIZE, num_hidden_nodes)
-        self.theta2 = self._rand_initialize_weights(num_hidden_nodes, 10)
+        self.theta2 = self._rand_initialize_weights(num_hidden_nodes, OUTPUT_LAYER_SIZE)
         self.input_layer_bias = self._rand_initialize_weights(1, num_hidden_nodes)
-        self.hidden_layer_bias = self._rand_initialize_weights(1, 10)
+        self.hidden_layer_bias = self._rand_initialize_weights(1, OUTPUT_LAYER_SIZE)
     
     def sigmoid(self, matrix):
         sigmoid_to_matrix = np.vectorize(self._sigmoid_scalar)
@@ -92,8 +92,8 @@ class NeuralNetwork:
         y1 = results['y1']
         y2 = results['y2']
 
-        actual_vals = [0] * 10
-        actual_vals[actual_digit] = 1
+        actual_vals = [0] * OUTPUT_LAYER_SIZE
+        actual_vals[ALPHABET.index(actual_digit)] = 1
         output_errors = np.asmatrix(actual_vals).T - np.asmatrix(y2)
         hidden_errors = np.multiply(np.dot(np.asmatrix(self.theta2).T, output_errors), y1)
     
@@ -132,7 +132,7 @@ class NeuralNetwork:
         highest_confidence = max(predictions)
         confidence_percent = int(highest_confidence * 100)
         prediction = predictions.index(highest_confidence)
-        print("Predicting character is {0} with {1}% confidence".format(prediction, confidence_percent))
+        print("Predicting character is {0} with {1}% confidence".format(ALPHABET[prediction], confidence_percent))
         return { "character": predictions.index(max(predictions)), "confidence": confidence_percent }
 
     ''' 
@@ -146,11 +146,13 @@ class NeuralNetwork:
 
     def train_on_lexigraph(self, slices, row_labels):
         predictions = []
-        for index, slices in enumerate(slices):
-            self.predict(slice)
+        for index, slice in enumerate(slices):
+            prediction = self.predict(slice)
             actual = row_labels[index]
-        for index, prediction in enumerate(predictions):
-            self.back_propogate(slices[index], predictions, row_labels[index])
+            predictions.append(prediction)
+
+            propogation = self.forward_propogate(slice)
+            self.back_propogate(slices[index], propogation, row_labels[index])
         return predictions
 
     def train(self, training_data):
