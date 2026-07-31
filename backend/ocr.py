@@ -42,12 +42,14 @@ ALPHABET = ['ᡠ',
             'ᡩ',
             'ᡶ',
             '\'᠋',
-            'ᡡ']
+            'ᡡ',
+            ' ',    # whitespace
+            '*']    # blank
 OUTPUT_LAYER_SIZE = len(ALPHABET)
 
 class NeuralNetwork:
     LEARNING_RATE = 0.2
-    _use_file = True
+    _use_file = False
     NN_FILE_PATH = "saved_ann.json"
 
     def _rand_initialize_weights(self, size_in, size_out):

@@ -3,6 +3,7 @@ import sqlite3
 import time
 import json
 from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 
 from db import get_db_name
 
@@ -77,7 +78,7 @@ def save_lexigraph(font, manchu, boundaries):
     connection.close()
     return success
 
-def get_boundaries(font, manchu):
+def get_slice_dimensions(font, manchu):
     connection = sqlite3.connect(get_db_name())
     cursor = connection.cursor()
 
@@ -86,7 +87,53 @@ def get_boundaries(font, manchu):
     connection.close()
 
     if row == None: return None
-    else: return row[0]
+    else: return json.loads(row[0])
+
+def collapse_pixel(pixel_tuple):
+    total = 0
+    for channel in pixel_tuple: total += int(channel)
+    total = total / 3
+    if total > 100: return 0
+    return 1
+
+def image_to_array(image):
+    image_array = np.array(image)
+    array = np.zeros((350, 50))
+    for y, row in enumerate(image_array):
+        for x, pixel in enumerate(row):
+            array[y][x] = collapse_pixel(pixel)
+    return array
+
+def slice_dimensions_to_rows(manchu, slice_dimensions):
+    rows = []
+
+    for index, slice in enumerate(slice_dimensions):
+        letter = manchu[index]
+        margin = int(slice[0])
+        length = int(slice[1])
+        for i in range(margin):
+            if index == 0: rows.append(' ')
+            else: rows.append('*')
+        for i in range(length): rows.append(letter)
+    while len(rows) < 330: rows.append(' ')
+
+    return rows[10:]
+
+def get_slices(font, manchu):
+    slice_dimensions = get_slice_dimensions(font, manchu)
+    lexigraph = create_lexigraph(manchu, font)
+    # lexigraph.show()
+    array = image_to_array(lexigraph)
+    row_labels = slice_dimensions_to_rows(manchu, slice_dimensions)
+
+    slices = []
+    for i in range(350 - 30):
+        start = i + 10
+        end = start + 21
+        slice = array[start:end]
+        slices.append(slice)
+
+    return slices, row_labels
 
 def drop_table(cursor):
     try: cursor.execute("DROP TABLE lexigraphy")
@@ -111,4 +158,5 @@ def create_lexigraphy():
     connection.close()
 
 if __name__ == "__main__":
-    create_lexigraphy()
+    # create_lexigraphy()
+    get_slices(0, "ᠰᡳᠮᠨᡝᠪᡠᠮᠪᡳ")

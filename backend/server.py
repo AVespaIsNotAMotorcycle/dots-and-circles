@@ -4,9 +4,13 @@ import io
 
 import corpus
 import lexigraphy
+from ocr import NeuralNetwork
 
 app = Flask(__name__)
 CORS(app)
+    
+nn = NeuralNetwork(50)
+nn._load()
 
 @app.route("/corpus/count")
 def get_corpus_count():
