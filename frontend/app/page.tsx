@@ -233,6 +233,15 @@ function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
 	);
 }
 
+function TrainButton() {
+	const train = () => {
+		axios.put(`${BACKEND}/train`)
+			.then(() => { alert('Training done!'); })
+			.catch(console.error);
+	};
+	return <button onClick={train}>TRAIN</button>
+}
+
 export default function Home() {
 	const [word, setWord] = useState('ᠰᡳᠮᠨᡝᠪᡠᠮᠪᡳ')
 	const [boundaries, setBoundaries] = useState([])
@@ -260,6 +269,7 @@ export default function Home() {
 					<div>
 						<LoadButton setWord={setWord} />
 						<FontSelection font={font} setFont={setFont} />
+						<TrainButton />
 					</div>
 					<div className="form-fields">
   					<BoundarySetter word={word} boundaries={boundaries} setBoundaries={setBoundaries} />

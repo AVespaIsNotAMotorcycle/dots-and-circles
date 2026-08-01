@@ -49,7 +49,7 @@ OUTPUT_LAYER_SIZE = len(ALPHABET)
 
 class NeuralNetwork:
     LEARNING_RATE = 0.1
-    _use_file = False
+    _use_file = True
     NN_FILE_PATH = "saved_ann.json"
 
     def _rand_initialize_weights(self, size_in, size_out):

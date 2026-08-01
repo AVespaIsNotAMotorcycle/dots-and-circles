@@ -134,6 +134,20 @@ def get_slices(font, manchu):
 
     return slices, row_labels
 
+def get_random_marked_lexigraph():
+    connection = sqlite3.connect(get_db_name())
+    cursor = connection.cursor()
+
+    all_characters = []
+    rows = cursor.execute("SELECT manchu, font FROM lexigraphy").fetchall()
+    random.shuffle(rows)
+    row = rows[0]
+    manchu, font = row
+    slices, row_labels = get_slices(font, manchu)
+
+    connection.close()
+    return font, manchu, slices, row_labels
+
 def drop_table(cursor):
     try: cursor.execute("DROP TABLE lexigraphy")
     except: return

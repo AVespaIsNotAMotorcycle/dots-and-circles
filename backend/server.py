@@ -4,12 +4,12 @@ import io
 
 import corpus
 import lexigraphy
-from ocr import NeuralNetwork
+from ocr import NeuralNetwork, ALPHABET
 
 app = Flask(__name__)
 CORS(app)
     
-nn = NeuralNetwork(50)
+nn = NeuralNetwork(128)
 nn._load()
 
 @app.route("/corpus/count")
@@ -59,7 +59,23 @@ def save_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
     predictions = nn.train_on_lexigraph(slices, row_labels)
 
+    nn.save()
     return predictions
+
+@app.route("/train", methods=["PUT"])
+def train_100_times():
+    trials = 0
+    successes = 0
+    for i in range(100):
+        font, manchu, slices, row_labels = lexigraphy.get_random_marked_lexigraph()
+        predictions = nn.train_on_lexigraph(slices, row_labels)
+        for index in range(len(row_labels)):
+            prediction = predictions[index]["character"]
+            answer = ALPHABET.index(row_labels[index])
+            trials += 1
+            if prediction == answer: successes += 1
+    print("Accuracy: {0}%".format(successes / trials * 100))
+    return "OK"
 
 @app.route("/")
 def hello_world():
