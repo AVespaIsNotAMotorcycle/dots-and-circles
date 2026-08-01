@@ -56,6 +56,8 @@ class NeuralNetwork:
         return [((x * 0.12) - 0.06) for x in np.random.rand(size_out, size_in)]
     
     def _sigmoid_scalar(self, z):
+        if z >= 13: return 1
+        if z <= -13: return 0
         return 1 / (1 + math.e ** -z)
     
     def __init__(self, num_hidden_nodes):
@@ -132,7 +134,7 @@ class NeuralNetwork:
         highest_confidence = max(predictions)
         confidence_percent = int(highest_confidence * 100)
         prediction = predictions.index(highest_confidence)
-        print("Predicting character is {0} with {1}% confidence".format(ALPHABET[prediction], confidence_percent))
+        # print("Predicting character is {0} with {1}% confidence".format(ALPHABET[prediction], confidence_percent))
         return { "character": predictions.index(max(predictions)), "confidence": confidence_percent }
 
     ''' 
