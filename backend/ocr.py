@@ -48,7 +48,7 @@ ALPHABET = ['ᡠ',
 OUTPUT_LAYER_SIZE = len(ALPHABET)
 
 class NeuralNetwork:
-    LEARNING_RATE = 0.2
+    LEARNING_RATE = 0.1
     _use_file = False
     NN_FILE_PATH = "saved_ann.json"
 
@@ -146,12 +146,15 @@ class NeuralNetwork:
 
     def train_on_lexigraph(self, slices, row_labels):
         predictions = []
+        propogations = []
         for index, slice in enumerate(slices):
             prediction = self.predict(slice)
             actual = row_labels[index]
             predictions.append(prediction)
 
             propogation = self.forward_propogate(slice)
+            propogations.append(propogation)
+        for index, propogation in enumerate(propogations):
             self.back_propogate(slices[index], propogation, row_labels[index])
         return predictions
 
