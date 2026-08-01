@@ -209,7 +209,7 @@ function parseResults(results) {
 		if (character !== previous && character !== next) continue;
 		reducedCharacters.push(character);
 	}
-	return reducedCharacters.filter((character) => character !== '*').join(' ');
+	return reducedCharacters.filter((character) => character !== '*').join('');
 }
 
 function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
@@ -228,7 +228,7 @@ function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
 					}}
 				/>
 			))}
-			<p className="manchu-text">{parsed}</p>
+			<p className="manchu-text">[{parsed}]</p>
 		</div>
 	);
 }
