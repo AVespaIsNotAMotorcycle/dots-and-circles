@@ -108,7 +108,7 @@ main {
 @font-face { font-family: manchu9; src: url('http://localhost:5000/lexigraphy/fonts/XM_ZhengBai.ttf'); }
 @font-face { font-family: manchu10; src: url('http://localhost:5000/lexigraphy/fonts/XM_ZhengHei.ttf'); }
 
-main {
+main.labelling {
 	display: flex;
 	gap: 5rem;
 }
@@ -188,7 +188,7 @@ div.slice:nth-child(odd) { background-color: rgba(0, 0, 255, 0.2); }
 	grid-template-columns: 1fr 2fr 2fr;
 	margin: 1rem;
 }
-.boundary-setter input {
+input {
 	width: 5rem;
 	margin: 0 1rem;
 	border: 2px solid var(--color-foreground);

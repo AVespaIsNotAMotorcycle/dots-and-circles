@@ -81,8 +81,9 @@ def train_100_times():
             answer = ALPHABET.index(row_labels[index])
             trials += 1
             if prediction == answer: successes += 1
-    print("Accuracy: {0}%".format(successes / trials * 100))
-    return "OK"
+    accuracy = successes / trials * 100
+    print("Accuracy: {0}%".format(accuracy))
+    return { "accuracy": accuracy }
 
 @app.route("/")
 def hello_world():
