@@ -196,3 +196,14 @@ div.slice:nth-child(odd) { background-color: rgba(0, 0, 255, 0.2); }
 	opacity: 0.5;
 	left: 90px;
 }
+
+.prediction-chart-legend li {
+	display: flex;
+	gap: 1rem;
+}
+.prediction-chart-legend li div {
+	width: 20px;
+	height: 20px;
+	border: 1px solid grey;
+	border-radius: 5px;
+}

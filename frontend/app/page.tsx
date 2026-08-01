@@ -212,6 +212,30 @@ function parseResults(results) {
 	return reducedCharacters.filter((character) => character !== '*').join('');
 }
 
+function PredictionChartLegend({ results = PLACEHOLDER_RESULTS }) {
+	const [uniqueCharacters, setUniqueCharacters] = useState([]);
+
+	useEffect(() => {
+		const newCharacters = [];
+		results.forEach(({ character }) => {
+			if (newCharacters.includes(character)) return;
+			newCharacters.push(character);
+		});
+		setUniqueCharacters(newCharacters);
+	}, [results]);
+
+	return (
+		<ul className="prediction-chart-legend">
+			{uniqueCharacters.map((character) => (
+				<li key={character}>
+					<div style={{ background: `var(${ALPHABET[Object.keys(ALPHABET)[character]]})` }} />
+					{Object.keys(ALPHABET)[character]}
+				</li>
+			))}
+		</ul>
+	)
+}
+
 function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
 	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
 	const parsed = parseResults(results);
@@ -228,6 +252,7 @@ function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
 					}}
 				/>
 			))}
+			<PredictionChartLegend results={results} />
 			<p className="manchu-text">[{parsed}]</p>
 		</div>
 	);
