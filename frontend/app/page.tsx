@@ -256,9 +256,11 @@ export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
 			<main>
-			  <LoadButton setWord={setWord} />
-				<FontSelection font={font} setFont={setFont} />
 				<form onSubmit={(e) => { e.preventDefault(); }}>
+					<div>
+						<LoadButton setWord={setWord} />
+						<FontSelection font={font} setFont={setFont} />
+					</div>
 					<div className="form-fields">
   					<BoundarySetter word={word} boundaries={boundaries} setBoundaries={setBoundaries} />
   					<Lexigraph word={word} font={font} boundaries={boundaries} />

@@ -77,8 +77,14 @@ body {
 @font-face { font-family: manchu9; src: url('http://localhost:5000/lexigraphy/fonts/XM_ZhengBai.ttf'); }
 @font-face { font-family: manchu10; src: url('http://localhost:5000/lexigraphy/fonts/XM_ZhengHei.ttf'); }
 
+main {
+	display: flex;
+	gap: 5rem;
+}
+
 form {
 	display: flex;
+	width: fit-content;
 }
 
 .manchu-text {
@@ -180,6 +186,9 @@ div.slice:nth-child(odd) { background-color: rgba(0, 0, 255, 0.2); }
 
 .prediction {
 	position: relative;
+	display: flex;
+	justify-content: space-between;
+	gap: 100px;
 }
 .slice-letter-prediction {
 	height: 2px;
