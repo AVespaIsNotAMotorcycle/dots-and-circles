@@ -59,10 +59,36 @@ html {
   --letter-color-37: #ffb6c1;
 }
 
+header {
+	padding: 1rem 2rem;
+	font-size: 1.5rem;
+	margin-bottom: 3rem;
+	box-shadow: rgba(0, 0, 0, 0.2) 0px 5px 5px;
+}
+
+header nav ul {
+	display: flex;
+	gap: 2rem;
+}
+header nav a {
+	border-bottom: 5px solid transparent;
+	transition-property: border-color;
+	padding-bottom: 1rem;
+	transition-duration: 0.15s;
+}
+header nav a:hover,
+header nav a:hover {
+	border-color: black;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+main {
+	margin: 1rem;
 }
 
 @font-face { font-family: manchu0; src: url('http://localhost:5000/lexigraphy/fonts/XM_BiaoHei.ttf'); }
