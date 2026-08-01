@@ -32,6 +32,7 @@ function FontName({ font }) {
 
 function LexigraphCard({ font, manchu, boundaries }) {
 	const url = `${BACKEND}/lexigraphy/new/${font}/${manchu}`;
+	console.log(font, manchu, boundaries);
 	return (
 		<section className={styles.lexigraphCard}>
 			<div>
@@ -44,7 +45,7 @@ function LexigraphCard({ font, manchu, boundaries }) {
   				<button type="button">Edit</button>
   			</Link>
 			</div>
-			<Lexigraph font={font} word={manchu} boundaries={boundaries} />
+			<Lexigraph font={font} word={manchu} boundaries={JSON.parse(boundaries)} />
 		</section>
 	)
 }

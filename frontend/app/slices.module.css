@@ -3,14 +3,14 @@
 }
 .lexigraph div.slices {
 	position: absolute;
-	width: 50px;
+	width: 100%;
 	height: 330px;
 	left: 0;
 	top: 20px
 }
 
 .lexigraph.large div.slices {
-	width: 100px;
+	width: 100%;
 	height: 660px;
 }
 

@@ -8,8 +8,7 @@
 	justify-content: space-around;
 }
 
-.lexigraphCard,
-.lexigraphCard img {
+.lexigraphCard {
 	border: 1px solid black;
 	border-radius: 5px;
 }

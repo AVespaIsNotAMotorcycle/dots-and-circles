@@ -9,27 +9,29 @@ import { useState, useEffect } from 'react';
 
 const BACKEND = 'http://localhost:5000';
 
-function Slice({ margin, length }) {
+function Slice({ margin, length, size }) {
+	const scale = size === 'large' ? 2 : 1;
 	return (
 		<div
 			style={{
-				marginTop: `${margin * 2}px`,
-				height: `${(length) * 2}px`,
+				marginTop: `${margin * scale}px`,
+				height: `${(length) * scale}px`,
 			}}
 			className="slice"
 		/>
 	);
 }
 
-function Slices({ word, boundaries }) {
+function Slices({ word, boundaries, size }) {
 	if (boundaries.length !== word.length) return <div className="slices" />;
 	return (
 		<div className={styles.slices}>
 			{word.split('').map((letter, index) => {
 				return (
 					<Slice
-						margin={boundaries[index][0]}
-						length={boundaries[index][1]}
+						size={size}
+						margin={Number(boundaries[index][0])}
+						length={Number(boundaries[index][1])}
 						key={`${letter}-${index}`}
 					/>
 				);
@@ -51,7 +53,7 @@ export default function Lexigraph({ word, font, boundaries, size='normal' }) {
 		>
 			<figcaption className="element-label">Lexigraph</figcaption>
 			<img src={url} />
-			<Slices word={word} boundaries={boundaries} />
+			<Slices word={word} boundaries={boundaries} size={size} />
 		</figure>
 	);
 }
