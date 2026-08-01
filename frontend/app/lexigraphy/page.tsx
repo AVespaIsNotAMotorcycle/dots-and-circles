@@ -7,6 +7,8 @@ import Link from "next/link";
 import axios from 'axios';
 import { useState, useEffect } from 'react';
 
+import Lexigraph from '../slices';
+
 const BACKEND = 'http://localhost:5000';
 
 function formatFontName(fonts, fontNumber) {
@@ -28,7 +30,7 @@ function FontName({ font }) {
 	return <span>Font: {formatFontName(fonts, font)}</span>;
 }
 
-function Lexigraph({ font, manchu }) {
+function LexigraphCard({ font, manchu, boundaries }) {
 	const url = `${BACKEND}/lexigraphy/new/${font}/${manchu}`;
 	return (
 		<section className={styles.lexigraphCard}>
@@ -42,18 +44,16 @@ function Lexigraph({ font, manchu }) {
   				<button type="button">Edit</button>
   			</Link>
 			</div>
-			<img src={url} />
+			<Lexigraph font={font} word={manchu} boundaries={boundaries} />
 		</section>
 	)
 }
 
-
-
 function Page({ start = 0, end = 12, lexigraphs = []}) {
 	return (
 		<div className={styles.lexigraphyPage}>
-			{lexigraphs.map(([manchu, font]) => (
-				<Lexigraph key={`${font}${manchu}`} font={font} manchu={manchu} />
+			{lexigraphs.map(([manchu, font, boundaries]) => (
+				<LexigraphCard key={`${font}${manchu}`} font={font} manchu={manchu} boundaries={boundaries} />
 			))}
 		</div>
 	)

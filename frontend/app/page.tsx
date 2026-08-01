@@ -5,6 +5,8 @@ import axios from 'axios';
 import Image from "next/image";
 import { useState, useEffect } from 'react';
 
+import Lexigraph from './slices';
+
 const BACKEND = 'http://localhost:5000';
 const ALPHABET = {'ᡠ': '--letter-color-1',
                   'ᡬ': '--letter-color-2',
@@ -55,35 +57,6 @@ function LoadButton({ setWord }) {
 	};
 
 	return <button type="button" onClick={onClick}>LOAD RANDOM WORD</button>;
-}
-
-function Slice({ margin, length }) {
-	return (
-		<div
-			style={{
-				marginTop: `${margin * 2}px`,
-				height: `${(length) * 2}px`,
-			}}
-			className="slice"
-		/>
-	);
-}
-
-function Slices({ word, boundaries }) {
-	if (boundaries.length !== word.length) return <div className="slices" />;
-	return (
-		<div className="slices">
-			{word.split('').map((letter, index) => {
-				return (
-					<Slice
-						margin={boundaries[index][0]}
-						length={boundaries[index][1]}
-						key={`${letter}-${index}`}
-					/>
-				);
-			})}
-		</div>
-	);
 }
 
 function LexigraphWord({ word, font }) {
@@ -158,17 +131,6 @@ function BoundarySetter({word, boundaries, setBoundaries}) {
 				</div>
 			))}
 		</section>
-	);
-}
-
-function Lexigraph({ word, font, boundaries }) {
-	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
-	return (
-		<figure>
-			<figcaption className="element-label">Lexigraph</figcaption>
-			<img src={url} />
-			<Slices word={word} boundaries={boundaries} />
-		</figure>
 	);
 }
 
@@ -298,7 +260,7 @@ export default function Home() {
 					</div>
 					<div className="form-fields">
   					<BoundarySetter word={word} boundaries={boundaries} setBoundaries={setBoundaries} />
-  					<Lexigraph word={word} font={font} boundaries={boundaries} />
+  					<Lexigraph word={word} font={font} boundaries={boundaries} size="large" />
   					<LexigraphWord word={word} font={font} />
 					</div>
 					<SaveButton word={word} font={font} boundaries={boundaries} setResults={setResults} />

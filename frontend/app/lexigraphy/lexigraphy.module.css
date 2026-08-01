@@ -10,9 +10,16 @@
 
 .lexigraphCard,
 .lexigraphCard img {
-	padding: 1rem;
 	border: 1px solid black;
 	border-radius: 5px;
+}
+
+.lexigraphCard {
+	padding: 1rem;
+}
+
+.lexigraphCard img {
+	margin-inline: auto;
 }
 
 .lexigraphCard > div:first-child {
@@ -20,7 +27,7 @@
 }
 
 .lexigraphCard {
-	width: 15rem;
+	min-width: 15rem;
 }
 
 .lexigraphCard,

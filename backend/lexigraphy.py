@@ -139,7 +139,7 @@ def get_lexigraph_page(start, end):
     cursor = connection.cursor()
 
     all_characters = []
-    rows = cursor.execute("SELECT manchu, font FROM lexigraphy").fetchall()
+    rows = cursor.execute("SELECT manchu, font, boundaries FROM lexigraphy").fetchall()
     page = rows[start:end]
 
     connection.close()

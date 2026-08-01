@@ -1,0 +1,25 @@
+.lexigraph {
+	position: relative;
+}
+.lexigraph div.slices {
+	position: absolute;
+	width: 50px;
+	height: 330px;
+	left: 0;
+	top: 20px
+}
+
+.lexigraph.large div.slices {
+	width: 100px;
+	height: 660px;
+}
+
+.lexigraph img {
+	width: 50px;
+	height: 350px;
+}
+
+.lexigraph.large img {
+	width: 100px;
+	height: 700px;
+}

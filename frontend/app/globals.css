@@ -157,23 +157,8 @@ form > .form-fields {
 	padding: 0.5rem;
 }
 
-figure {
-	position: relative;
-}
-div.slices {
-	position: absolute;
-	width: 50px;
-	height: 330px;
-	left: 0;
-	top: 20px
-}
-div.slice {
-	width: 100px;
-	height: 10px;
-}
 
-.prediction img,
-figure img {
+.prediction img {
 	width: 100px;
 	height: 700px;
 }
