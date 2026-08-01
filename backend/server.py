@@ -62,6 +62,13 @@ def save_lexigraph(font, manchu):
     nn.save()
     return predictions
 
+@app.route("/lexigraphy/get/page")
+def get_lexigraph():
+    start = int(request.args.get("start"))
+    end = int(request.args.get("end"))
+    page = lexigraphy.get_lexigraph_page(start, end)
+    return page
+
 @app.route("/train", methods=["PUT"])
 def train_100_times():
     trials = 0

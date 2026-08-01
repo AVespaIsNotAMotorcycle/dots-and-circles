@@ -5,6 +5,7 @@
 	margin-top: 3rem;
 	margin-inline: auto;
 	width: fit-content;
+	justify-content: space-around;
 }
 
 .lexigraphCard,
@@ -16,13 +17,17 @@
 
 .lexigraphCard > div:first-child {
 	flex-direction: column;
-	justify-content: space-between;
+}
+
+.lexigraphCard {
+	width: 15rem;
 }
 
 .lexigraphCard,
 .lexigraphCard > div:first-child {
 	display: flex;
 	gap: 1rem;
+	justify-content: space-between;
 }
 .lexigraphCard button {
 	margin: 0;

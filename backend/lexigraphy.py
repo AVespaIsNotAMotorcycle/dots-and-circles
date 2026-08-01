@@ -134,6 +134,17 @@ def get_slices(font, manchu):
 
     return slices, row_labels
 
+def get_lexigraph_page(start, end):
+    connection = sqlite3.connect(get_db_name())
+    cursor = connection.cursor()
+
+    all_characters = []
+    rows = cursor.execute("SELECT manchu, font FROM lexigraphy").fetchall()
+    page = rows[start:end]
+
+    connection.close()
+    return page
+
 def get_random_marked_lexigraph():
     connection = sqlite3.connect(get_db_name())
     cursor = connection.cursor()

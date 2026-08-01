@@ -20,7 +20,7 @@ function FontName({ font }) {
 
 	useEffect(() => {
 		axios.get(url)
-			.then(({ data }) => { console.log(data); setFonts(data); })
+			.then(({ data }) => { setFonts(data); })
 			.catch(console.error);
 	}, [font]);
 
@@ -47,24 +47,53 @@ function Lexigraph({ font, manchu }) {
 	)
 }
 
-function Page({ start = 0, end = 12}) {
-	const lexigraphs = [{ manchu: 'ᠰᡳᡰᡥᡳᡤᡳᠶᠠᠨ', font: 0 },
-											{ manchu: 'ᠰᡳᡰᡥᡳᡤᡳᠶᠠᠨ', font: 0 },
-											{ manchu: 'ᠰᡳᡰᡥᡳᡤᡳᠶᠠᠨ', font: 0 }];
+
+
+function Page({ start = 0, end = 12, lexigraphs = []}) {
 	return (
 		<div className={styles.lexigraphyPage}>
-			{lexigraphs.map(({ font, manchu }) => (
+			{lexigraphs.map(([manchu, font]) => (
 				<Lexigraph key={`${font}${manchu}`} font={font} manchu={manchu} />
 			))}
 		</div>
 	)
 }
 
+const PER_PAGE = 12;
+function Pagination({ range, setRange }) {
+	const go = (delta) => {
+		let start = range.start + delta;
+		let end = range.end + delta;
+		if (start < 0) { start = 0; end = PER_PAGE; }
+		setRange({ start, end });
+	}
+	const goBack = () => { go(PER_PAGE * -1) };
+	const goForward = () => { go(PER_PAGE) };
+
+	return (
+		<div>
+			<button type="button" onClick={goBack}>Previous</button>
+			{`Showing lexigraphs ${range.start} through ${range.end}`}
+			<button type="button" onClick={goForward}>Next</button>
+		</div>
+	)
+}
+
 export default function Lexigraphy() {
+	const [range, setRange] = useState({ start: 0, end: PER_PAGE });
+	const [page, setPage] = useState([]);
+
+	useEffect(() => {
+		axios.get(`${BACKEND}/lexigraphy/get/page?start=${range.start}&end=${range.end}`)
+			.then(({ data }) => { setPage(data); })
+			.catch(console.error);
+	}, [range]);
+
 	return (
 		<main style={{ display: 'block' }}>
 			<h1>Lexigraphy</h1>
-			<Page />
+			<Pagination range={range} setRange={setRange} />
+			<Page start={range.start} end={range.end} lexigraphs={page} />
 		</main>
 	);
 }
