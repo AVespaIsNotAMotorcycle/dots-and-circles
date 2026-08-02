@@ -71,7 +71,7 @@ def get_lexigraph():
 
 @app.route("/train", methods=["PUT"])
 def train_100_times():
-    trials = 0
+    trials = []
     successes = 0
     for i in range(100):
         font, manchu, slices, row_labels = lexigraphy.get_random_marked_lexigraph()
@@ -79,11 +79,12 @@ def train_100_times():
         for index in range(len(row_labels)):
             prediction = predictions[index]["character"]
             answer = ALPHABET.index(row_labels[index])
-            trials += 1
             if prediction == answer: successes += 1
-    accuracy = successes / trials * 100
+            trial = { "prediction": prediction, "actual": answer, "correct": prediction == answer }
+            trials.append(trial)
+    accuracy = successes / len(trials) * 100
     print("Accuracy: {0}%".format(accuracy))
-    return { "accuracy": accuracy }
+    return { "accuracy": accuracy, "trials": trials }
 
 @app.route("/")
 def hello_world():
