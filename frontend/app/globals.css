@@ -223,3 +223,26 @@ input {
 	border: 1px solid grey;
 	border-radius: 5px;
 }
+
+table {
+	border-collapse: separate;
+	--border-radius: 5px;
+	border-spacing: 0;
+}
+th, td {
+	padding: 0.5rem 1rem;
+	border: 1px solid grey;
+}
+thead:first-child th:first-child {
+	border-radius: var(--border-radius) 0 0 0;
+}
+thead:first-child th:last-child {
+	border-radius: 0 var(--border-radius) 0 0;
+}
+tr:last-child td:first-child {
+	border-radius: 0 0 0 var(--border-radius);
+}
+thead:last-child th:last-child,
+tr:last-child td:last-child {
+	border-radius: 0 0 var(--border-radius) 0;
+}
