@@ -80,7 +80,13 @@ def train_100_times():
             prediction = predictions[index]["character"]
             answer = ALPHABET.index(row_labels[index])
             if prediction == answer: successes += 1
-            trial = { "prediction": prediction, "actual": answer, "correct": prediction == answer }
+            trial = {
+                    "prediction": prediction,
+                    "actual": answer,
+                    "correct": prediction == answer,
+                    "font": font,
+                    "manchu": manchu,
+                    }
             trials.append(trial)
     accuracy = successes / len(trials) * 100
     print("Accuracy: {0}%".format(accuracy))
