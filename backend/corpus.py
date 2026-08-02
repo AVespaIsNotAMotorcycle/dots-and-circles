@@ -4,7 +4,7 @@ import sys
 import unicodedata
 import os
 
-from db import get_db_name
+import constants
 
 def read_manchu_cake_db():
     file = open("./manchucake_db.json", "r", encoding="utf-8")
@@ -29,7 +29,7 @@ def all_latin_characters(text):
     return True
 
 def characters_in_corpus():
-    connection = sqlite3.connect(get_db_name())
+    connection = sqlite3.connect(constants.DB_NAME)
     cursor = connection.cursor()
 
     all_characters = []
@@ -78,7 +78,7 @@ def print_percent(index, entries):
     sys.stdout.write('%s\r' % message)
 
 def create_corpus():
-    connection = sqlite3.connect(get_db_name())
+    connection = sqlite3.connect(constants.DB_NAME)
     cursor = connection.cursor()
 
     drop_table(cursor)
@@ -94,7 +94,7 @@ def create_corpus():
     connection.close()
 
 def get_corpus_size():
-    connection = sqlite3.connect(get_db_name())
+    connection = sqlite3.connect(constants.DB_NAME)
     cursor = connection.cursor()
     rows = cursor.execute("SELECT manchu, romanization FROM corpus ORDER BY romanization").fetchall()
     size = len(rows)
@@ -102,7 +102,7 @@ def get_corpus_size():
     return size
 
 def get_random_word():
-    connection = sqlite3.connect(get_db_name())
+    connection = sqlite3.connect(constants.DB_NAME)
     cursor = connection.cursor()
     word_set = cursor.execute("SELECT  * FROM corpus ORDER BY RANDOM() LIMIT 1;").fetchone()
     word_dict = { "manchu": word_set[0], "romanization": word_set[1] }

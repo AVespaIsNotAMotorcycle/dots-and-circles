@@ -4,7 +4,8 @@ import io
 
 import corpus
 import lexigraphy
-from ocr import NeuralNetwork, ALPHABET
+import constants
+from ocr import NeuralNetwork
 
 app = Flask(__name__)
 CORS(app)
@@ -78,7 +79,7 @@ def train_100_times():
         predictions = nn.train_on_lexigraph(slices, row_labels)
         for index in range(len(row_labels)):
             prediction = predictions[index]["character"]
-            answer = ALPHABET.index(row_labels[index])
+            answer = constants.ALPHABET.index(row_labels[index])
             if prediction == answer: successes += 1
             trial = {
                     "prediction": prediction,

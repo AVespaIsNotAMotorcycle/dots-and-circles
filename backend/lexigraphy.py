@@ -5,9 +5,9 @@ import json
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
-from db import get_db_name
+import constants
 
-WIDTH = 50
+constants.ROW_LENGTH = 50
 HEIGHT = 350
 
 FONTS = ["fonts/XM_BiaoHei.ttf",
@@ -40,9 +40,9 @@ def get_font(font_index = 0):
     return font
 
 def get_boundaries():
-    left = (HEIGHT - WIDTH) / 2
+    left = (HEIGHT - constants.ROW_LENGTH) / 2
     top = 0
-    right = left + WIDTH
+    right = left + constants.ROW_LENGTH
     bottom = HEIGHT
     return [left, top, right, bottom]
 
@@ -67,7 +67,7 @@ def save_lexigraph(font, manchu, boundaries):
     timestamp = time.time()
     data = [str(manchu), int(font), json.dumps(boundaries), str(timestamp)]
 
-    connection = sqlite3.connect(get_db_name())
+    connection = sqlite3.connect(constants.DB_NAME)
     cursor = connection.cursor()
 
     success = True
@@ -79,7 +79,7 @@ def save_lexigraph(font, manchu, boundaries):
     return success
 
 def get_slice_dimensions(font, manchu):
-    connection = sqlite3.connect(get_db_name())
+    connection = sqlite3.connect(constants.DB_NAME)
     cursor = connection.cursor()
 
     command = "SELECT boundaries FROM lexigraphy WHERE font={0} AND manchu=\"{1}\"".format(font, manchu)
@@ -136,16 +136,16 @@ def get_slices(font, manchu):
     non_blank_row_labels = []
     for i in range(350 - 30):
         start = i + 10
-        end = start + 21
+        end = start + constants.NUMBER_OF_ROWS
         slice = array[start:end]
         if completely_blank(slice): continue
-        slices.append(slice.reshape(1, WIDTH * 21))
+        slices.append(slice.reshape(1, constants.ROW_LENGTH * constants.NUMBER_OF_ROWS))
         non_blank_row_labels.append(row_labels[i])
 
     return slices, non_blank_row_labels
 
 def get_lexigraph_page(start, end):
-    connection = sqlite3.connect(get_db_name())
+    connection = sqlite3.connect(constants.DB_NAME)
     cursor = connection.cursor()
 
     all_characters = []
@@ -156,7 +156,7 @@ def get_lexigraph_page(start, end):
     return page
 
 def get_random_marked_lexigraph():
-    connection = sqlite3.connect(get_db_name())
+    connection = sqlite3.connect(constants.DB_NAME)
     cursor = connection.cursor()
 
     all_characters = []
@@ -182,7 +182,7 @@ def create_table(cursor):
     cursor.execute("CREATE TABLE lexigraphy({0})".format(columns))
 
 def create_lexigraphy():
-    connection = sqlite3.connect(get_db_name())
+    connection = sqlite3.connect(constants.DB_NAME)
     cursor = connection.cursor()
 
     drop_table(cursor)
