@@ -139,16 +139,12 @@ function parseResults(results) {
 		.map(({ character }) => numberToCharacter(character));
 	const reducedCharacters = [];
 	reducedCharacters.push(characters[0]);
-	for (var i = 0; i < characters.length; i += 1) {
-		const previous = i == 0 ? '*' : characters[i - 1];
-		const character = characters[i];
-		const next = i === characters.length ? '*' : characters[i + 1];
 
-		if (character === previous) continue;
-		if (previous === next) continue;
-		if (character !== previous && character !== next) continue;
+	characters.forEach((character) => {
+		if (reducedCharacters[reducedCharacters.length - 1] == character) return;
 		reducedCharacters.push(character);
-	}
+	});
+
 	return reducedCharacters.filter((character) => character !== '*').join('');
 }
 
