@@ -119,6 +119,13 @@ def slice_dimensions_to_rows(manchu, slice_dimensions):
 
     return rows[10:]
 
+def completely_blank(slice):
+    for row in slice:
+        for pixel in row:
+            if pixel != 0:
+                return False
+    return True
+
 def get_slices(font, manchu):
     slice_dimensions = get_slice_dimensions(font, manchu)
     lexigraph = create_lexigraph(manchu, font)
@@ -126,13 +133,16 @@ def get_slices(font, manchu):
     row_labels = slice_dimensions_to_rows(manchu, slice_dimensions)
 
     slices = []
+    non_blank_row_labels = []
     for i in range(350 - 30):
         start = i + 10
         end = start + 21
         slice = array[start:end]
+        if completely_blank(slice): continue
         slices.append(slice.reshape(1, WIDTH * 21))
+        non_blank_row_labels.append(row_labels[i])
 
-    return slices, row_labels
+    return slices, non_blank_row_labels
 
 def get_lexigraph_page(start, end):
     connection = sqlite3.connect(get_db_name())
