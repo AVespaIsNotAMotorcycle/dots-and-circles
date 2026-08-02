@@ -116,7 +116,6 @@ function SaveButton({ word, font, boundaries, setResults }) {
 	const onClick = () => {
 		axios.put(`${BACKEND}/lexigraphy/save/${font}/${word}`, { boundaries })
 			.then((response) => {
-				console.log(response.data);
 				setResults(response.data);
 				alert('Save succesful');
 			})
@@ -158,7 +157,6 @@ function numberToCharacter(number) {
 }
 
 function characterColor(characterNumber) {
-	console.log(characterNumber, COLORS[characterNumber])
 	return COLORS[characterNumber];
 }
 
@@ -174,7 +172,6 @@ function PredictionChartLegend({ results = PLACEHOLDER_RESULTS }) {
 		setUniqueCharacters(newCharacters);
 	}, [results]);
 
-	console.log(results, uniqueCharacters);
 	return (
 		<ul className="prediction-chart-legend">
 			{uniqueCharacters.map((character) => (
