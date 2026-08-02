@@ -174,6 +174,14 @@ function parseResults(results) {
 	return reducedCharacters.filter((character) => character !== '*').join('');
 }
 
+function numberToCharacter(number) {
+	return Object.keys(ALPHABET)[number];
+}
+
+function characterColor(characterNumber) {
+	return `var(${ALPHABET[numberToCharacter(characterNumber)]})`;
+}
+
 function PredictionChartLegend({ results = PLACEHOLDER_RESULTS }) {
 	const [uniqueCharacters, setUniqueCharacters] = useState([]);
 
@@ -186,12 +194,13 @@ function PredictionChartLegend({ results = PLACEHOLDER_RESULTS }) {
 		setUniqueCharacters(newCharacters);
 	}, [results]);
 
+	console.log(results, uniqueCharacters);
 	return (
 		<ul className="prediction-chart-legend">
 			{uniqueCharacters.map((character) => (
 				<li key={character}>
-					<div style={{ background: `var(${ALPHABET[Object.keys(ALPHABET)[character]]})` }} />
-					{Object.keys(ALPHABET)[character]}
+					<div style={{ background: characterColor(character) }} />
+					{numberToCharacter(character)}
 				</li>
 			))}
 		</ul>
@@ -210,7 +219,7 @@ function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
 					style={{
 						top: `${(index * 2) + 18}px`,
 						width: `${20 + (confidence)}px`,
-						background: `var(${ALPHABET[Object.keys(ALPHABET)[character]]})`,
+						background: characterColor(character),
 					}}
 				/>
 			))}
