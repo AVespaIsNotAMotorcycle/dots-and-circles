@@ -139,7 +139,7 @@ def get_slices(font, manchu):
         end = start + constants.NUMBER_OF_ROWS
         slice = array[start:end]
         if completely_blank(slice): continue
-        slices.append(slice.reshape(1, constants.ROW_LENGTH * constants.NUMBER_OF_ROWS))
+        slices.append(slice.reshape(constants.INPUT_LAYER_SIZE, 1))
         non_blank_row_labels.append(row_labels[i])
 
     return slices, non_blank_row_labels

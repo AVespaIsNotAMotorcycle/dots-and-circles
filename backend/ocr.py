@@ -1,128 +1,89 @@
 import numpy as np
+from numpy.random import randn
 import math
 import json
 
 import constants
 
+def softmax(array):
+    return np.exp(array) / sum(np.exp(array))
+   
+def cross_entropy_loss(output, actual_letter):
+    return -np.log(output[actual_letter])
+
 class NeuralNetwork:
     LEARNING_RATE = 0.1
     _use_file = True
     NN_FILE_PATH = "saved_ann.json"
-
-    def _rand_initialize_weights(self, size_in, size_out):
-        return [((x * 0.12) - 0.06) for x in np.random.rand(size_out, size_in)]
     
-    def _sigmoid_scalar(self, z):
-        if z >= 13: return 1
-        if z <= -13: return 0
-        return 1 / (1 + math.e ** -z)
-    
-    def __init__(self, num_hidden_nodes):
-        print("Initializing neural network")
-        self.theta1 = self._rand_initialize_weights(constants.INPUT_LAYER_SIZE, num_hidden_nodes)
-        self.theta2 = self._rand_initialize_weights(num_hidden_nodes, constants.OUTPUT_LAYER_SIZE)
-        self.input_layer_bias = self._rand_initialize_weights(1, num_hidden_nodes)
-        self.hidden_layer_bias = self._rand_initialize_weights(1, constants.OUTPUT_LAYER_SIZE)
-    
-    def sigmoid(self, matrix):
-        sigmoid_to_matrix = np.vectorize(self._sigmoid_scalar)
-        new_matrix = sigmoid_to_matrix(matrix)
-        return new_matrix
+    def __init__(self, hidden_layer_size=64):
+        self.weight_x_h = randn(hidden_layer_size, constants.INPUT_LAYER_SIZE) / 1000
+        self.weight_h_y = randn(constants.OUTPUT_LAYER_SIZE, hidden_layer_size) / 1000
 
-    def forward_propogate(self, pixels):
-        y1 = np.dot(np.asmatrix(self.theta1), np.asmatrix(pixels).T)
-        y1 = y1 + np.asmatrix(self.input_layer_bias)
-        y1 = self.sigmoid(y1)
-    
-        y2 = np.dot(np.array(self.theta2), y1)
-        y2 = y2 + np.asmatrix(self.hidden_layer_bias)
-        y2 = self.sigmoid(y2)
+        self.bias_h = np.zeros((hidden_layer_size, 1))
+        self.bias_y = np.zeros((constants.OUTPUT_LAYER_SIZE, 1))
 
-        predictions = y2.T.tolist()[0]
+    def get_neurons(self):
+        return { "weight_x_h": self.weight_x_h,
+                 "weight_h_y": self.weight_h_y,
+                 "bias_h": self.bias_h,
+                 "bias_y": self.bias_y }
 
-        results = {
-            "y1": y1,
-            "y2": y2,
-            "predictions": predictions,
-        }
-        return results
-    
-    def back_propogate(self, pixels, results, actual_digit):
-        y1 = results['y1']
-        y2 = results['y2']
+    def forward(self, x):
+        h = np.tanh(self.weight_x_h @ x + self.bias_h)
+        self.last_h = h
 
-        actual_vals = [0] * constants.OUTPUT_LAYER_SIZE
-        actual_vals[constants.ALPHABET.index(actual_digit)] = 1
-        output_errors = np.asmatrix(actual_vals).T - np.asmatrix(y2)
-        hidden_errors = np.multiply(np.dot(np.asmatrix(self.theta2).T, output_errors), y1)
-    
-        self.theta1 += self.LEARNING_RATE * np.dot(np.asmatrix(hidden_errors), np.asmatrix(pixels))
-        self.theta2 += self.LEARNING_RATE * np.dot(np.asmatrix(output_errors), np.asmatrix(y1).T)
-        self.hidden_layer_bias += self.LEARNING_RATE * output_errors
-        self.input_layer_bias += self.LEARNING_RATE * hidden_errors
+        y = self.weight_h_y @ h + self.bias_y
+        self.last_y = y
 
-    def save(self):
-        if not self._use_file:
-            return
+        return softmax(y)
 
-        json_neural_network = {
-            "theta1":[np_mat.tolist()[0] for np_mat in self.theta1],
-            "theta2":[np_mat.tolist()[0] for np_mat in self.theta2],
-            "b1":self.input_layer_bias[0].tolist()[0],
-            "b2":self.hidden_layer_bias[0].tolist()[0]
-        };
-        with open(self.NN_FILE_PATH,'w') as nnFile:
-            json.dump(json_neural_network, nnFile)
+    def backward(self, input, output, label):
+        loss = cross_entropy_loss(output, label)
+        gradient = -1 / output[label]
 
-    def _load(self):
-        if not self._use_file:
-            return
+        softmax_numerators = np.exp(self.last_y) # numerators in softmax
+        softmax_denominator = np.sum(softmax_numerators)  # denomenators in softmax
 
-        with open(self.NN_FILE_PATH) as nnFile:
-            nn = json.load(nnFile)
-        self.theta1 = [np.array(li) for li in nn['theta1']]
-        self.theta2 = [np.array(li) for li in nn['theta2']]
-        self.input_layer_bias = [np.array(nn['b1'][0])]
-        self.hidden_layer_bias = [np.array(nn['b2'][0])]
-    
-    def predict(self, lexigraph_slice):
-        predictions = self.forward_propogate(lexigraph_slice)['predictions']
-    
-        highest_confidence = max(predictions)
-        confidence_percent = int(highest_confidence * 100)
-        prediction = predictions.index(highest_confidence)
-        # print("Predicting character is {0} with {1}% confidence".format(ALPHABET[prediction], confidence_percent))
-        return { "character": predictions.index(max(predictions)), "confidence": confidence_percent }
+        d_output_d_numerators = (-softmax_numerators[label]
+                                * softmax_numerators
+                                / (softmax_denominator ** 2))
+        d_output_d_numerators[label] = (softmax_numerators[label]
+                                       * (softmax_denominator - softmax_numerators[label])
+                                       / (softmax_denominator ** 2))
 
-    ''' 
-    def train_on_example(self, pixels, digit):
-        prediction = self.predict(pixels)
-        results = self.forward_propogate(pixels)
-        self.back_propogate(pixels, results, digit)
-        print("Actual digit is {0}".format(digit))
-        return { "prediction": prediction['digit'], "actual": digit }
-    ''' 
+        d_numerators_d_w_h_y = self.last_h
+        d_numerators_d_b_y = 1
+        d_numerators_d_h = self.weight_h_y
+
+        d_L_d_numerators = gradient * d_output_d_numerators
+
+        d_L_d_w_h_y = d_L_d_numerators @ d_numerators_d_w_h_y.T
+        d_L_d_b_y = d_L_d_numerators * d_numerators_d_b_y
+        d_L_d_h = d_numerators_d_h.T @ d_L_d_numerators
+
+        self.weight_h_y -= self.LEARNING_RATE * d_L_d_w_h_y
+        self.bias_y -= self.LEARNING_RATE * d_L_d_b_y
+
+        '''
+        gradient = np.zeros(constants.OUTPUT_LAYER_SIZE)
+        gradient[label] = -1 / output[label]
+        '''
+        return
+
+    def save(self): return
+
+    def load(self): return
 
     def train_on_lexigraph(self, slices, row_labels):
         predictions = []
-        propogations = []
-        for index, slice in enumerate(slices):
-            prediction = self.predict(slice)
-            actual = row_labels[index]
-            predictions.append(prediction)
+        for index in range(len(slices)):
+            input = slices[index]
+            label = constants.ALPHABET.index(row_labels[index])
 
-            propogation = self.forward_propogate(slice)
-            propogations.append(propogation)
-        for index, propogation in enumerate(propogations):
-            self.back_propogate(slices[index], propogation, row_labels[index])
+            output = self.forward(input)
+            self.backward(input, output, label)
+
+            prediction = list(output).index(max(output))
+            predictions.append({ "character": prediction, "actual": label })
         return predictions
-
-    def train(self, training_data):
-        predictions = []
-        for example in training_data:
-            prediction = self.train_on_example(example['y0'], example['label'])
-            predictions.append(prediction)
-        return predictions
-
-if __name__ == "__main__":
-    print(constants.ALPHABET)

@@ -11,7 +11,7 @@ app = Flask(__name__)
 CORS(app)
     
 nn = NeuralNetwork(128)
-nn._load()
+nn.load()
 
 @app.route("/corpus/count")
 def get_corpus_count():
