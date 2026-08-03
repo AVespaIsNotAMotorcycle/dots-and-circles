@@ -34,6 +34,7 @@ export default function RootLayout({
 						<li><Link href="/">Lexigraph Labelling</Link></li>
 						<li><Link href="/lexigraphy">Lexigraphy</Link></li>
 						<li><Link href="/training">Training</Link></li>
+						<li><Link href="/word-testing">Word Testing</Link></li>
 					</ul>
   			</nav>
 			</header>

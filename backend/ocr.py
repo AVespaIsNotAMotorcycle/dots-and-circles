@@ -86,16 +86,22 @@ class NeuralNetwork:
 
     def load(self): return
 
-    def train_on_lexigraph(self, slices, row_labels):
+    def predict_lexigraph(self, slices, row_labels=[], backprop=False):
         predictions = []
         for index in range(len(slices)):
             input = slices[index]
-            label = constants.ALPHABET.index(row_labels[index])
+            if backprop: label = constants.ALPHABET.index(row_labels[index])
 
             output = self.forward(input)
-            self.backward(input, output, label)
+            if backprop: self.backward(input, output, label)
 
             prediction = list(output).index(max(output))
             confidence = max(output)[0]
-            predictions.append({ "character": prediction, "confidence": confidence, "actual": label })
+
+            return_value = { "character": prediction, "confidence": confidence }
+            if backprop: return_value["actual"] = label
+            predictions.append(return_value)
         return predictions
+
+    def train_on_lexigraph(self, slices, row_labels):
+        return self.predict_lexigraph(slices, row_labels, True)

@@ -52,6 +52,12 @@ def create_lexigraph(font, manchu):
     image_io.seek(0)
     return send_file(image_io, mimetype="image/png")
 
+@app.route("/lexigraphy/predict/<font>/<manchu>")
+def predict_lexigraph(font, manchu):
+    slices, row_labels = lexigraphy.get_slices(font, manchu)
+    predictions = nn.predict_lexigraph(slices)
+    return predictions
+
 @app.route("/lexigraphy/save/<font>/<manchu>", methods=["PUT"])
 def save_lexigraph(font, manchu):
     boundaries = request.get_json()["boundaries"]
