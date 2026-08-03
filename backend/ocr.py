@@ -42,33 +42,44 @@ class NeuralNetwork:
         loss = cross_entropy_loss(output, label)
         gradient = -1 / output[label]
 
-        softmax_numerators = np.exp(self.last_y) # numerators in softmax
-        softmax_denominator = np.sum(softmax_numerators)  # denomenators in softmax
+        t_exp = np.exp(self.last_y) # t in softmax
+        S = np.sum(t_exp)  # denomenators in softmax
 
-        d_output_d_numerators = (-softmax_numerators[label]
-                                * softmax_numerators
-                                / (softmax_denominator ** 2))
-        d_output_d_numerators[label] = (softmax_numerators[label]
-                                       * (softmax_denominator - softmax_numerators[label])
-                                       / (softmax_denominator ** 2))
+        d_o_d_t = (-t_exp[label]
+                                * t_exp
+                                / (S ** 2))
+        d_o_d_t[label] = (t_exp[label]
+                                       * (S - t_exp[label])
+                                       / (S ** 2))
 
-        d_numerators_d_w_h_y = self.last_h
-        d_numerators_d_b_y = 1
-        d_numerators_d_h = self.weight_h_y
+        # Output Layer
 
-        d_L_d_numerators = gradient * d_output_d_numerators
+        d_t_d_w_h_y = self.last_h
+        d_t_d_b_y = 1
+        d_t_d_h = self.weight_h_y
 
-        d_L_d_w_h_y = d_L_d_numerators @ d_numerators_d_w_h_y.T
-        d_L_d_b_y = d_L_d_numerators * d_numerators_d_b_y
-        d_L_d_h = d_numerators_d_h.T @ d_L_d_numerators
+        d_L_d_t = gradient * d_o_d_t
+
+        d_L_d_w_h_y = d_L_d_t @ d_t_d_w_h_y.T
+        d_L_d_b_y = d_L_d_t * d_t_d_b_y
+        d_L_d_h = d_t_d_h.T @ d_L_d_t
 
         self.weight_h_y -= self.LEARNING_RATE * d_L_d_w_h_y
         self.bias_y -= self.LEARNING_RATE * d_L_d_b_y
 
-        '''
-        gradient = np.zeros(constants.OUTPUT_LAYER_SIZE)
-        gradient[label] = -1 / output[label]
-        '''
+        # Hidden Layer
+
+        d_t_d_w_x_h = input
+        d_t_d_b_h = 1
+        d_h_d_x = self.weight_x_h
+
+        d_L_d_w_x_h = d_L_d_h @ d_t_d_w_x_h.T
+        d_L_d_b_h = d_L_d_h * d_t_d_b_h
+        d_L_d_x = d_h_d_x.T @ d_L_d_h
+
+        self.weight_x_h -= self.LEARNING_RATE * d_L_d_w_x_h
+        self.bias_h -= self.LEARNING_RATE * d_L_d_b_h
+
         return
 
     def save(self): return
@@ -85,5 +96,6 @@ class NeuralNetwork:
             self.backward(input, output, label)
 
             prediction = list(output).index(max(output))
-            predictions.append({ "character": prediction, "actual": label })
+            confidence = max(output)[0]
+            predictions.append({ "character": prediction, "confidence": confidence, "actual": label })
         return predictions
