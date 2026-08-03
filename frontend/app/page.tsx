@@ -121,10 +121,11 @@ function parseResults(results) {
 	const characters = results
 		.map(({ character }) => numberToCharacter(character));
 	const reducedCharacters = [];
-	reducedCharacters.push(characters[0]);
+	reducedCharacters.push();
 
-	characters.forEach((character) => {
-		if (reducedCharacters[reducedCharacters.length - 1] == character) return;
+	characters.forEach((character, index) => {
+		if (reducedCharacters.length > 0 && reducedCharacters[reducedCharacters.length - 1] == character) return;
+		if (characters[index + 1] != character) return
 		reducedCharacters.push(character);
 	});
 
