@@ -23,17 +23,17 @@ function parseResults(results) {
 	return reducedCharacters.filter((character) => character !== '*').join('');
 }
 
-function PredictionChartLegend({ results = PLACEHOLDER_RESULTS }) {
+function PredictionChartLegend({ prediction = PLACEHOLDER_RESULTS }) {
 	const [uniqueCharacters, setUniqueCharacters] = useState([]);
 
 	useEffect(() => {
 		const newCharacters = [];
-		results.forEach(({ character }) => {
+		prediction.forEach(({ character }) => {
 			if (newCharacters.includes(character)) return;
 			newCharacters.push(character);
 		});
 		setUniqueCharacters(newCharacters);
-	}, [results]);
+	}, [prediction]);
 
 	return (
 		<ul className="prediction-chart-legend">
@@ -47,25 +47,9 @@ function PredictionChartLegend({ results = PLACEHOLDER_RESULTS }) {
 	)
 }
 
-export default function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
-	const [prediction, setPrediction] = useState(results);
-
-	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
-	const parsed = parseResults(prediction);
-
-	useEffect(() => {
-		if (results.length && results !== PLACEHOLDER_RESULTS) {
-			setPrediction(results);
-			return;
-		}
-
-		axios.get(`${BACKEND}/lexigraphy/predict/${font}/${word}`)
-			.then(({ data }) => { setPrediction(data); });
-	}, [font, word, results])
-
+function RowPredictionVisualizer({ prediction }) {
 	return (
-		<div className="prediction">
-			<img src={url} />
+		<>
 			{prediction.map(({ character, confidence }, index) => (
 				<div
 					className="slice-letter-prediction"
@@ -77,7 +61,26 @@ export default function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }
 				/>
 			))}
 			<PredictionChartLegend prediction={prediction} />
-			<p className="manchu-text">[{parsed}]</p>
+		</>
+	);
+}
+
+export default function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
+	const [prediction, setPrediction] = useState(results);
+
+	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
+	const parsed = parseResults(prediction);
+
+	useEffect(() => {
+		axios.get(`${BACKEND}/lexigraphy/predict/${font}/${word}`)
+			.then(({ data }) => { setPrediction(data); });
+	}, [font, word, results])
+
+	return (
+		<div className="prediction">
+			<img src={url} />
+			<RowPredictionVisualizer prediction={prediction} />
+			<p className="manchu-text">{parsed}</p>
 		</div>
 	);
 }
