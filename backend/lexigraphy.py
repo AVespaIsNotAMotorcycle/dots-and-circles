@@ -86,7 +86,7 @@ def get_slice_dimensions(font, manchu):
     row = cursor.execute(command).fetchone()
     connection.close()
 
-    if row == None: return None
+    if row == None: return []
     else: return json.loads(row[0])
 
 def collapse_pixel(pixel_tuple):
@@ -127,9 +127,9 @@ def completely_blank(slice):
     return True
 
 def get_slices(font, manchu):
-    slice_dimensions = get_slice_dimensions(font, manchu)
     lexigraph = create_lexigraph(manchu, font)
     array = image_to_array(lexigraph)
+    slice_dimensions = get_slice_dimensions(font, manchu)
     row_labels = slice_dimensions_to_rows(manchu, slice_dimensions)
 
     slices = []
