@@ -38,8 +38,8 @@ function PredictionChartLegend({ prediction = PLACEHOLDER_RESULTS }) {
 	return (
 		<ul className="prediction-chart-legend">
 			{uniqueCharacters.map((character) => (
-				<li key={character}>
-					<div style={{ background: characterColor(character) }} />
+				<li key={character} style={{ fontSize: '1.8rem' }}>
+					<div style={{ background: characterColor(character), margin: '0.5rem' }} />
 					{numberToCharacter(character)}
 				</li>
 			))}
