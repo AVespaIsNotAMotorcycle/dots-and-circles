@@ -17,6 +17,7 @@
 .lexigraph img {
 	width: 50px;
 	height: 350px;
+	max-width: max-content;
 }
 
 .lexigraph.large img {

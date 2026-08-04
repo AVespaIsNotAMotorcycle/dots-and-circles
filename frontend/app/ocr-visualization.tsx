@@ -79,8 +79,8 @@ export default function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }
 	return (
 		<div className="prediction">
 			<img src={url} />
+			<p className="manchu-text" style={{ marginTop: '20px', fontSize: '3.8rem' }}>{parsed}</p>
 			<RowPredictionVisualizer prediction={prediction} />
-			<p className="manchu-text">{parsed}</p>
 		</div>
 	);
 }
