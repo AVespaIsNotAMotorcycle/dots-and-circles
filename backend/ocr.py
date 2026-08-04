@@ -12,7 +12,7 @@ def cross_entropy_loss(output, actual_letter):
     return -np.log(output[actual_letter])
 
 class NeuralNetwork:
-    LEARNING_RATE = 0.1
+    LEARNING_RATE = 0.005
     _use_file = True
     NN_FILE_PATH = "saved_ann.json"
     
