@@ -16,7 +16,7 @@ function parseResults(results) {
 
 	characters.forEach((character, index) => {
 		if (reducedCharacters.length > 0 && reducedCharacters[reducedCharacters.length - 1] == character) return;
-		if (characters[index + 1] != character) return
+		if (characters[index + 1] != character || characters[index - 1] != character) return
 		reducedCharacters.push(character);
 	});
 
@@ -55,7 +55,7 @@ function RowPredictionVisualizer({ prediction }) {
 					className="slice-letter-prediction"
 					style={{
 						top: `${(index * 2) + 18}px`,
-						width: `${20 + (confidence)}px`,
+						width: `${10 + (confidence * 100)}px`,
 						background: characterColor(character),
 					}}
 				/>

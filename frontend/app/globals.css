@@ -209,7 +209,7 @@ input {
 .slice-letter-prediction {
 	height: 2px;
 	position: absolute;
-	opacity: 0.5;
+	opacity: 0.75;
 	left: 90px;
 }
 
@@ -222,6 +222,7 @@ input {
 	height: 20px;
 	border: 1px solid grey;
 	border-radius: 5px;
+	opacity: 0.75;
 }
 
 table {
