@@ -10,11 +10,22 @@ import Lexigraph from './slices';
 import { numberToCharacter, characterColor } from './alphabet';
 
 const BACKEND = 'http://localhost:5000';
-function LoadButton({ setWord }) {
+function LoadButton({ setWord, setFont }) {
+	const [fonts, setFonts] = useState({});
+
+	useEffect(() => {
+		axios.get(`${BACKEND}/lexigraphy/fonts/dict`)
+			.then(({ data }) => { setFonts(data); });
+	}, []);
+	
 	const onClick = () => {
 		axios.get(`${BACKEND}/corpus/random`)
 			.then(({ data }) => {
 				setWord(data.manchu);
+				const fontIndex = Math.floor(Math.random() * Object.keys(fonts).length);
+				const fontKey = Object.keys(fonts)[fontIndex];
+				console.log(fontIndex, fontKey);
+				setFont(fontKey);
 			});
 	};
 
@@ -33,23 +44,6 @@ function LexigraphWord({ word, font }) {
       	))}
   		</span>
 		</section>
-	);
-}
-
-function FontSelection({ font, setFont }) {
-	const [fonts, setFonts] = useState({});
-
-	useEffect(() => {
-		axios.get(`${BACKEND}/lexigraphy/fonts/dict`)
-			.then(({ data }) => { setFonts(data); });
-	}, [])
-
-	const onChange = ({ target }) => { setFont(target.value); };
-
-	return (
-		<select value={font} onChange={onChange}>
-			{Object.keys(fonts).map((key) => <option value={key} key={key}>{fonts[key]}</option>)}
-		</select>
 	);
 }
 
@@ -143,8 +137,7 @@ export default function Home() {
 			<main className="labelling">
 				<form onSubmit={(e) => { e.preventDefault(); }}>
 					<div>
-						<LoadButton setWord={setWord} />
-						<FontSelection font={font} setFont={setFont} />
+						<LoadButton setWord={setWord} setFont={setFont} />
 					</div>
 					<div className="form-fields">
   					<BoundarySetter word={word} boundaries={boundaries} setBoundaries={setBoundaries} />
