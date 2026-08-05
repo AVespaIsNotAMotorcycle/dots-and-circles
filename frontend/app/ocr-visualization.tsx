@@ -37,7 +37,7 @@ export function removeInvalidDipthongs(word) {
 													if (!vowels.includes(letter)) return letter;
 													if (!vowels.includes(previous)) return letter
 
-													const dipthong = [letter, previous].join('');
+													const dipthong = [previous, letter].join('');
 													if (validDipthongs.includes(dipthong)) return letter;
 													return undefined;
 												})
@@ -77,7 +77,7 @@ export function enforceVowelHarmony(word) {
 	return harmoniousWord;
 }
 
-function parseResults(results) {
+export function parseResults(results) {
 	const characters = results
 		.map(({ character }) => numberToCharacter(character));
 	const reducedCharacters = [];
@@ -90,7 +90,9 @@ function parseResults(results) {
 	});
 
 	const noBreaks = reducedCharacters.filter((character) => character !== '*').join('');
-	return removeInvalidDipthongs(enforceVowelHarmony(noBreaks));
+	return enforceVowelHarmony(noBreaks);
+	// return removeInvalidDipthongs(enforceVowelHarmony(noBreaks));
+  // return noBreaks;
 }
 
 function PredictionChartLegend({ prediction = PLACEHOLDER_RESULTS }) {

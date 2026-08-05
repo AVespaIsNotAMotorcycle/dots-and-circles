@@ -5,7 +5,11 @@ import { useState, useEffect } from 'react';
 import levenshtein from 'js-levenshtein';
 
 import styles from './word-testing.module.css';
-import OCRVisualization from '../ocr-visualization';
+import OCRVisualization, {
+	removeInvalidDipthongs,
+	enforceVowelHarmony,
+	parseResults,
+} from '../ocr-visualization';
 
 const BACKEND = 'http://localhost:5000';
 
@@ -43,8 +47,15 @@ function LexigraphClassDescription({ lexigraphClass }) {
 	);
 }
 
+function degreeOfError(word, prediction) {
+	// const denominator = Math.min(word.length, prediction.length);
+	const denominator = word.length;
+	const degree = levenshtein(word, prediction) / denominator;
+	return degree;
+}
+
 function Performance({ word, prediction }) {
-	const degree = levenshtein(word, prediction) / word.length;
+	const degree = degreeOfError(word, prediction);
 
 	let degreeClass = 'bad';
 	const cutoffs = [0.25, 1];
@@ -92,6 +103,35 @@ function LoadButton({ setWord, setFont }) {
 	return <button type="button" onClick={onClick}>LOAD RANDOM WORD</button>;
 }
 
+function AverageDegreesOfError({ records }) {
+	const sums = records.reduce((accumulator, currentValue) => {
+		accumulator[0] = accumulator[0] + degreeOfError(currentValue.word, currentValue.parsed);
+		accumulator[1] = accumulator[1] + degreeOfError(currentValue.word, currentValue.harmonious);
+		accumulator[2] = accumulator[2] + degreeOfError(currentValue.word, currentValue.validDipthongs);
+		return accumulator;
+	}, [0, 0, 0]);
+	console.log(sums);
+	if (!sums) return null;
+	return (
+		<table>
+			<thead>
+				<tr>
+					<th>parse()</th>
+					<th>enforceVowelHarmony()</th>
+					<th>removeInvalidDipthongs()</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>{(sums[0] / records.length).toPrecision(2)}</td>
+					<td>{(sums[1] / records.length).toPrecision(2)}</td>
+					<td>{(sums[2] / records.length).toPrecision(2)}</td>
+				</tr>
+			</tbody>
+		</table>
+	)
+}
+
 export default function WordTesting({}) {
 	const [word, setWord] = useState('');
 	const [font, setFont] = useState(0);
@@ -100,6 +140,8 @@ export default function WordTesting({}) {
 	const [predictions, setPredictions] = useState([]);
 
 	const [parsed, setParsed] = useState('');
+
+	const [records, setRecords] = useState([]);
 
 	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
 
@@ -111,6 +153,12 @@ export default function WordTesting({}) {
 				console.log(data.class);
 				setLexigraphClass(data.class);
 				setPredictions(data.predictions);
+
+				const parsed = parseResults(data.predictions);
+				const harmonious = enforceVowelHarmony(parsed);
+				const validDipthongs = removeInvalidDipthongs(harmonious);
+				const newRecords = [...records, { word, font, class: data.class, parsed, harmonious, validDipthongs }];
+				setRecords(newRecords);
 			})
 			.catch(console.error);
 	}, [word, font]);
@@ -129,6 +177,37 @@ export default function WordTesting({}) {
 				<OCRVisualization font={font} word={word} results={predictions} setParsed={setParsed} />
 				<Performance word={word} prediction={parsed} />
 			</div>
+			<AverageDegreesOfError records={records} />
+			<table>
+				<thead>
+					<tr>
+						<th>Word</th>
+						<th>Font</th>
+						<th>Class</th>
+						<th>parse()</th>
+						<th>Degree of error</th>
+						<th>enforceVowelHarmony()</th>
+						<th>Degree of error</th>
+						<th>removeInvalidDipthongs()</th>
+						<th>Degree of error</th>
+					</tr>
+				</thead>
+				<tbody>
+					{records.map((record) => (
+						<tr key={JSON.stringify(record)}>
+							<td>{record.word}</td>
+							<td>{record.font}</td>
+							<td>{record.class}</td>
+							<td>{record.parsed}</td>
+							<td>{degreeOfError(record.word, record.parsed).toPrecision(2)}</td>
+							<td>{record.harmonious}</td>
+							<td>{degreeOfError(record.word, record.harmonious).toPrecision(2)}</td>
+							<td>{record.validDipthongs}</td>
+							<td>{degreeOfError(record.word, record.validDipthongs).toPrecision(2)}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
 		</main>
 	)
 }
