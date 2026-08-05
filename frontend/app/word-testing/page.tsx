@@ -48,8 +48,8 @@ function Performance({ word, prediction }) {
 
 	let degreeClass = 'bad';
 	const cutoffs = [0.25, 1];
-	if (degree < cutoffs[0]) degreeClass = 'good';
 	if (degree < cutoffs[1]) degreeClass = 'mid';
+	if (degree < cutoffs[0]) degreeClass = 'good';
 
 	const description = ['The degree of error is the Levenshtein distance between the actual string',
 											 'and the string predicted by the neural network, divided by the length',
