@@ -6,12 +6,40 @@ import corpus
 import lexigraphy
 import constants
 from ocr import NeuralNetwork
+from classifier import Classifier
 
 app = Flask(__name__)
 CORS(app)
     
-nn = NeuralNetwork(128)
-nn.load()
+classifier = Classifier()
+
+OCR_class_A = NeuralNetwork(128)
+OCR_class_A.load()
+OCR_class_B = NeuralNetwork(128)
+OCR_class_B.load()
+OCR_class_C = NeuralNetwork(128)
+OCR_class_C.load()
+OCR_class_D = NeuralNetwork(128)
+OCR_class_D.load()
+
+def train_on_lexigraph(font, manchu):
+    slices, row_labels = lexigraphy.get_slices(font, manchu)
+    lexigraph_class = classifier.classify(font)
+    predictions = []
+    if lexigraph_class == 'A':
+        predictions = OCR_class_A.train_on_lexigraph(slices, row_labels)
+        OCR_class_A.save()
+    if lexigraph_class == 'B':
+        predictions = OCR_class_B.train_on_lexigraph(slices, row_labels)
+        OCR_class_B.save()
+    if lexigraph_class == 'C':
+        predictions = OCR_class_C.train_on_lexigraph(slices, row_labels)
+        OCR_class_C.save()
+    if lexigraph_class == 'D':
+        predictions = OCR_class_D.train_on_lexigraph(slices, row_labels)
+        OCR_class_D.save()
+
+    return predictions, lexigraph_class
 
 @app.route("/corpus/count")
 def get_corpus_count():
@@ -55,18 +83,23 @@ def create_lexigraph(font, manchu):
 @app.route("/lexigraphy/predict/<font>/<manchu>")
 def predict_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
-    predictions = nn.predict_lexigraph(slices)
-    return predictions
+
+    lexigraph_class = classifier.classify(font)
+    predictions = []
+    if lexigraph_class == 'A': predictions = OCR_class_A.predict_lexigraph(slices)
+    if lexigraph_class == 'B': predictions = OCR_class_B.predict_lexigraph(slices)
+    if lexigraph_class == 'C': predictions = OCR_class_C.predict_lexigraph(slices)
+    if lexigraph_class == 'D': predictions = OCR_class_D.predict_lexigraph(slices)
+
+    return { "predictions": predictions, "class": lexigraph_class }
 
 @app.route("/lexigraphy/save/<font>/<manchu>", methods=["PUT"])
 def save_lexigraph(font, manchu):
     boundaries = request.get_json()["boundaries"]
     success = lexigraphy.save_lexigraph(font, manchu, boundaries)
 
-    slices, row_labels = lexigraphy.get_slices(font, manchu)
-    predictions = nn.train_on_lexigraph(slices, row_labels)
+    predictions, lexigraph_class = train_on_lexigraph(font, manchu)
 
-    nn.save()
     return predictions
 
 @app.route("/lexigraphy/get/page")
@@ -82,7 +115,7 @@ def train_100_times():
     successes = 0
     for i in range(100):
         font, manchu, slices, row_labels = lexigraphy.get_random_marked_lexigraph()
-        predictions = nn.train_on_lexigraph(slices, row_labels)
+        predictions, lexigraph_class = train_on_lexigraph(font, manchu)
         for index in range(len(row_labels)):
             prediction = predictions[index]["character"]
             answer = constants.ALPHABET.index(row_labels[index])
