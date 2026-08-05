@@ -8,6 +8,75 @@ import { numberToCharacter, characterColor } from './alphabet';
 const BACKEND = 'http://localhost:5000';
 const PLACEHOLDER_RESULTS = [];
 
+export function removeInvalidDipthongs(word) {
+	const validDipthongs = ['ᠠᡳ',
+													'ᠠᠣ',
+                          'ᡝᡳ',
+                          'ᡝᠣ',
+                          'ᡳᠠ',
+                          'ᡳᡝ',
+                          'ᡳᡳ',
+                          'ᡳᠣ',
+                          'ᡳᡠ',
+                          'ᠣᡳ',
+                          'ᠣᠣ',
+                          'ᡠᠠ',
+                          'ᡠᡝ',
+                          'ᡠᡳ',
+                          'ᡠᠣ',
+                          'ᡡᠠ',
+                          'ᡡᡝ',
+                          'ᡡᡳ',
+                          'ᡡᠣ'];
+	const vowels = ['ᡝ', 'ᠠ', 'ᠣ', 'ᡡ', 'ᡳ', 'ᡠ'];
+	const validated = word.split('')
+												.map((letter, index) => {
+													if (index === 0) return letter;
+
+													const previous = word[index - 1];
+													if (!vowels.includes(letter)) return letter;
+													if (!vowels.includes(previous)) return letter
+
+													const dipthong = [letter, previous].join('');
+													if (validDipthongs.includes(dipthong)) return letter;
+													return undefined;
+												})
+												.filter((letter) => letter !== undefined)
+												.join('');
+	return validated;
+} 
+
+export function enforceVowelHarmony(word) {
+	const frontVowels = ['ᡝ'];
+	const backVowels = ['ᠠ', 'ᠣ', 'ᡡ'];
+	const neutralVowels = ['ᡳ', 'ᡠ'];
+
+	let frontScore = 0;
+	let backScore = 0;
+	word.split('').forEach((letter) => {
+		if (frontVowels.includes(letter)) frontScore += 1;
+		if (backVowels.includes(letter)) backScore += 1;
+	});
+
+	let harmoniousWord = word;
+	if (frontScore > backScore) {
+		harmoniousWord = harmoniousWord.replaceAll('ᠠ', 'ᡝ');
+		harmoniousWord = harmoniousWord.replaceAll('ᠣ', 'ᡠ');
+		harmoniousWord = harmoniousWord.replaceAll('ᡡ', 'ᡳ');
+	}
+	if (backScore > frontScore) {
+		harmoniousWord = harmoniousWord
+			.split('')
+			.map((letter, index) => {
+				if (letter === 'ᡝ' && harmoniousWord[index + 1] !== 'ᠣ') return 'ᠠ';
+				return letter;
+			})
+			.join('');
+	}
+	console.log(word, harmoniousWord)
+	return harmoniousWord;
+}
+
 function parseResults(results) {
 	const characters = results
 		.map(({ character }) => numberToCharacter(character));
@@ -20,7 +89,8 @@ function parseResults(results) {
 		reducedCharacters.push(character);
 	});
 
-	return reducedCharacters.filter((character) => character !== '*').join('');
+	const noBreaks = reducedCharacters.filter((character) => character !== '*').join('');
+	return removeInvalidDipthongs(enforceVowelHarmony(noBreaks));
 }
 
 function PredictionChartLegend({ prediction = PLACEHOLDER_RESULTS }) {
