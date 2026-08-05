@@ -132,6 +132,17 @@ function AverageDegreesOfError({ records }) {
 	)
 }
 
+function Autocorrect({ word }) {
+	const [correction, setCorrection] = useState(word);
+
+	useEffect(() => {
+		axios.get(`${BACKEND}/corpus/autocorrect/${word}`)
+			.then(({ data }) => { setCorrection(data.word); });
+	}, [word]);
+
+	return <p className="manchu-text">{correction}</p>;
+}
+
 export default function WordTesting({}) {
 	const [word, setWord] = useState('');
 	const [font, setFont] = useState(0);
@@ -175,7 +186,7 @@ export default function WordTesting({}) {
 					<LexigraphClassDescription lexigraphClass={lexigraphClass} />
 				</div>
 				<OCRVisualization font={font} word={word} results={predictions} setParsed={setParsed} />
-				<Performance word={word} prediction={parsed} />
+				<Performance word={word} prediction={removeInvalidDipthongs(enforceVowelHarmony(parsed))} />
 			</div>
 			<AverageDegreesOfError records={records} />
 			<table>
