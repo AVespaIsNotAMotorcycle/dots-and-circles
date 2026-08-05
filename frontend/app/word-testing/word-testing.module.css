@@ -15,7 +15,7 @@
 .classDescription {
 	padding: 2rem;
 	border-radius: 5px;
-	width: 20rem;
+	max-width: 20rem;
 	height: fit-content;
 	box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
 }
@@ -30,3 +30,20 @@
 .classB { background: Moccasin; }
 .classC { background: PaleTurquoise; }
 .classD { background: LightSalmon; }
+
+.performance {
+	margin-left: 3rem;
+	padding: 1rem 2rem;
+	max-width: 20rem;
+}
+.performance.good .degree { background: LightGreen; }
+.performance.mid .degree { background: Khaki; }
+.performance.bad .degree { background: LightCoral; }
+
+.performance .degree {
+	font-weight: bold;
+	border-radius: 5px;
+}
+.performance > * {
+	padding: 0.5rem;
+}

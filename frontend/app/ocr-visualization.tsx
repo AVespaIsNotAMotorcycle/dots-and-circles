@@ -65,7 +65,7 @@ function RowPredictionVisualizer({ prediction }) {
 	);
 }
 
-export default function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }) {
+export default function OCRResults({ font, word, results = PLACEHOLDER_RESULTS, setParsed = () => {} }) {
 	const [prediction, setPrediction] = useState(results);
 
 	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
@@ -77,6 +77,10 @@ export default function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }
 		axios.get(`${BACKEND}/lexigraphy/predict/${font}/${word}`)
 			.then(({ data }) => { setPrediction(data.predictions); });
 	}, [font, word, results])
+
+	useEffect(() => {
+		setParsed(parsed);
+	}, [parsed]);
 
 	return (
 		<div className="prediction">

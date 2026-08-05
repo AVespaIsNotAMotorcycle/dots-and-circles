@@ -2,6 +2,7 @@
 
 import axios from 'axios';
 import { useState, useEffect } from 'react';
+import levenshtein from 'js-levenshtein';
 
 import styles from './word-testing.module.css';
 import OCRVisualization from '../ocr-visualization';
@@ -55,6 +56,33 @@ function LexigraphClassDescription({ lexigraphClass }) {
 	);
 }
 
+function Performance({ word, prediction }) {
+	const degree = levenshtein(word, prediction) / word.length;
+
+	let degreeClass = 'bad';
+	const cutoffs = [0.25, 1];
+	if (degree < cutoffs[0]) degreeClass = 'good';
+	if (degree < cutoffs[1]) degreeClass = 'mid';
+
+	const description = ['The degree of error is the Levenshtein distance between the actual string',
+											 'and the string predicted by the neural network, divided by the length',
+											 'of the actual string.',
+											 `A score below ${cutoffs[0]} is good.`,
+											 `A score above that but below ${cutoffs[1]} is okay.`,
+											 `A score above ${cutoffs[1]} is bad.`].join(' ');
+
+	return (
+		<div className={[styles.performance, styles[degreeClass]].join(' ')}>
+			<div className={styles.degree}>
+				{`Degree of error: ${degree.toPrecision(2)}`}
+			</div>
+			<p>
+				{description}
+			</p>
+		</div>
+	)
+}
+
 function LoadButton({ setWord, setFont }) {
 	const [fonts, setFonts] = useState({});
 	
@@ -84,6 +112,8 @@ export default function WordTesting({}) {
 	const [lexigraphClass, setLexigraphClass] = useState();
 	const [predictions, setPredictions] = useState([]);
 
+	const [parsed, setParsed] = useState('');
+
 	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
 
 	useEffect(() => {
@@ -109,7 +139,8 @@ export default function WordTesting({}) {
 					<LoadButton setWord={setWord} setFont={setFont} />
 					<LexigraphClassDescription lexigraphClass={lexigraphClass} />
 				</div>
-				<OCRVisualization font={font} word={word} results={predictions} />
+				<OCRVisualization font={font} word={word} results={predictions} setParsed={setParsed} />
+				<Performance word={word} prediction={parsed} />
 			</div>
 			<table>
 				<thead>
