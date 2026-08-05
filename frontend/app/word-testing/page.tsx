@@ -8,19 +8,6 @@ import styles from './word-testing.module.css';
 import OCRVisualization from '../ocr-visualization';
 
 const BACKEND = 'http://localhost:5000';
-const fonts = [
-		'BiaoHei',
-		'GuFeng',
-		'LiuYe',
-		'ShuKai',
-		'WenJian',
-		'WenQin',
-		'XingShu',
-		'YaBai',
-		'YingBi',
-		'ZhengBai',
-		'ZhengHei',
-	];
 
 function LexigraphClassDescription({ lexigraphClass }) {
 	const traits = ['Lexigraphs of this class have heavier line weight.',
@@ -142,84 +129,6 @@ export default function WordTesting({}) {
 				<OCRVisualization font={font} word={word} results={predictions} setParsed={setParsed} />
 				<Performance word={word} prediction={parsed} />
 			</div>
-			<table>
-				<thead>
-					<tr>
-						<th>Feature</th>
-						{fonts.map((name) => <th>{name}</th>)}
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td />
-						{fonts.map((name, index) => (
-							<td
-								className="manchu-text"
-								key={name}
-								style={{ fontFamily: `manchu${index}`, fontSize: '3rem' }}
-							>
-								{word}
-							</td>
-						))}
-					</tr>
-					<tr>
-						<td>Thick lines</td>
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'pink' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'pink' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-					</tr>
-					<tr>
-						<td>m/l connected to main body</td>
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'pink' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'pink' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'pink' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-					</tr>
-					<tr>
-						<td>e/a are pointy</td>
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'pink' }} />
-						<td style={{ background: 'pink' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'pink' }} />
-						<td style={{ background: 'pink' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'pink' }} />
-						<td style={{ background: 'lightgreen' }} />
-						<td style={{ background: 'lightgreen' }} />
-					</tr>
-					<tr>
-						<td>Class</td>
-						<td>A</td>
-						<td>A</td>
-						<td>B</td>
-						<td>C</td>
-						<td>A</td>
-						<td>B</td>
-						<td>D</td>
-						<td>A</td>
-						<td>C</td>
-						<td>A</td>
-						<td>A</td>
-					</tr>
-				</tbody>
-			</table>
 		</main>
 	)
 }
