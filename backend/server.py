@@ -13,13 +13,14 @@ CORS(app)
     
 classifier = Classifier()
 
-OCR_class_A = NeuralNetwork(128)
+num_hidden_nodes = 256
+OCR_class_A = NeuralNetwork(num_hidden_nodes)
 OCR_class_A.load()
-OCR_class_B = NeuralNetwork(128)
+OCR_class_B = NeuralNetwork(num_hidden_nodes)
 OCR_class_B.load()
-OCR_class_C = NeuralNetwork(128)
+OCR_class_C = NeuralNetwork(num_hidden_nodes)
 OCR_class_C.load()
-OCR_class_D = NeuralNetwork(128)
+OCR_class_D = NeuralNetwork(num_hidden_nodes)
 OCR_class_D.load()
 
 def train_on_lexigraph(font, manchu):
