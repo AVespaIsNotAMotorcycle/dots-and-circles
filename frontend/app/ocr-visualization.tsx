@@ -72,14 +72,21 @@ export default function OCRResults({ font, word, results = PLACEHOLDER_RESULTS }
 	const parsed = parseResults(prediction);
 
 	useEffect(() => {
+		if (font == undefined) return;
+		if (!word) return;
 		axios.get(`${BACKEND}/lexigraphy/predict/${font}/${word}`)
-			.then(({ data }) => { setPrediction(data); });
+			.then(({ data }) => { setPrediction(data.predictions); });
 	}, [font, word, results])
 
 	return (
 		<div className="prediction">
 			<img src={url} />
-			<p className="manchu-text" style={{ marginTop: '20px', fontSize: '3.8rem' }}>{parsed}</p>
+			<p
+				className="manchu-text"
+				style={{ marginTop: '20px', fontSize: '3.8rem', fontFamily: `manchu${font}` }}
+			>
+				{parsed}
+			</p>
 			<RowPredictionVisualizer prediction={prediction} />
 		</div>
 	);

@@ -1,0 +1,32 @@
+.classSection {
+  display: flex;
+	margin: 2rem;
+	gap: 1rem;
+}
+
+.classSection img {
+	width: 100px;
+}
+
+.classSection button {
+	margin: 1rem 0;
+}
+
+.classDescription {
+	padding: 2rem;
+	border-radius: 5px;
+	width: 20rem;
+	height: fit-content;
+	box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+}
+.classDescription h2 {
+	font-weight: 800;
+	font-size: 1.25rem;
+	border-bottom: 1px solid black;
+	padding-bottom: 1rem;
+	margin-bottom: 1rem;
+}
+.classA { background: LightGreen; }
+.classB { background: Moccasin; }
+.classC { background: PaleTurquoise; }
+.classD { background: LightSalmon; }
