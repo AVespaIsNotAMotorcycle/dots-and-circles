@@ -99,7 +99,7 @@ export default function WordTesting({}) {
 	}, [word, font]);
 
 	return (
-		<>
+		<main>
 			<h1>Word Testing</h1>
 			<div>
 			</div>
@@ -189,6 +189,6 @@ export default function WordTesting({}) {
 					</tr>
 				</tbody>
 			</table>
-		</>
+		</main>
 	)
 }
