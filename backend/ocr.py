@@ -82,9 +82,30 @@ class NeuralNetwork:
 
         return
 
-    def save(self): return
+    def save(self, filename):
+        saved_values = {}
 
-    def load(self): return
+        saved_values['weight_x_h'] = self.weight_x_h.tolist()
+        saved_values['weight_h_y'] = self.weight_h_y.tolist()
+
+        saved_values['bias_h'] = self.bias_h.tolist()
+        saved_values['bias_y'] = self.bias_y.tolist()
+
+        with open(filename, 'w') as file:
+            json.dump(saved_values, file)
+        return
+
+    def load(self, filename):
+        try:
+            with open(filename, 'r') as file:
+                saved_values = json.load(file)
+
+                self.weight_x_h = np.array(saved_values['weight_x_h'])
+                self.weight_h_y = np.array(saved_values['weight_h_y'])
+
+                self.bias_h = np.array(saved_values['bias_h'])
+                self.bias_y = np.array(saved_values['bias_y'])
+        except: return
 
     def predict_lexigraph(self, slices, row_labels=[], backprop=False):
         predictions = []
