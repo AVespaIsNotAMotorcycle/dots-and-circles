@@ -3,6 +3,7 @@ import sqlite3
 import sys
 import unicodedata
 import os
+from Levenshtein import ratio
 
 import constants
 
@@ -111,6 +112,23 @@ def get_random_word():
 
 def generate_new_lexigraph():
     return
+
+def autocorrect(word):
+    connection = sqlite3.connect(constants.DB_NAME)
+    cursor = connection.cursor()
+    rows = cursor.execute("SELECT manchu FROM corpus ORDER BY manchu").fetchall()
+
+    best_index = 0
+    best_similarity = 0
+    for index, row in enumerate(rows):
+        manchu = row[0]
+        similarity = ratio(word, manchu)
+        if similarity > best_similarity:
+            best_index = index
+            best_similarity = similarity
+
+    connection.close()
+    return { "word": rows[best_index][0], "similarity": best_similarity }
 
 if __name__ == "__main__":
     # create_corpus()
