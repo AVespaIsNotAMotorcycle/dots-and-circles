@@ -2,6 +2,8 @@ saved_ann.json
 training_data.json
 training_logs.json
 
+backend/*class*.json
+
 *.db
 
 # Byte-compiled / optimized / DLL files
