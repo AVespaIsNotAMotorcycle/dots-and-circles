@@ -14,41 +14,51 @@ CORS(app)
     
 classifier = Classifier()
 
+def get_filename(stage, l_class):
+    valid_stages = ['primary', 'secondary']
+    if stage not in valid_stages:
+        message = 'get_filename expects stage to be one of {0}, but it was {1}'.format(valid_stages, stage)
+        raise ValueError(message)
+    valid_classes = ['A', 'B', 'C', 'D']
+    if l_class.upper() not in valid_classes:
+        message = 'get_filename expects l_class to be one of {0}, but it was {1}'.format(valid_classes, stage)
+        raise ValueError(message)
+
+    if stage == 'primary': return 'ocr_class_{0}.json'.format(l_class).lower()
+    if stage == 'secondary': return 'ctc_class_{0}.json'.format(l_class).lower()
+
 num_hidden_nodes = 256
 OCR_class_A = NeuralNetwork(num_hidden_nodes)
-OCR_class_A.load('ocr_class_a.json')
 OCR_class_B = NeuralNetwork(num_hidden_nodes)
-OCR_class_B.load('ocr_class_b.json')
 OCR_class_C = NeuralNetwork(num_hidden_nodes)
-OCR_class_C.load('ocr_class_c.json')
 OCR_class_D = NeuralNetwork(num_hidden_nodes)
-OCR_class_D.load('ocr_class_d.json')
+
+primary_ocr = { 'A': OCR_class_A, 
+                'B': OCR_class_B,
+                'C': OCR_class_C,
+                'D': OCR_class_D }
 
 CTC_class_A = CTCNeuralNetwork()
-CTC_class_A.load('ctc_class_a.json')
 CTC_class_B = CTCNeuralNetwork()
-CTC_class_B.load('ctc_class_b.json')
 CTC_class_C = CTCNeuralNetwork()
-CTC_class_C.load('ctc_class_c.json')
 CTC_class_D = CTCNeuralNetwork()
-CTC_class_D.load('ctc_class_d.json')
+
+secondary_ocr = { 'A': CTC_class_A, 
+                  'B': CTC_class_B,
+                  'C': CTC_class_C,
+                  'D': CTC_class_D }
+
+for l_class in ['A', 'B', 'C', 'D']:
+    primary_ocr[l_class].load(get_filename('primary', l_class))
+    secondary_ocr[l_class].load(get_filename('secondary', l_class))
 
 def train_on_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
     lexigraph_class = classifier.classify(font)
     predictions = []
-    if lexigraph_class == 'A':
-        predictions = OCR_class_A.train_on_lexigraph(slices, row_labels)
-        OCR_class_A.save('ocr_class_a.json')
-    if lexigraph_class == 'B':
-        predictions = OCR_class_B.train_on_lexigraph(slices, row_labels)
-        OCR_class_B.save('ocr_class_b.json')
-    if lexigraph_class == 'C':
-        predictions = OCR_class_C.train_on_lexigraph(slices, row_labels)
-        OCR_class_C.save('ocr_class_c.json')
-    if lexigraph_class == 'D':
-        predictions = OCR_class_D.train_on_lexigraph(slices, row_labels)
-        OCR_class_D.save('ocr_class_d.json')
+
+    predictions = primary_ocr[lexigraph_class].train_on_lexigraph(slices, row_labels)
+    primary_ocr[lexigraph_class].save(get_filename('primary', lexigraph_class))
 
     return predictions, lexigraph_class
 
@@ -100,11 +110,7 @@ def predict_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
 
     lexigraph_class = classifier.classify(font)
-    predictions = []
-    if lexigraph_class == 'A': predictions = OCR_class_A.predict_lexigraph(slices)
-    if lexigraph_class == 'B': predictions = OCR_class_B.predict_lexigraph(slices)
-    if lexigraph_class == 'C': predictions = OCR_class_C.predict_lexigraph(slices)
-    if lexigraph_class == 'D': predictions = OCR_class_D.predict_lexigraph(slices)
+    predictions = primary_ocr[lexigraph_class].predict_lexigraph(slices)
 
     return { "predictions": predictions, "class": lexigraph_class }
 
@@ -124,9 +130,9 @@ def get_lexigraph():
     page = lexigraphy.get_lexigraph_page(start, end)
     return page
 
-def train_CTC(trials):
-    inputs = []
-    labels = []
+def train_secondary_ocr(trials):
+    inputs = { 'A': [], 'B': [], 'C': [], 'D': [] }
+    labels = { 'A': [], 'B': [], 'C': [], 'D': [] }
     for index, trial in enumerate(trials):
         predictions = [0] * 21
         for delta in range(21):
@@ -134,16 +140,25 @@ def train_CTC(trials):
             if pred_index < 0: continue
             if pred_index >= len(trials): continue
             predictions[delta] = trials[pred_index]['prediction']
+
         actual = trial['actual']
+        lexigraph_class = trial['class']
+
         predictions = CTC_class_A.digits_array_to_x(predictions)
-        inputs.append(predictions)
-        labels.append(actual)
-    predictions = CTC_class_A.train_on_tokens(inputs, labels)
+        inputs[lexigraph_class].append(predictions)
+        labels[lexigraph_class].append(actual)
+
     successes = 0
-    for index, prediction in enumerate(predictions):
-        character = prediction['character']
-        if character == labels[index]: successes += 1
-    accuracy = successes / len(inputs) * 100
+    for l_class in ['A', 'B', 'C', 'D']:
+        predictions = secondary_ocr[l_class].train_on_tokens(inputs[l_class], labels[l_class])
+    
+        for index, prediction in enumerate(predictions):
+            character = prediction['character']
+            if character == labels[lexigraph_class][index]: successes += 1
+
+        secondary_ocr[l_class].save(get_filename('secondary', l_class))
+
+    accuracy = successes / len(trials) * 100
     print("CTC Accuracy: {0}%".format(accuracy))
 
 @app.route("/train", methods=["PUT"])
@@ -163,9 +178,10 @@ def train_100_times():
                     "correct": prediction == answer,
                     "font": font,
                     "manchu": manchu,
+                    "class": lexigraph_class
                     }
             trials.append(trial)
-    train_CTC(trials)
+    train_secondary_ocr(trials)
     accuracy = successes / len(trials) * 100
     print("OCR Accuracy: {0}%".format(accuracy))
     return { "accuracy": accuracy, "trials": trials }
