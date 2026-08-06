@@ -6,6 +6,7 @@ import corpus
 import lexigraphy
 import constants
 from ocr import NeuralNetwork
+from ctc import CTCNeuralNetwork
 from classifier import Classifier
 
 app = Flask(__name__)
@@ -15,13 +16,22 @@ classifier = Classifier()
 
 num_hidden_nodes = 256
 OCR_class_A = NeuralNetwork(num_hidden_nodes)
-OCR_class_A.load()
+OCR_class_A.load('ocr_class_a.json')
 OCR_class_B = NeuralNetwork(num_hidden_nodes)
-OCR_class_B.load()
+OCR_class_B.load('ocr_class_b.json')
 OCR_class_C = NeuralNetwork(num_hidden_nodes)
-OCR_class_C.load()
+OCR_class_C.load('ocr_class_c.json')
 OCR_class_D = NeuralNetwork(num_hidden_nodes)
-OCR_class_D.load()
+OCR_class_D.load('ocr_class_d.json')
+
+CTC_class_A = CTCNeuralNetwork()
+CTC_class_A.load('ctc_class_a.json')
+CTC_class_B = CTCNeuralNetwork()
+CTC_class_B.load('ctc_class_b.json')
+CTC_class_C = CTCNeuralNetwork()
+CTC_class_C.load('ctc_class_c.json')
+CTC_class_D = CTCNeuralNetwork()
+CTC_class_D.load('ctc_class_d.json')
 
 def train_on_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
@@ -29,16 +39,16 @@ def train_on_lexigraph(font, manchu):
     predictions = []
     if lexigraph_class == 'A':
         predictions = OCR_class_A.train_on_lexigraph(slices, row_labels)
-        OCR_class_A.save()
+        OCR_class_A.save('ocr_class_a.json')
     if lexigraph_class == 'B':
         predictions = OCR_class_B.train_on_lexigraph(slices, row_labels)
-        OCR_class_B.save()
+        OCR_class_B.save('ocr_class_b.json')
     if lexigraph_class == 'C':
         predictions = OCR_class_C.train_on_lexigraph(slices, row_labels)
-        OCR_class_C.save()
+        OCR_class_C.save('ocr_class_c.json')
     if lexigraph_class == 'D':
         predictions = OCR_class_D.train_on_lexigraph(slices, row_labels)
-        OCR_class_D.save()
+        OCR_class_D.save('ocr_class_d.json')
 
     return predictions, lexigraph_class
 
@@ -57,6 +67,10 @@ def get_random_word():
     - romanized text
     '''
     return corpus.get_random_word()
+
+@app.route("/corpus/autocorrect/<manchu>")
+def get_autocorrect(manchu):
+    return corpus.autocorrect(manchu)
 
 @app.route("/lexigraphy/fonts/dict")
 def get_fonts_dict():
@@ -110,6 +124,28 @@ def get_lexigraph():
     page = lexigraphy.get_lexigraph_page(start, end)
     return page
 
+def train_CTC(trials):
+    inputs = []
+    labels = []
+    for index, trial in enumerate(trials):
+        predictions = [0] * 21
+        for delta in range(21):
+            pred_index = index + delta - 10
+            if pred_index < 0: continue
+            if pred_index >= len(trials): continue
+            predictions[delta] = trials[pred_index]['prediction']
+        actual = trial['actual']
+        predictions = CTC_class_A.digits_array_to_x(predictions)
+        inputs.append(predictions)
+        labels.append(actual)
+    predictions = CTC_class_A.train_on_tokens(inputs, labels)
+    successes = 0
+    for index, prediction in enumerate(predictions):
+        character = prediction['character']
+        if character == labels[index]: successes += 1
+    accuracy = successes / len(inputs) * 100
+    print("CTC Accuracy: {0}%".format(accuracy))
+
 @app.route("/train", methods=["PUT"])
 def train_100_times():
     trials = []
@@ -129,8 +165,9 @@ def train_100_times():
                     "manchu": manchu,
                     }
             trials.append(trial)
+    train_CTC(trials)
     accuracy = successes / len(trials) * 100
-    print("Accuracy: {0}%".format(accuracy))
+    print("OCR Accuracy: {0}%".format(accuracy))
     return { "accuracy": accuracy, "trials": trials }
 
 @app.route("/")
