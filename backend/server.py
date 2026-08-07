@@ -2,6 +2,8 @@ from flask import Flask, send_file, request
 from flask_cors import CORS
 import io
 
+import numpy as np
+
 import corpus
 import lexigraphy
 import constants
@@ -110,9 +112,25 @@ def predict_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
 
     lexigraph_class = classifier.classify(font)
-    predictions = primary_ocr[lexigraph_class].predict_lexigraph(slices)
+    primary_predictions = primary_ocr[lexigraph_class].predict_lexigraph(slices)
 
-    return { "predictions": predictions, "class": lexigraph_class }
+    secondary_inputs = []
+    for index, primary_prediction in enumerate(primary_predictions):
+        secondary_input = [0] * 21
+        for delta in range(21):
+            pred_index = index + delta - 10
+            if pred_index < 0: continue
+            if pred_index >= len(primary_predictions): continue
+            secondary_input[delta] = primary_predictions[pred_index]['character']
+
+        secondary_input = CTC_class_A.digits_array_to_x(secondary_input)
+        secondary_inputs.append(secondary_input)
+
+    secondary_predictions = secondary_ocr[lexigraph_class].predict_tokens(secondary_inputs)
+
+    return { "primary_predictions": primary_predictions,
+             "secondary_predictions": secondary_predictions,
+             "class": lexigraph_class }
 
 @app.route("/lexigraphy/save/<font>/<manchu>", methods=["PUT"])
 def save_lexigraph(font, manchu):
@@ -154,7 +172,7 @@ def train_secondary_ocr(trials):
     
         for index, prediction in enumerate(predictions):
             character = prediction['character']
-            if character == labels[lexigraph_class][index]: successes += 1
+            if character == labels[l_class][index]: successes += 1
 
         secondary_ocr[l_class].save(get_filename('secondary', l_class))
 
