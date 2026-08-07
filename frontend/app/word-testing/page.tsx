@@ -47,32 +47,33 @@ function LexigraphClassDescription({ lexigraphClass }) {
 	);
 }
 
-function degreeOfError(word, prediction) {
-	// const denominator = Math.min(word.length, prediction.length);
-	const denominator = word.length;
-	const degree = levenshtein(word, prediction) / denominator;
+function accuracy(word, prediction) {
+	const sumOfLengths = word.length + prediction.length;
+	const distance = levenshtein(word, prediction);
+	const degree = (sumOfLengths - distance) / sumOfLengths;
 	return degree;
 }
 
 function Performance({ word, prediction }) {
-	const degree = degreeOfError(word, prediction);
+	const degree = accuracy(word, prediction);
 
 	let degreeClass = 'bad';
-	const cutoffs = [0.25, 1];
-	if (degree < cutoffs[1]) degreeClass = 'mid';
-	if (degree < cutoffs[0]) degreeClass = 'good';
+	const cutoffs = [0.7, 0.9];
+	if (degree > cutoffs[0]) degreeClass = 'mid';
+	if (degree > cutoffs[1]) degreeClass = 'good';
 
-	const description = ['The degree of error is the Levenshtein distance between the actual string',
-											 'and the string predicted by the neural network, divided by the length',
-											 'of the actual string.',
-											 `A score below ${cutoffs[0]} is good.`,
+	const description = ['Accuracy is (s - d) / s, wehere s is the sum of the lengths',
+											 'of the actual string and the string predicted by the network',
+											 'and d is the Levenshtein distance between the two.',
+											 `A score below ${cutoffs[0]} is bad.`,
 											 `A score above that but below ${cutoffs[1]} is okay.`,
-											 `A score above ${cutoffs[1]} is bad.`].join(' ');
+											 `A score above ${cutoffs[1]} is good.`,
+											 'A score of 1 is perfect.'].join(' ');
 
 	return (
 		<div className={[styles.performance, styles[degreeClass]].join(' ')}>
 			<div className={styles.degree}>
-				{`Degree of error: ${degree.toPrecision(2)}`}
+				{`Accuracy: ${degree.toPrecision(2)}`}
 			</div>
 			<p>
 				{description}
@@ -105,9 +106,9 @@ function LoadButton({ setWord, setFont }) {
 
 function AverageDegreesOfError({ records }) {
 	const sums = records.reduce((accumulator, currentValue) => {
-		accumulator[0] = accumulator[0] + degreeOfError(currentValue.word, currentValue.parsed);
-		accumulator[1] = accumulator[1] + degreeOfError(currentValue.word, currentValue.harmonious);
-		accumulator[2] = accumulator[2] + degreeOfError(currentValue.word, currentValue.validDipthongs);
+		accumulator[0] = accumulator[0] + accuracy(currentValue.word, currentValue.parsed);
+		accumulator[1] = accumulator[1] + accuracy(currentValue.word, currentValue.harmonious);
+		accumulator[2] = accumulator[2] + accuracy(currentValue.word, currentValue.validDipthongs);
 		return accumulator;
 	}, [0, 0, 0]);
 	console.log(sums);
@@ -210,11 +211,11 @@ export default function WordTesting({}) {
 							<td>{record.font}</td>
 							<td>{record.class}</td>
 							<td>{record.parsed}</td>
-							<td>{degreeOfError(record.word, record.parsed).toPrecision(2)}</td>
+							<td>{accuracy(record.word, record.parsed).toPrecision(2)}</td>
 							<td>{record.harmonious}</td>
-							<td>{degreeOfError(record.word, record.harmonious).toPrecision(2)}</td>
+							<td>{accuracy(record.word, record.harmonious).toPrecision(2)}</td>
 							<td>{record.validDipthongs}</td>
-							<td>{degreeOfError(record.word, record.validDipthongs).toPrecision(2)}</td>
+							<td>{accuracy(record.word, record.validDipthongs).toPrecision(2)}</td>
 						</tr>
 					))}
 				</tbody>
