@@ -138,32 +138,53 @@ function RowPredictionVisualizer({ prediction }) {
 }
 
 export default function OCRResults({ font, word, results = PLACEHOLDER_RESULTS, setParsed = () => {} }) {
-	const [prediction, setPrediction] = useState(results);
+	const [primaryPrediction, setPrimaryPrediction] = useState(results);
+	const [secondaryPrediction, setSecondaryPrediction] = useState(results);
 
 	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
-	const parsed = parseResults(prediction);
+	const parsed1 = parseResults(primaryPrediction);
+	const parsed2 = removeInvalidDipthongs(parseResults(secondaryPrediction));
 
 	useEffect(() => {
 		if (font == undefined) return;
 		if (!word) return;
 		axios.get(`${BACKEND}/lexigraphy/predict/${font}/${word}`)
-			.then(({ data }) => { setPrediction(data.predictions); });
+			.then(({ data }) => {
+				setPrimaryPrediction(data.primary_predictions);
+				setSecondaryPrediction(data.secondary_predictions);
+			});
 	}, [font, word, results])
 
 	useEffect(() => {
-		setParsed(parsed);
-	}, [parsed]);
+		setParsed(parsed2.trim());
+	}, [parsed2]);
 
 	return (
-		<div className="prediction">
-			<img src={url} />
-			<p
-				className="manchu-text"
-				style={{ marginTop: '20px', fontSize: '3.8rem', fontFamily: `manchu${font}` }}
-			>
-				{parsed}
-			</p>
-			<RowPredictionVisualizer prediction={prediction} />
-		</div>
+		<>
+  		<div className="prediction">
+  			<img src={url} />
+  			<p
+  				className="manchu-text"
+  				style={{ marginTop: '20px', fontSize: '3.8rem', fontFamily: `manchu${font}` }}
+  			>
+  				{parsed1}
+  			</p>
+  			<div>
+  				<RowPredictionVisualizer prediction={primaryPrediction} />
+  			</div>
+  		</div>
+  		<div className="prediction">
+  			<img src={url} />
+  			<p
+  				className="manchu-text"
+  				style={{ marginTop: '20px', fontSize: '3.8rem', fontFamily: `manchu${font}` }}
+  			>
+  				{parsed2}
+  			</p>
+  			<div>
+  				<RowPredictionVisualizer prediction={secondaryPrediction} />
+  			</div>
+  		</div>
+		</>
 	);
 }
