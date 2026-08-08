@@ -1,6 +1,6 @@
 Dots and Circles is my first non-tutorial machine learning project. It is an app for optical character recognition of Manchu-language text. An image is converted to a string of Unicode text in four stages:
 
-- Classifier: This is a Recurrant Neural Network which reads an image line by line and then sorts it into one of four categories which correspond to various styles of Manchu writing.
+- Classifier: This is a Recurrent Neural Network which reads an image line by line and then sorts it into one of four categories which correspond to various styles of Manchu writing.
 - Primary OCR: This is a Neural Network which, given 21 sequential rows of pixels, identifies the Manchu letter represented by the middle row. There are four different objects of this class, each corresponding to and trained on one of the four categories identified by the Classifier.
 - Secondary OCR: This is a Neural Network which, given 21 sequential outputs from the primary OCR, identifies the Manchu letter represented by the middle row. This was added to handle misidentifications by the Primary OCR; though the Primary OCR often got letters wrong, it tended to get them wrong in particular patterns, which the Secondary OCR can recognize and account for. Much like the Primary OCR, this has four specialized variants.
 - CTC Parser: This takes the output from the Secondary OCR, which is much longer than the actual word, and converts it into a string. While doing so, it also accounts for Manchu phonotactics to remove invalid letters. Currently, no machine learning is used here.
