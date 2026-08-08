@@ -1,22 +1,24 @@
 'use client'
 
 import axios from 'axios';
-
-import Image from "next/image";
 import { useState, useEffect } from 'react';
 
-import OCRVisualization from './ocr-visualization';
-import Lexigraph from './slices';
-import { numberToCharacter, characterColor } from './alphabet';
+import styles from './main.module.css';
+
+import LexigraphClassDescription from './components/LexigraphClassDescription';
+import Performance from './components/Performance';
+import OCRVisualization, {
+	removeInvalidDipthongs,
+	enforceVowelHarmony,
+	parseResults,
+	RowPredictionVisualizer,
+	PredictionChartLegend,
+} from './components/OCRVisualization';
 
 const BACKEND = 'http://localhost:5000';
+
 function LoadButton({ setWord, setFont }) {
 	const [fonts, setFonts] = useState({});
-
-	useEffect(() => {
-		axios.get(`${BACKEND}/lexigraphy/fonts/dict`)
-			.then(({ data }) => { setFonts(data); });
-	}, []);
 	
 	const onClick = () => {
 		axios.get(`${BACKEND}/corpus/random`)
@@ -24,130 +26,149 @@ function LoadButton({ setWord, setFont }) {
 				setWord(data.manchu);
 				const fontIndex = Math.floor(Math.random() * Object.keys(fonts).length);
 				const fontKey = Object.keys(fonts)[fontIndex];
-				console.log(fontIndex, fontKey);
 				setFont(fontKey);
 			});
 	};
 
-	return <button type="button" onClick={onClick}>LOAD RANDOM WORD</button>;
+	useEffect(() => {
+		axios.get(`${BACKEND}/lexigraphy/fonts/dict`)
+			.then(({ data }) => { setFonts(data); });
+	}, []);
+
+	return <button type="button" style={{ marginBottom: '1rem' }} onClick={onClick}>LOAD RANDOM WORD</button>;
 }
 
-function LexigraphWord({ word, font }) {
-	const fontName = `manchu${font}`
+function Demo() {
+	const [word, setWord] = useState();
+	const [font, setFont] = useState();
+	const [lexigraphClass, setLexigraphClass] = useState('A');
 
-	return (
-		<section className="lexigraph-word">
-			<span className="element-label">Text</span>
-  		<span className="manchu-text" style={{ fontFamily: fontName }}>
-      	{word.split('').map((letter, index) => (
-      		<span key={`${letter}-${index}`}>{letter}</span>
-      	))}
-  		</span>
-		</section>
-	);
-}
+	const [primaryPredictions, setPrimaryPredictions] = useState([]);
+	const [secondaryPredictions, setSecondaryPredictions] = useState([]);
+	const [prediction, setPrediction] = useState('');
 
-function BoundarySetter({word, boundaries, setBoundaries}) {
-	const setMargin = (index, value) => {
-		if (value < 1) return;
-		if (index < 0 || index > word.length) return;
-		const newBoundaries = [...boundaries];
-		newBoundaries[index][0] = value;
-		setBoundaries(newBoundaries);
-	}
-	const setLength = (index, value) => {
-		if (value < 1) return;
-		const newBoundaries = [...boundaries];
-		newBoundaries[index][1] = value;
-		setBoundaries(newBoundaries);
-	}
+	const url = `${BACKEND}/lexigraphy/new/${font}/${word}`;
 
-	if (boundaries.length !== word.length) return;
-	return (
-		<section className="boundary-setter">
-			{word.split('').map((letter, index) => (
-				<div key={`${letter}${index}`}>
-					<span className="letter manchu-text">{letter}</span>
-					<label>
-						Margin:
-						<input
-							type="number"
-							value={boundaries[index][0]}
-							onChange={({ target }) => { setMargin(index, target.value); }}
-						/>
-					</label>
-					<label>
-						Length:
-						<input
-							type="number"
-							value={boundaries[index][1]}
-							onChange={({ target }) => { setLength(index, target.value); }}
-						/>
-					</label>
-				</div>
-			))}
-		</section>
-	);
-}
+	useEffect(() => {
+		if (font === undefined) return;
+		if (!word) return;
+		axios.get(`${BACKEND}/lexigraphy/predict/${font}/${word}`)
+			.then(({ data }) => {
+				setLexigraphClass(data.class);
+				setPrimaryPredictions(data.primary_predictions);
+				setSecondaryPredictions(data.secondary_predictions);
 
-function SaveButton({ word, font, boundaries, setResults }) {
-	const onClick = () => {
-		axios.put(`${BACKEND}/lexigraphy/save/${font}/${word}`, { boundaries })
-			.then((response) => {
-				setResults(response.data);
-				alert('Save succesful');
+				const parsed = parseResults(data.secondary_predictions);
+				const harmonious = enforceVowelHarmony(parsed);
+				const validDipthongs = removeInvalidDipthongs(harmonious);
+				setPrediction(validDipthongs);
 			})
-			.catch((error) => {
-				console.error(error);
-				alert('Save failed');
-			});
-	};
+			.catch(console.error);
+	}, [word, font]);
+
+	if (!word) {
+		return (
+			<section>
+				<h2>Demo</h2>
+				<LoadButton setWord={setWord} setFont={setFont} />
+			</section>
+		);
+	}
 	return (
-		<button
-			type="submit"
-			onClick={onClick}
-		>
-			SAVE LEXIGRAPH
-		</button>
-	)
+		<section>
+			<h2>Demo</h2>
+			<LoadButton setWord={setWord} setFont={setFont} />
+			<div style={{ display: 'flex', justifyContent: 'space-between' }}>
+				<div>
+					<LexigraphClassDescription lexigraphClass={lexigraphClass} />
+				</div>
+				<div className={styles.visualizerWrapper}>
+					<h3>Primary OCR</h3>
+					<h3>Input Image</h3>
+					<h3>Secondary OCR</h3>
+					<h3>Parsed Output</h3>
+					<RowPredictionVisualizer prediction={primaryPredictions} flip />
+					<img className={styles.lexigraph} src={url} />
+					<RowPredictionVisualizer prediction={secondaryPredictions} />
+					<p
+						className="manchu-text"
+						style={{ marginTop: '20px', fontSize: '3.8rem', fontFamily: `manchu${font}` }}
+					>
+						{prediction}
+	  			</p>
+				</div>
+				<Performance word={word} prediction={prediction} />
+			</div>
+		</section>
+	);
+}
+
+function About() {
+	const manchuCakeLink = 'https://github.com/OverflowCat/manchu-cake';
+	const datasetLink = 'https://www.scidb.cn/en/detail?dataSetId=b45491b63d694534a9323acf14846586';
+	return (
+		<section>
+			<h2>About</h2>
+			<p>
+				Dots and Circles is my (Sasha Madden Ebersole's) first non-tutorial machine learning
+				project. It is an app for optical character recognition of Manchu-language text. An
+				image is converted to a string of Unicode text in four stages:
+			</p>
+			<dl>
+				<div>
+  				<dt>Classifier</dt>
+  				<dd>
+  					This is a Recurrant Neural Network which reads an image line by line and then sorts
+  					it into one of four categories which correspond to various styles of Manchu writing.
+  				</dd>
+				</div>
+				<div>
+				<dt>Primary OCR</dt>
+				<dd>
+					This is a Neural Network which, given 21 sequential rows of pixels, identifies the
+					Manchu letter represented by the middle row. There are four different objects of this
+					class, each corresponding to and trained on one of the four categories identified by
+					the Classifier.
+				</dd>
+				</div>
+				<div>
+  				<dt>Secondary OCR</dt>
+  				<dd>
+  					This is a Neural Network which, given 21 sequential outputs from the primary OCR,
+  					identifies the Manchu letter represented by the middle row. This was added to handle
+  					misidentifications by the Primary OCR; though the Primary OCR often got letters wrong,
+  					it tended to get them wrong in particular patterns, which the Secondary OCR can
+  					recognize and account for. Much like the Primary OCR, this has four specialized variants.
+  				</dd>
+				</div>
+				<div>
+  				<dt>CTC Parser</dt>
+  				<dd>
+  					This takes the output from the Secondary OCR, which is much longer than the actual word,
+  					and converts it into a string. While doing so, it also accounts for Manchu phonotactics
+  					to remove invalid letters. Currently, no machine learning is used here.
+  				</dd>
+				</div>
+			</dl>
+			<p>
+				Training data is, as of now, entirely synthetic, generated by rendering Manchu unicode text
+				from <a href={manchuCakeLink}>manchu-cake</a> in various fonts.
+				At some point I intend to revisit this project
+				with a new approach, at which point I will also use real-world data. A set of real-world data
+				was compiled and published by Sun Haipeng, Tao Wenhao, and Bi Xiaojun and is
+				available <a href={datasetLink}>here</a>, which I will likely use for the next iteration on this
+				project.
+			</p>
+		</section>
+	);
 }
 
 export default function Home() {
-	const [word, setWord] = useState('ᠰᡳᠮᠨᡝᠪᡠᠮᠪᡳ')
-	const [boundaries, setBoundaries] = useState([])
-	const [lexigraph, setLexigraph] = useState()
-	const [font, setFont] = useState(0);
-	const [results, setResults] = useState([]);
-
-	useEffect(() => {
-		const newBoundaries = [];
-		const offset = 10;
-		const spacing = 10;
-		const gap = 1;
-		word.split('').forEach((letter, index) => {
-			const margin = index == 0 ? offset : gap;
-			const length = spacing;
-			newBoundaries.push([margin, length]);
-		})
-		setBoundaries(newBoundaries);
-	}, [word])
-
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-			<main className="labelling">
-				<form onSubmit={(e) => { e.preventDefault(); }}>
-					<div>
-						<LoadButton setWord={setWord} setFont={setFont} />
-					</div>
-					<div className="form-fields">
-  					<BoundarySetter word={word} boundaries={boundaries} setBoundaries={setBoundaries} />
-  					<Lexigraph word={word} font={font} boundaries={boundaries} size="large" />
-  					<LexigraphWord word={word} font={font} />
-					</div>
-					<SaveButton word={word} font={font} boundaries={boundaries} setResults={setResults} />
-				</form>
-				<OCRVisualization font={font} word={word} results={results} />
-      </main>
-    </div>
-  );
+	return (
+		<main className={styles.homepage}>
+			<h1>Dots and Circles</h1>
+			<About />
+			<Demo />
+		</main>
+	);
 }

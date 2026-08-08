@@ -3,7 +3,9 @@
 import axios from 'axios';
 import { useState, useEffect } from 'react';
 
-import { numberToCharacter, characterColor } from './alphabet';
+import { numberToCharacter, characterColor } from '../alphabet';
+
+import styles from './OCRVisualization.module.css';
 
 const BACKEND = 'http://localhost:5000';
 const PLACEHOLDER_RESULTS = [];
@@ -95,7 +97,7 @@ export function parseResults(results) {
   // return noBreaks;
 }
 
-function PredictionChartLegend({ prediction = PLACEHOLDER_RESULTS }) {
+export function PredictionChartLegend({ prediction = PLACEHOLDER_RESULTS }) {
 	const [uniqueCharacters, setUniqueCharacters] = useState([]);
 
 	useEffect(() => {
@@ -119,12 +121,12 @@ function PredictionChartLegend({ prediction = PLACEHOLDER_RESULTS }) {
 	)
 }
 
-function RowPredictionVisualizer({ prediction }) {
+export function RowPredictionVisualizer({ prediction, flip = false}) {
 	return (
-		<>
+		<div className={styles.predictionVisualizer}>
 			{prediction.map(({ character, confidence }, index) => (
 				<div
-					className="slice-letter-prediction"
+					className={flip ? [styles.predictionVisualizerRow, styles.flip].join(' ') : styles.predictionVisualizerRow}
 					style={{
 						top: `${(index * 2) + 18}px`,
 						width: `${10 + (confidence * 100)}px`,
@@ -132,8 +134,7 @@ function RowPredictionVisualizer({ prediction }) {
 					}}
 				/>
 			))}
-			<PredictionChartLegend prediction={prediction} />
-		</>
+		</div>
 	);
 }
 

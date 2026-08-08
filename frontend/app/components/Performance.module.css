@@ -1,0 +1,14 @@
+.performance {
+	max-width: 20rem;
+}
+.performance.good .degree { background: LightGreen; }
+.performance.mid .degree { background: Khaki; }
+.performance.bad .degree { background: LightCoral; }
+
+.performance .degree {
+	font-weight: bold;
+	border-radius: 5px;
+}
+.performance > * {
+	padding: 0.5rem;
+}

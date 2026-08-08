@@ -2,7 +2,17 @@
 
 h1 {
 	font-weight: 800;
-	font-size: 1.8rem;
+	font-size: 2rem;
+}
+
+h2 {
+	margin: 1rem 0;
+	font-weight: 600;
+	font-size: 1.5rem;
+}
+
+h3 {
+	font-weight: 600;
 }
 
 :root {
@@ -70,6 +80,10 @@ header {
 	margin-bottom: 3rem;
 	box-shadow: rgba(0, 0, 0, 0.2) 0px 5px 5px;
 }
+header nav {
+	max-width: 80rem;
+	margin-inline: auto;
+}
 
 header nav ul {
 	display: flex;
@@ -80,6 +94,7 @@ header nav a {
 	transition-property: border-color;
 	padding-bottom: 1rem;
 	transition-duration: 0.15s;
+	text-decoration: none;
 }
 header nav a:hover,
 header nav a:hover {
@@ -93,7 +108,7 @@ body {
 }
 
 main {
-	margin: 1rem;
+	margin: 2rem;
 }
 
 @font-face { font-family: manchu0; src: url('http://localhost:5000/lexigraphy/fonts/XM_BiaoHei.ttf'); }
@@ -127,7 +142,6 @@ form {
 select,
 button {
 	border: 2px solid var(--color-foreground);
-	margin: 0 0.5rem;
 	padding: 0.5rem;
 	height: fit-content;
 	border-radius: 5px;
@@ -212,7 +226,16 @@ input {
 	opacity: 0.75;
 	left: 90px;
 }
+.slice-letter-prediction.flip {
+	left: 0;
+}
 
+.prediction-chart-legend {
+	display: flex;
+	flex-wrap: wrap;
+	margin-inline: auto;
+	width: fit-content;
+}
 .prediction-chart-legend li {
 	display: flex;
 	gap: 1rem;
@@ -246,4 +269,24 @@ tr:last-child td:first-child {
 thead:last-child th:last-child,
 tr:last-child td:last-child {
 	border-radius: 0 0 var(--border-radius) 0;
+}
+
+dl {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr 1fr;
+	gap: 0.5rem;
+	margin: 2rem 0;
+}
+dl > div {
+	padding: 0.5rem;
+	border: 1px solid grey;
+	border-radius: 5px;
+}
+
+dt {
+	font-weight: 800;
+}
+
+a {
+	text-decoration: underline;
 }

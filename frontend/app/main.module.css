@@ -1,0 +1,20 @@
+.homepage {
+	max-width: 80rem;
+	margin-inline: auto;
+}
+
+.lexigraph {
+	width: 100px;
+}
+
+.visualizer {
+	width: 300px;
+	display: grid;
+	grid-template-columns: 100px 100px 100px;
+}
+
+.visualizerWrapper {
+	display: grid;
+	grid-template-columns: 100px 100px 100px 1fr;
+	gap: 1rem;
+}

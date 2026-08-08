@@ -9,7 +9,7 @@ import OCRVisualization, {
 	removeInvalidDipthongs,
 	enforceVowelHarmony,
 	parseResults,
-} from '../ocr-visualization';
+} from '../components/OCRVisualization';
 
 const BACKEND = 'http://localhost:5000';
 
