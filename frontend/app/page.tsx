@@ -118,7 +118,7 @@ function About() {
 				<div>
   				<dt>Classifier</dt>
   				<dd>
-  					This is a Recurrant Neural Network which reads an image line by line and then sorts
+  					This is a Recurrent Neural Network which reads an image line by line and then sorts
   					it into one of four categories which correspond to various styles of Manchu writing.
   				</dd>
 				</div>
