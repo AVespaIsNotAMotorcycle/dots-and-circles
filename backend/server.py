@@ -26,8 +26,7 @@ def get_filename(stage, l_class):
         message = 'get_filename expects l_class to be one of {0}, but it was {1}'.format(valid_classes, stage)
         raise ValueError(message)
 
-    if stage == 'primary': return 'ocr_class_{0}.json'.format(l_class).lower()
-    if stage == 'secondary': return 'ctc_class_{0}.json'.format(l_class).lower()
+    return './saved_nns/{0}_class_{1}.json'.format(stage, l_class).lower()
 
 num_hidden_nodes = 256
 OCR_class_A = NeuralNetwork(num_hidden_nodes)

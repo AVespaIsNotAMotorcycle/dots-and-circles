@@ -113,7 +113,9 @@ class CTCNeuralNetwork:
 
                 self.bias_h = np.array(saved_values['bias_h'])
                 self.bias_y = np.array(saved_values['bias_y'])
-        except: return
+        except:
+            print('Failed to load {0}'.format(filename))
+            return
 
     def predict_tokens(self, inputs, labels=[], backprop=False):
         predictions = []

@@ -105,7 +105,9 @@ class NeuralNetwork:
 
                 self.bias_h = np.array(saved_values['bias_h'])
                 self.bias_y = np.array(saved_values['bias_y'])
-        except: return
+        except:
+            print('Failed to load {0}'.format(filename))
+            return
 
     def predict_lexigraph(self, slices, row_labels=[], backprop=False):
         predictions = []
