@@ -176,7 +176,7 @@ def train_secondary_ocr(trials):
         secondary_ocr[l_class].save(get_filename('secondary', l_class))
 
     accuracy = successes / len(trials) * 100
-    print("CTC Accuracy: {0}%".format(accuracy))
+    print("Secondary Accuracy: {0}%".format(accuracy))
 
 @app.route("/train", methods=["PUT"])
 def train_100_times():
@@ -200,7 +200,7 @@ def train_100_times():
             trials.append(trial)
     train_secondary_ocr(trials)
     accuracy = successes / len(trials) * 100
-    print("OCR Accuracy: {0}%".format(accuracy))
+    print("Primary Accuracy: {0}%".format(accuracy))
     return { "accuracy": accuracy, "trials": trials }
 
 @app.route("/")
