@@ -2,66 +2,37 @@ from flask import Flask, send_file, request
 from flask_cors import CORS
 import io
 
+import random
 import numpy as np
 
 import corpus
 import lexigraphy
 import constants
-from ocr import NeuralNetwork
-from ctc import CTCNeuralNetwork
-from classifier import Classifier
+from primary_ocr import NeuralNetwork
+from secondary_ocr import CTCNeuralNetwork
 
 app = Flask(__name__)
 CORS(app)
     
-classifier = Classifier()
-
-def get_filename(stage, l_class):
-    valid_stages = ['primary', 'secondary']
-    if stage not in valid_stages:
-        message = 'get_filename expects stage to be one of {0}, but it was {1}'.format(valid_stages, stage)
-        raise ValueError(message)
-    valid_classes = ['A', 'B', 'C', 'D']
-    if l_class.upper() not in valid_classes:
-        message = 'get_filename expects l_class to be one of {0}, but it was {1}'.format(valid_classes, stage)
-        raise ValueError(message)
-
-    return './saved_nns/{0}_class_{1}.json'.format(stage, l_class).lower()
+PRIMARY_FILENAME = './saved_nns/primary.json';
+SECONDARY_FILENAME = './saved_nns/secondary.json';
 
 num_hidden_nodes = 256
-OCR_class_A = NeuralNetwork(num_hidden_nodes)
-OCR_class_B = NeuralNetwork(num_hidden_nodes)
-OCR_class_C = NeuralNetwork(num_hidden_nodes)
-OCR_class_D = NeuralNetwork(num_hidden_nodes)
 
-primary_ocr = { 'A': OCR_class_A, 
-                'B': OCR_class_B,
-                'C': OCR_class_C,
-                'D': OCR_class_D }
+primary_ocr = NeuralNetwork(num_hidden_nodes)
+primary_ocr.load(PRIMARY_FILENAME)
 
-CTC_class_A = CTCNeuralNetwork()
-CTC_class_B = CTCNeuralNetwork()
-CTC_class_C = CTCNeuralNetwork()
-CTC_class_D = CTCNeuralNetwork()
-
-secondary_ocr = { 'A': CTC_class_A, 
-                  'B': CTC_class_B,
-                  'C': CTC_class_C,
-                  'D': CTC_class_D }
-
-for l_class in ['A', 'B', 'C', 'D']:
-    primary_ocr[l_class].load(get_filename('primary', l_class))
-    secondary_ocr[l_class].load(get_filename('secondary', l_class))
+secondary_ocr = CTCNeuralNetwork()
+secondary_ocr.load(SECONDARY_FILENAME)
 
 def train_on_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
-    lexigraph_class = classifier.classify(font)
     predictions = []
 
-    predictions = primary_ocr[lexigraph_class].train_on_lexigraph(slices, row_labels)
-    primary_ocr[lexigraph_class].save(get_filename('primary', lexigraph_class))
+    predictions = primary_ocr.train_on_lexigraph(slices, row_labels)
+    primary_ocr.save(PRIMARY_FILENAME)
 
-    return predictions, lexigraph_class
+    return predictions
 
 @app.route("/corpus/count")
 def get_corpus_count():
@@ -110,8 +81,8 @@ def create_lexigraph(font, manchu):
 def predict_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
 
-    lexigraph_class = classifier.classify(font)
-    primary_predictions = primary_ocr[lexigraph_class].predict_lexigraph(slices)
+    image_array = lexigraphy.get_lexigraph_array(font, manchu)
+    primary_predictions = primary_ocr.predict_lexigraph(slices)
 
     secondary_inputs = []
     for index, primary_prediction in enumerate(primary_predictions):
@@ -122,21 +93,20 @@ def predict_lexigraph(font, manchu):
             if pred_index >= len(primary_predictions): continue
             secondary_input[delta] = primary_predictions[pred_index]['character']
 
-        secondary_input = CTC_class_A.digits_array_to_x(secondary_input)
+        secondary_input = secondary_ocr.digits_array_to_x(secondary_input)
         secondary_inputs.append(secondary_input)
 
-    secondary_predictions = secondary_ocr[lexigraph_class].predict_tokens(secondary_inputs)
+    secondary_predictions = secondary_ocr.predict_tokens(secondary_inputs)
 
     return { "primary_predictions": primary_predictions,
-             "secondary_predictions": secondary_predictions,
-             "class": lexigraph_class }
+             "secondary_predictions": secondary_predictions }
 
 @app.route("/lexigraphy/save/<font>/<manchu>", methods=["PUT"])
 def save_lexigraph(font, manchu):
     boundaries = request.get_json()["boundaries"]
     success = lexigraphy.save_lexigraph(font, manchu, boundaries)
 
-    predictions, lexigraph_class = train_on_lexigraph(font, manchu)
+    predictions = train_on_lexigraph(font, manchu)
 
     return predictions
 
@@ -148,43 +118,42 @@ def get_lexigraph():
     return page
 
 def train_secondary_ocr(trials):
-    inputs = { 'A': [], 'B': [], 'C': [], 'D': [] }
-    labels = { 'A': [], 'B': [], 'C': [], 'D': [] }
+    inputs = []
+    labels = []
+    training_data = []
     for index, trial in enumerate(trials):
-        predictions = [0] * 21
+        primary_output = [0] * 21
         for delta in range(21):
             pred_index = index + delta - 10
             if pred_index < 0: continue
             if pred_index >= len(trials): continue
-            predictions[delta] = trials[pred_index]['prediction']
+            primary_output[delta] = trials[pred_index]['prediction']
 
         actual = trial['actual']
-        lexigraph_class = trial['class']
 
-        predictions = CTC_class_A.digits_array_to_x(predictions)
-        inputs[lexigraph_class].append(predictions)
-        labels[lexigraph_class].append(actual)
+        primary_output = secondary_ocr.digits_array_to_x(primary_output)
+        inputs.append(primary_output)
+        labels.append(actual)
 
     successes = 0
-    for l_class in ['A', 'B', 'C', 'D']:
-        predictions = secondary_ocr[l_class].train_on_tokens(inputs[l_class], labels[l_class])
+    predictions = secondary_ocr.train_on_tokens(inputs, labels)
     
-        for index, prediction in enumerate(predictions):
-            character = prediction['character']
-            if character == labels[l_class][index]: successes += 1
+    for index, prediction in enumerate(predictions):
+        character = prediction['character']
+        if character == labels[index]: successes += 1
 
-        secondary_ocr[l_class].save(get_filename('secondary', l_class))
-
+    secondary_ocr.save(SECONDARY_FILENAME)
     accuracy = successes / len(trials) * 100
-    print("Secondary Accuracy: {0}%".format(accuracy))
+    print("Secondary Accuracy: {0}%".format(int(accuracy)))
 
-@app.route("/train", methods=["PUT"])
-def train_100_times():
+def train_primary_ocr():
     trials = []
     successes = 0
+
     for i in range(100):
         font, manchu, slices, row_labels = lexigraphy.get_random_marked_lexigraph()
-        predictions, lexigraph_class = train_on_lexigraph(font, manchu)
+
+        predictions = train_on_lexigraph(font, manchu)
         for index in range(len(row_labels)):
             prediction = predictions[index]["character"]
             answer = constants.ALPHABET.index(row_labels[index])
@@ -195,12 +164,17 @@ def train_100_times():
                     "correct": prediction == answer,
                     "font": font,
                     "manchu": manchu,
-                    "class": lexigraph_class
                     }
             trials.append(trial)
-    train_secondary_ocr(trials)
     accuracy = successes / len(trials) * 100
-    print("Primary Accuracy: {0}%".format(accuracy))
+    print("Primary Accuracy: {0}%".format(int(accuracy)))
+    return trials, accuracy
+
+@app.route("/train", methods=["PUT"])
+def train_100_times():
+    trials, accuracy = train_primary_ocr()
+    train_secondary_ocr(trials)
+
     return { "accuracy": accuracy, "trials": trials }
 
 @app.route("/")

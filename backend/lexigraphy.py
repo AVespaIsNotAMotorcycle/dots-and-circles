@@ -126,6 +126,11 @@ def completely_blank(slice):
                 return False
     return True
 
+def get_lexigraph_array(font, manchu):
+    lexigraph = create_lexigraph(manchu, font)
+    array = image_to_array(lexigraph)
+    return array
+
 def get_slices(font, manchu):
     lexigraph = create_lexigraph(manchu, font)
     array = image_to_array(lexigraph)
