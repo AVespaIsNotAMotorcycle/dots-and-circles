@@ -77,10 +77,9 @@ function Demo() {
 	return (
 		<section>
 			<h2>Demo</h2>
-			<LoadButton setWord={setWord} setFont={setFont} />
 			<div style={{ display: 'flex', justifyContent: 'space-between' }}>
 				<div>
-					<LexigraphClassDescription lexigraphClass={lexigraphClass} />
+					<LoadButton setWord={setWord} setFont={setFont} />
 				</div>
 				<div className={styles.visualizerWrapper}>
 					<h3>Primary OCR</h3>
@@ -112,24 +111,17 @@ function About() {
 			<p>
 				Dots and Circles is my (Sasha Madden Ebersole's) first non-tutorial machine learning
 				project. It is an app for optical character recognition of Manchu-language text. An
-				image is converted to a string of Unicode text in four stages:
+				image is converted to a string of Unicode text in three stages:
 			</p>
 			<dl>
 				<div>
-  				<dt>Classifier</dt>
+  				<dt>Primary OCR</dt>
   				<dd>
-  					This is a Recurrent Neural Network which reads an image line by line and then sorts
-  					it into one of four categories which correspond to various styles of Manchu writing.
+  					This is a Neural Network which, given 21 sequential rows of pixels, identifies the
+  					Manchu letter represented by the middle row. There are four different objects of this
+  					class, each corresponding to and trained on one of the four categories identified by
+  					the Classifier.
   				</dd>
-				</div>
-				<div>
-				<dt>Primary OCR</dt>
-				<dd>
-					This is a Neural Network which, given 21 sequential rows of pixels, identifies the
-					Manchu letter represented by the middle row. There are four different objects of this
-					class, each corresponding to and trained on one of the four categories identified by
-					the Classifier.
-				</dd>
 				</div>
 				<div>
   				<dt>Secondary OCR</dt>
