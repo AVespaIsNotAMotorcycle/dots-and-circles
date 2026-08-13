@@ -125,6 +125,7 @@ export function RowPredictionVisualizer({ prediction, flip = false}) {
 		<div className={styles.predictionVisualizer}>
 			{prediction.map(({ character, confidence }, index) => (
 				<div
+					key={`${character}${confidence}${index}`}
 					className={flip ? [styles.predictionVisualizerRow, styles.flip].join(' ') : styles.predictionVisualizerRow}
 					style={{
 						top: `${(index * 2) + 18}px`,
