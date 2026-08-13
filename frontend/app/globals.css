@@ -13,6 +13,7 @@ h2 {
 
 h3 {
 	font-weight: 600;
+	margin: 1rem 0;
 }
 
 :root {
@@ -109,6 +110,7 @@ body {
 
 main {
 	margin: 2rem;
+	padding: 0 1rem;
 }
 
 @font-face { font-family: manchu0; src: url('http://localhost:5000/lexigraphy/fonts/XM_BiaoHei.ttf'); }
@@ -272,15 +274,16 @@ tr:last-child td:last-child {
 }
 
 dl {
-	display: grid;
-	grid-template-columns: 1fr 1fr 1fr 1fr;
-	gap: 0.5rem;
+	display: flex;
 	margin: 2rem 0;
+	gap: 1rem;
+	justify-content: space-between;
 }
 dl > div {
 	padding: 0.5rem;
 	border: 1px solid grey;
 	border-radius: 5px;
+	flex-basis: 33%;
 }
 
 dt {
@@ -290,3 +293,5 @@ dt {
 a {
 	text-decoration: underline;
 }
+
+.bold { font-weight: 800; }
