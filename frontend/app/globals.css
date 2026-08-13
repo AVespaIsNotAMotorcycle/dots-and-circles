@@ -16,6 +16,10 @@ h3 {
 	margin: 1rem 0;
 }
 
+p + p {
+	margin-top: 1rem;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

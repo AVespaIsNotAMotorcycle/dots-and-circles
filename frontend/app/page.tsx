@@ -132,17 +132,20 @@ function About() {
 					in a particular font (called a <span className="bold">lexigraph</span> from here on)
 					had letter boundaries manually labelled. Each lexigraph is 50 pixels wide, and there
 					are 10 pixels of whitespace on each side.
-
+				</p>
+				<p>
 					OCR is performed by two neural networks. The first networks, henceforth called
 					the <span className="bold">Primary OCR</span>, takes as input 21 sequential rows of pixels
 					in a lexigraph and outputs a single character. This character is what the Primary OCR
 					thinks the middle row of pixels corresponds to.
-
+				</p>
+				<p>
 					Unfortunately, the Primary OCR had difficulty differentiating certain letters. However,
 					it tended to produce errors in patterns. In order to counteract this, I added a second
-					network, called the Secondary OCR, which took as input 21 outputs from the Primary OCR
-					and output the character it predicted the middle to actually correspond to. This had
-					the effect of reducing noise in output and marginally improving accuracy.
+					network, called the <span className="bold">Secondary OCR</span>, which took as input 21
+					outputs from the Primary OCR and output the character it predicted the middle to actually
+					correspond to. This had the effect of reducing noise in output and marginally improving
+					accuracy.
 				</p>
 			</section>
 			<section>
@@ -152,7 +155,8 @@ function About() {
 					an encoder/decoder model, with an RNN (the encoder) first reading the lexigraph line
 					by line and producing some representation of the word, and a second RNN (the decoder)
 					using that representation to spell out the word character by character.
-
+				</p>
+				<p>
 					Additionally, I abandon the marking of character boundaries in favor of giving the
 					machine whole lexigraphs and allowing it to learn the boundaries on its own. This would
 					make it easier to generate training data, and make it easier to incorporate real-world
