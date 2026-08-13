@@ -32,7 +32,6 @@ function FontName({ font }) {
 
 function LexigraphCard({ font, manchu, boundaries }) {
 	const url = `${BACKEND}/lexigraphy/new/${font}/${manchu}`;
-	console.log(font, manchu, boundaries);
 	return (
 		<section className={styles.lexigraphCard}>
 			<div>

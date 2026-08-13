@@ -75,7 +75,6 @@ export function enforceVowelHarmony(word) {
 			})
 			.join('');
 	}
-	console.log(word, harmoniousWord)
 	return harmoniousWord;
 }
 

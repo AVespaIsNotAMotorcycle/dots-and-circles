@@ -91,7 +91,6 @@ function LoadButton({ setWord, setFont }) {
 				setWord(data.manchu);
 				const fontIndex = Math.floor(Math.random() * Object.keys(fonts).length);
 				const fontKey = Object.keys(fonts)[fontIndex];
-				console.log(fontIndex, fontKey);
 				setFont(fontKey);
 			});
 	};
@@ -111,7 +110,6 @@ function AverageDegreesOfError({ records }) {
 		accumulator[2] = accumulator[2] + accuracy(currentValue.word, currentValue.validDipthongs);
 		return accumulator;
 	}, [0, 0, 0]);
-	console.log(sums);
 	if (!sums) return null;
 	return (
 		<table>
@@ -162,7 +160,6 @@ export default function WordTesting({}) {
 		if (!word) return;
 		axios.get(`${BACKEND}/lexigraphy/predict/${font}/${word}`)
 			.then(({ data }) => {
-				console.log(data.class);
 				setLexigraphClass(data.class);
 				setPredictions(data.predictions);
 

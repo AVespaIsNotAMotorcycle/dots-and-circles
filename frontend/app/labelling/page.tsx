@@ -24,7 +24,6 @@ function LoadButton({ setWord, setFont }) {
 				setWord(data.manchu);
 				const fontIndex = Math.floor(Math.random() * Object.keys(fonts).length);
 				const fontKey = Object.keys(fonts)[fontIndex];
-				console.log(fontIndex, fontKey);
 				setFont(fontKey);
 			});
 	};
