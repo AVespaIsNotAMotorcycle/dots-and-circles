@@ -2,7 +2,7 @@ import random
 import sqlite3
 import time
 import json
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 import numpy as np
 
 import constants
@@ -57,10 +57,22 @@ def rotate_image(horizontal_image):
     vertical_image = horizontal_image.rotate(-90).crop([left, top, right, bottom])
     return vertical_image
 
-def create_lexigraph(word, font_index = get_random_font_index()):
+def crop_image(vertical_image):
+    image_array = image_to_array(vertical_image)
+    start_of_whitespace = len(image_array) - 1
+    while sum(image_array[start_of_whitespace]) == 0:
+        start_of_whitespace -= 1
+    image_array = image_array[:start_of_whitespace + 10]
+    image_array = image_array * 255
+    cropped_image = Image.fromarray(image_array.astype('uint8'))
+    cropped_image = ImageOps.invert(cropped_image)
+    return cropped_image
+
+def create_lexigraph(word, font_index = get_random_font_index(), crop=False):
     font = get_font(font_index)
     horizontal_image = create_horizontal_image(word, font)
     vertical_image = rotate_image(horizontal_image)
+    if crop: return crop_image(vertical_image)
     return vertical_image
 
 def save_lexigraph(font, manchu, boundaries):

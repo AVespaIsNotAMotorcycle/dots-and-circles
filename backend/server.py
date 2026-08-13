@@ -97,7 +97,7 @@ def create_lexigraph(font, manchu):
     returns:
     - image of that text
     '''
-    lexigraph = lexigraphy.create_lexigraph(manchu, int(font))
+    lexigraph = lexigraphy.create_lexigraph(manchu, int(font), crop=True)
     image_io = io.BytesIO()
     lexigraph.save(image_io, 'PNG')
     image_io.seek(0)
