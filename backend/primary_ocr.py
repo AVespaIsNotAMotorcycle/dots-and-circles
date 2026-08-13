@@ -107,7 +107,7 @@ class NeuralNetwork:
 
         saved_values['weight_x_h1'] = self.weight_x_h1.tolist()
         saved_values['weight_h1_h2'] = self.weight_h1_h2.tolist()
-        saved_values['weight_h_y'] = self.weight_h2_y.tolist()
+        saved_values['weight_h2_y'] = self.weight_h2_y.tolist()
 
         saved_values['bias_h1'] = self.bias_h1.tolist()
         saved_values['bias_h2'] = self.bias_h2.tolist()
@@ -121,11 +121,13 @@ class NeuralNetwork:
         try:
             with open(filename, 'r') as file:
                 saved_values = json.load(file)
-
-                self.weight_x_h = np.array(saved_values['weight_x_h'])
-                self.weight_h_y = np.array(saved_values['weight_h_y'])
-
-                self.bias_h = np.array(saved_values['bias_h'])
+    
+                self.weight_x_h1 = np.array(saved_values['weight_x_h1'])
+                self.weight_h1_h2 = np.array(saved_values['weight_h1_h2'])
+                self.weight_h2_y = np.array(saved_values['weight_h2_y'])
+    
+                self.bias_h1 = np.array(saved_values['bias_h1'])
+                self.bias_h2 = np.array(saved_values['bias_h2'])
                 self.bias_y = np.array(saved_values['bias_y'])
         except:
             print('Failed to load {0}'.format(filename))
