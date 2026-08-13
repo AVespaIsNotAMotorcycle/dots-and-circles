@@ -54,7 +54,7 @@ function Demo() {
 		if (!word) return;
 		axios.get(`${BACKEND}/lexigraphy/predict/${font}/${word}`)
 			.then(({ data }) => {
-				setLexigraphClass(data.class);
+				setLexigraphClass(data.l_class);
 				setPrimaryPredictions(data.primary_predictions);
 				setSecondaryPredictions(data.secondary_predictions);
 
@@ -77,9 +77,10 @@ function Demo() {
 	return (
 		<section>
 			<h2>Demo</h2>
-			<div style={{ display: 'flex', justifyContent: 'space-between' }}>
+			<div className={styles.demoWrapper}>
 				<div>
 					<LoadButton setWord={setWord} setFont={setFont} />
+					{lexigraphClass && <LexigraphClassDescription lexigraphClass={lexigraphClass} />}
 				</div>
 				<div className={styles.visualizerWrapper}>
 					<h3>Primary OCR</h3>

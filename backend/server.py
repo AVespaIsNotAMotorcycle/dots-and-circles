@@ -126,7 +126,8 @@ def predict_lexigraph(font, manchu):
     secondary_predictions = secondary_ocr[l_class].predict_tokens(secondary_inputs)
 
     return { "primary_predictions": primary_predictions,
-             "secondary_predictions": secondary_predictions }
+             "secondary_predictions": secondary_predictions,
+             "l_class": l_class }
 
 @app.route("/lexigraphy/save/<font>/<manchu>", methods=["PUT"])
 def save_lexigraph(font, manchu):
