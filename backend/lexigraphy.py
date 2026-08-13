@@ -105,8 +105,7 @@ def collapse_pixel(pixel_tuple):
     total = 0
     for channel in pixel_tuple: total += int(channel)
     total = total / 3
-    if total > 100: return 0
-    return 1
+    return (255 - total) / 255
 
 def image_to_array(image):
     image_array = np.array(image)
