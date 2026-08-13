@@ -21,11 +21,32 @@ SECONDARY_FILENAME = './saved_nns/secondary.json'
 
 num_hidden_nodes = 256
 
-primary_ocr = NeuralNetwork(num_hidden_nodes)
-primary_ocr.load(PRIMARY_FILENAME)
+l_classes = ["A", "B", "C", "D"]
+primary_ocr = {}
+secondary_ocr = {}
 
-secondary_ocr = CTCNeuralNetwork()
-secondary_ocr.load(SECONDARY_FILENAME)
+def classify_font(font):
+    if font in [2, 5]: return 'B'
+    if font in [3, 8]: return 'C'
+    if font == 6: return 'D'
+    return 'A'
+
+def get_filename(rank, l_class):
+    valid_ranks = ["primary", "secondary"]
+    assert rank in valid_ranks, \
+        f"get_filename expected rank to be one of {valid_ranks}, was {rank} instead"
+
+    assert l_class in l_classes, \
+        f"get_filename expected l_class to be one of {l_classes}, was {l_class} instead"
+
+    return "./saved_nns/{0}_{1}.json".format(rank, l_class)
+
+for l_class in l_classes:
+    primary_ocr[l_class] = NeuralNetwork(num_hidden_nodes)
+    primary_ocr[l_class].load(get_filename("primary", l_class))
+
+    secondary_ocr[l_class] = CTCNeuralNetwork()
+    secondary_ocr[l_class].load(get_filename("secondary", l_class))
 
 classifier = Classifier()
 classifier.load(CLASSIFIER_FILENAME)
@@ -33,9 +54,9 @@ classifier.load(CLASSIFIER_FILENAME)
 def train_on_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
     predictions = []
+    l_class = classify_font(font)
 
-    predictions = primary_ocr.train_on_lexigraph(slices, row_labels)
-    primary_ocr.save(PRIMARY_FILENAME)
+    predictions = primary_ocr[l_class].train_on_lexigraph(slices, row_labels)
 
     return predictions
 
@@ -86,8 +107,9 @@ def create_lexigraph(font, manchu):
 def predict_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
 
+    l_class = classifier.predict_lexigraph(slices)
     image_array = lexigraphy.get_lexigraph_array(font, manchu)
-    primary_predictions = primary_ocr.predict_lexigraph(slices)
+    primary_predictions = primary_ocr[l_class].predict_lexigraph(slices)
 
     secondary_inputs = []
     for index, primary_prediction in enumerate(primary_predictions):
@@ -98,10 +120,10 @@ def predict_lexigraph(font, manchu):
             if pred_index >= len(primary_predictions): continue
             secondary_input[delta] = primary_predictions[pred_index]['character']
 
-        secondary_input = secondary_ocr.digits_array_to_x(secondary_input)
+        secondary_input = secondary_ocr[l_class].digits_array_to_x(secondary_input)
         secondary_inputs.append(secondary_input)
 
-    secondary_predictions = secondary_ocr.predict_tokens(secondary_inputs)
+    secondary_predictions = secondary_ocr[l_class].predict_tokens(secondary_inputs)
 
     return { "primary_predictions": primary_predictions,
              "secondary_predictions": secondary_predictions }
@@ -136,18 +158,20 @@ def train_secondary_ocr(trials):
 
         actual = trial['actual']
 
-        primary_output = secondary_ocr.digits_array_to_x(primary_output)
+        l_class = trial['l_class']
+        primary_output = secondary_ocr[l_class].digits_array_to_x(primary_output)
         inputs.append(primary_output)
         labels.append(actual)
 
     successes = 0
-    predictions = secondary_ocr.train_on_tokens(inputs, labels)
+    predictions = secondary_ocr[l_class].train_on_tokens(inputs, labels)
     
     for index, prediction in enumerate(predictions):
         character = prediction['character']
         if character == labels[index]: successes += 1
 
-    secondary_ocr.save(SECONDARY_FILENAME)
+    for l_class in l_classes:
+        secondary_ocr[l_class].save(get_filename('secondary', l_class))
     accuracy = successes / len(trials) * 100
     print("Secondary Accuracy: {0}%".format(int(accuracy)))
 
@@ -158,6 +182,7 @@ def train_primary_ocr():
     for i in range(100):
         font, manchu, slices, row_labels = lexigraphy.get_random_marked_lexigraph()
 
+        l_class = classify_font(font)
         predictions = train_on_lexigraph(font, manchu)
         for index in range(len(row_labels)):
             prediction = predictions[index]["character"]
@@ -169,8 +194,11 @@ def train_primary_ocr():
                     "correct": prediction == answer,
                     "font": font,
                     "manchu": manchu,
+                    "l_class": l_class
                     }
             trials.append(trial)
+    for l_class in l_classes:
+        primary_ocr[l_class].save(get_filename('primary', l_class))
     accuracy = successes / len(trials) * 100
     print("Primary Accuracy: {0}%".format(int(accuracy)))
     return trials, accuracy
@@ -198,7 +226,7 @@ def train_classifier():
     classifier.save(CLASSIFIER_FILENAME)
     accuracy = successes / len(trials) * 100
     print("Classifier Accuracy: {0}%".format(int(accuracy)))
-    print("Classifier Average Loss: {0}%".format(total_loss / len(trials)))
+    print("Classifier Average Loss: {0}".format(total_loss / len(trials)))
     return trials, accuracy
 
 @app.route("/train", methods=["PUT"])
