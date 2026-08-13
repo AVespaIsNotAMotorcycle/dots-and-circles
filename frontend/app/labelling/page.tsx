@@ -9,7 +9,7 @@ import OCRVisualization from '../components/OCRVisualization';
 import Lexigraph from '../slices';
 import { numberToCharacter, characterColor } from '../alphabet';
 
-const BACKEND = 'http://localhost:5000';
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND
 function LoadButton({ setWord, setFont }) {
 	const [fonts, setFonts] = useState({});
 

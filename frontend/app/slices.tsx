@@ -7,7 +7,7 @@ import styles from './slices.module.css';
 import Image from "next/image";
 import { useState, useEffect } from 'react';
 
-const BACKEND = 'http://localhost:5000';
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND
 
 function Slice({ margin, length, size }) {
 	const scale = size === 'large' ? 2 : 1;

@@ -15,7 +15,7 @@ import OCRVisualization, {
 	PredictionChartLegend,
 } from './components/OCRVisualization';
 
-const BACKEND = 'http://localhost:5000';
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND
 
 function LoadButton({ setWord, setFont }) {
 	const [fonts, setFonts] = useState({});

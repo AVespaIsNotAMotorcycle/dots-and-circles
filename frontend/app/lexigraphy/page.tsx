@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 
 import Lexigraph from '../slices';
 
-const BACKEND = 'http://localhost:5000';
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND
 
 function formatFontName(fonts, fontNumber) {
 	const fontName = fonts[Number(fontNumber)];

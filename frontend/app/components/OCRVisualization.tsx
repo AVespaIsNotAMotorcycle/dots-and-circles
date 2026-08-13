@@ -7,7 +7,7 @@ import { numberToCharacter, characterColor } from '../alphabet';
 
 import styles from './OCRVisualization.module.css';
 
-const BACKEND = 'http://localhost:5000';
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND
 const PLACEHOLDER_RESULTS = [];
 
 export function removeInvalidDipthongs(word) {

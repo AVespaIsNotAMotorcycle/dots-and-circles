@@ -11,7 +11,7 @@ import OCRVisualization, {
 	parseResults,
 } from '../components/OCRVisualization';
 
-const BACKEND = 'http://localhost:5000';
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND
 
 function LexigraphClassDescription({ lexigraphClass }) {
 	const traits = ['Lexigraphs of this class have heavier line weight.',
