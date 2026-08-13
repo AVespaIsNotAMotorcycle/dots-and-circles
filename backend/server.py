@@ -10,12 +10,14 @@ import lexigraphy
 import constants
 from primary_ocr import NeuralNetwork
 from secondary_ocr import CTCNeuralNetwork
+from classifier import Classifier
 
 app = Flask(__name__)
 CORS(app)
-    
-PRIMARY_FILENAME = './saved_nns/primary.json';
-SECONDARY_FILENAME = './saved_nns/secondary.json';
+
+CLASSIFIER_FILENAME = './saved_nns/classifier.json'
+PRIMARY_FILENAME = './saved_nns/primary.json'
+SECONDARY_FILENAME = './saved_nns/secondary.json'
 
 num_hidden_nodes = 256
 
@@ -24,6 +26,9 @@ primary_ocr.load(PRIMARY_FILENAME)
 
 secondary_ocr = CTCNeuralNetwork()
 secondary_ocr.load(SECONDARY_FILENAME)
+
+classifier = Classifier()
+classifier.load(CLASSIFIER_FILENAME)
 
 def train_on_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
@@ -170,8 +175,35 @@ def train_primary_ocr():
     print("Primary Accuracy: {0}%".format(int(accuracy)))
     return trials, accuracy
 
+def train_classifier():
+    trials = []
+    successes = 0
+    total_loss = 0
+
+    for i in range(100):
+        font = lexigraphy.get_random_font_index()
+        manchu = corpus.get_random_word()["manchu"]
+        slices, row_labels = lexigraphy.get_slices(font, manchu)
+
+        label = 'A'
+        if font in [2, 5]: label = 'B'
+        if font in [3, 8]: label = 'C'
+        if font == 6: label = 'D'
+
+        prediction, success, loss = classifier.train_on_lexigraph(slices, label)
+        successes += int(success)
+        total_loss += loss
+        trials.append({ "label": label, "prediction": prediction })
+
+    classifier.save(CLASSIFIER_FILENAME)
+    accuracy = successes / len(trials) * 100
+    print("Classifier Accuracy: {0}%".format(int(accuracy)))
+    print("Classifier Average Loss: {0}%".format(total_loss / len(trials)))
+    return trials, accuracy
+
 @app.route("/train", methods=["PUT"])
 def train_100_times():
+    train_classifier()
     trials, accuracy = train_primary_ocr()
     train_secondary_ocr(trials)
 
