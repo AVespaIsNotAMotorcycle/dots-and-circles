@@ -51,6 +51,12 @@ for l_class in l_classes:
 classifier = Classifier()
 classifier.load(CLASSIFIER_FILENAME)
 
+def load_all():
+    for l_class in l_classes:
+        primary_ocr[l_class].load(get_filename("primary", l_class))
+
+        secondary_ocr[l_class].load(get_filename("secondary", l_class))
+
 def train_on_lexigraph(font, manchu):
     slices, row_labels = lexigraphy.get_slices(font, manchu)
     predictions = []
@@ -59,6 +65,13 @@ def train_on_lexigraph(font, manchu):
     predictions = primary_ocr[l_class].train_on_lexigraph(slices, row_labels)
 
     return predictions
+
+@app.route("/loadall"):
+    try:
+        loadall()
+        return "Loaded saved weights."
+    except Exception:
+        return Exception
 
 @app.route("/corpus/count")
 def get_corpus_count():
