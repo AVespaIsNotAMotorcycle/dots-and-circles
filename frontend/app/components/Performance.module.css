@@ -5,6 +5,17 @@
 .performance.mid .degree { background: Khaki; }
 .performance.bad .degree { background: LightCoral; }
 
+@media (prefers-color-scheme: dark) {
+	.classA { background: OliveDrab; }
+	.classB { background: LightSlateGrey; }
+	.classC { background: Teal; }
+	.classD { background: Maroon; }
+
+	.performance.good .degree { background: OliveDrab; }
+	.performance.mid .degree { background: Chocolate; }
+	.performance.bad .degree { background: Maroon; }
+}
+
 .performance .degree {
 	font-weight: bold;
 	border-radius: 5px;

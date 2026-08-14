@@ -30,3 +30,10 @@
 .classB { background: Moccasin; }
 .classC { background: PaleTurquoise; }
 .classD { background: LightSalmon; }
+
+@media (prefers-color-scheme: dark) {
+	.classA { background: OliveDrab; }
+	.classB { background: LightSlateGrey; }
+	.classC { background: Teal; }
+	.classD { background: Maroon; }
+}
