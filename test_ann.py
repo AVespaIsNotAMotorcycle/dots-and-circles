@@ -1,5 +1,9 @@
-from ann import ANN
+import pytest
+import os
 import numpy as np
+from numpy.random import randn
+
+from ann import ANN
 
 def test_init():
     dimensions = [(2, 3),
@@ -14,7 +18,6 @@ def test_init():
 
     for size_in, size_out in dimensions:
         for num_layers in layer_counts:
-            print(f"In: {size_in} | Out: {size_out} | {num_layers} layers")
             # Check that it initializes without crashing
             net = ANN(size_in, size_out, num_layers)
 
@@ -68,3 +71,29 @@ def test_backprop():
     
         learn_rate = 0.1
         net.backprop(x, out, dLdy, learn_rate)
+
+@pytest.fixture
+def setup_save_load():
+    filename = "test_ann_save_load.json"
+    yield filename
+    os.remove(filename)
+
+def test_save_and_load(setup_save_load):
+    filename = setup_save_load
+    size_in = 1500
+    size_out = 32
+    num_layers = 3
+
+    net1 = ANN(size_in, size_out, num_layers)
+    net2 = ANN(size_in, size_out, num_layers)
+
+    net1.save(filename)
+    net2.load(filename)
+
+    assert str(net1.get()) == str(net2.get())
+
+    x = randn(size_in, 1)
+    y1 = net1.forward(x)
+    y2 = net1.forward(x)
+
+    assert np.array_equal(y1, y2)

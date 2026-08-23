@@ -1,3 +1,6 @@
+import json
+import numpy as np
+
 from layer import Layer
 
 class ANN():
@@ -35,3 +38,25 @@ class ANN():
             index = len(self.layers) - i - 1
             gradient = self.layers[index].backprop(x, y, dLdy, learn_rate)
         return gradient
+
+    def save(self, filename):
+        with open(filename, "w") as f:
+            array_params = self.get()
+            list_params = []
+
+            for weight, bias in array_params:
+                list_params.append([weight.tolist(), bias.tolist()])
+
+            f.write(json.dumps(list_params))
+
+    def load(self, filename):
+        with open(filename, "r") as f:
+            print(filename)
+            text = f.read()
+            obj = json.loads(text)
+            parameters = []
+            for weight, bias in obj:
+                weight = np.array(weight)
+                bias = np.array(bias)
+                parameters.append([weight, bias])
+            self.set(parameters)
