@@ -2,6 +2,7 @@ import os
 import re
 import random
 from PIL import Image
+from Levenshtein import ratio
 
 from model1 import Model1
 
@@ -18,7 +19,7 @@ def load_test_data(max_entries = 0):
         filename = f"{folder}/{file}"
         label = re.sub('scidb/', '', folder)
         data.append([filename, label])
-        if max_entries > 0 and len(data) > max_entries: break
+        if max_entries > 0 and len(data) >= max_entries: break
 
     random.shuffle(data)
     return data
@@ -32,16 +33,16 @@ def benchmark_test_accuracy(models):
     for model in models:
         performance[model.name()] = 0
 
-    data = load_test_data()
+    data = load_test_data(500)
     for entry in data:
         filename, label = entry
         image = load_image(filename)
         for model in models:
             prediction = model.predict(image, output="abkai")
-            print(prediction, label)
-            correct = prediction == label
-            performance[model.name()] += int(correct)
+            performance[model.name()] += ratio(prediction, label)
 
+    for key in performance.keys():
+        performance[key] = performance[key] / len(data)
     return performance, len(data)
 
 model1 = Model1()
