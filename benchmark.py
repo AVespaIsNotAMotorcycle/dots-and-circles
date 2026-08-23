@@ -3,6 +3,8 @@ import re
 import random
 from PIL import Image
 
+from model1 import Model1
+
 def load_test_data(max_entries = 0):
     directories = list(os.walk('scidb'))
     random.shuffle(directories)
@@ -36,9 +38,11 @@ def benchmark_test_accuracy(models):
         image = load_image(filename)
         for model in models:
             prediction = model.predict(image, output="abkai")
+            print(prediction, label)
             correct = prediction == label
             performance[model.name()] += int(correct)
 
     return performance, len(data)
 
-print(benchmark_test_accuracy([]))
+model1 = Model1()
+print(benchmark_test_accuracy([model1]))
