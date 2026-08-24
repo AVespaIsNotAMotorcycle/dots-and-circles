@@ -102,6 +102,13 @@ def get_corpus_size():
     connection.close()
     return size
 
+def get_all_words():
+    connection = sqlite3.connect(constants.DB_NAME)
+    cursor = connection.cursor()
+    word_set = cursor.execute("SELECT  * FROM corpus ORDER BY romanization;").fetchall()
+    connection.close()
+    return word_set
+
 def get_random_word():
     connection = sqlite3.connect(constants.DB_NAME)
     cursor = connection.cursor()
