@@ -178,18 +178,34 @@ def get_lexigraph_array(font, manchu):
     array = image_to_array(lexigraph)
     return array
 
+def lighten_edges(image):
+    w, h = image.size
+    for x in range(w):
+        for y in range(h):
+            pixel = (x, y)
+            depth_x = min(x, w - x)
+            depth_y = min(y, h - y)
+            delta = min(depth_x, depth_y) + 1
+
+            val = image.getpixel(pixel)
+            if val == 255: continue
+
+            n_val = 255 - (delta * 24 - 1)
+            if n_val < 0: continue
+            
+            n_val += val
+            if n_val > 255: n_val = 255
+            image.putpixel(pixel, n_val)
+    
+    return image
+
 def preprocess_image(image):
     image = image.convert(mode="L")
     image = ImageOps.autocontrast(image, (0, 20))
     image = ImageOps.autocontrast(image, (0, 40))
     image = ImageOps.autocontrast(image, (5, 60))
     image = ImageOps.autocontrast(image, (5, 80))
-    image = image.convert(mode="RGB")
-    image = Image.eval(image, coerce_pixel)
-    image = image.filter(ImageFilter.FIND_EDGES)
-    image = ImageOps.invert(image)
-    image = ImageOps.autocontrast(image, (0, 80))
-    
+    image = lighten_edges(image)
     return image
 
 def get_slices(font, manchu):
