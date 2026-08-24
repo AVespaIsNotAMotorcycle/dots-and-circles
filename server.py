@@ -186,6 +186,12 @@ def train_secondary_ocr(trials):
     accuracy = successes / len(trials) * 100
     print("Secondary Accuracy: {0}%".format(int(accuracy)))
 
+def check_label(row_labels, index):
+    try:
+        return row_labels[index]
+    except:
+        return ' '
+
 def train_primary_ocr():
     trials = []
     successes = 0
@@ -195,9 +201,9 @@ def train_primary_ocr():
 
         l_class = classify_font(font)
         predictions = train_on_lexigraph(font, manchu)
-        for index in range(len(row_labels)):
+        for index in range(len(predictions)):
             prediction = predictions[index]["character"]
-            answer = constants.ALPHABET.index(row_labels[index])
+            answer = constants.ALPHABET.index(check_label(row_labels, index))
             if prediction == answer: successes += 1
             trial = {
                     "prediction": prediction,
