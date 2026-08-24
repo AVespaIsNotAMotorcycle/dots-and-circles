@@ -2,7 +2,7 @@ import random
 import sqlite3
 import time
 import json
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 import numpy as np
 
 import constants
@@ -138,6 +138,7 @@ def get_slice_dimensions(font, manchu):
 
 def collapse_pixel(pixel_tuple):
     total = 0
+    if type(pixel_tuple) == np.uint8: return pixel_tuple
     for channel in pixel_tuple: total += int(channel)
     total = total / 3
     return (255 - total) / 255
@@ -177,8 +178,23 @@ def get_lexigraph_array(font, manchu):
     array = image_to_array(lexigraph)
     return array
 
+def preprocess_image(image):
+    image = image.convert(mode="L")
+    image = ImageOps.autocontrast(image, (0, 20))
+    image = ImageOps.autocontrast(image, (0, 40))
+    image = ImageOps.autocontrast(image, (5, 60))
+    image = ImageOps.autocontrast(image, (5, 80))
+    image = image.convert(mode="RGB")
+    image = Image.eval(image, coerce_pixel)
+    image = image.filter(ImageFilter.FIND_EDGES)
+    image = ImageOps.invert(image)
+    image = ImageOps.autocontrast(image, (0, 80))
+    
+    return image
+
 def get_slices(font, manchu):
     lexigraph = create_lexigraph(manchu, font, crop=True)
+    lexigraph = preprocess_image(lexigraph)
     _, height = lexigraph.size
     array = image_to_array(lexigraph)
     slice_dimensions = get_slice_dimensions(font, manchu)
@@ -244,6 +260,6 @@ def create_lexigraphy():
     connection.close()
 
 if __name__ == "__main__":
-    for i in range(10):
-        get_random_marked_lexigraph()
-        # lexigraph = get_slices(0, corpus.get_random_word()['manchu'])
+    for i in range(1):
+        # get_random_marked_lexigraph()
+        lexigraph = get_slices(0, corpus.get_random_word()['manchu'])
