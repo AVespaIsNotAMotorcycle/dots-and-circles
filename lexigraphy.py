@@ -6,6 +6,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 import numpy as np
 
 import constants
+import corpus
 
 constants.ROW_LENGTH = 50
 HEIGHT = 350
@@ -46,10 +47,16 @@ def get_boundaries():
     bottom = HEIGHT
     return [left, top, right, bottom]
 
-def create_horizontal_image(word, font):
-    image = Image.new(mode = "RGB", size = (HEIGHT, HEIGHT), color = (255,255,255))
+def create_horizontal_image(word, font, seed=0):
+    image = Image.new(mode = "RGB", size = (HEIGHT, HEIGHT), color = (255,255,255)) \
+
     draw = ImageDraw.Draw(image)
-    draw.text((10, HEIGHT / 2), word, fill=(0,0,0), font=font, anchor="lm")
+
+    offset_x = 0 if seed == None else (seed % 12) - 6
+    offset_y = 0 if seed == None else seed**2 % 10
+    position = (10 + offset_y, HEIGHT / 2 + offset_x)
+
+    draw.text(position, word, fill=(0,0,0), font=font, anchor="lm")
     return image
 
 def rotate_image(horizontal_image):
@@ -57,7 +64,7 @@ def rotate_image(horizontal_image):
     vertical_image = horizontal_image.rotate(-90).crop([left, top, right, bottom])
     return vertical_image
 
-def crop_image(vertical_image):
+def crop_image(vertical_image, seed=0):
     image_array = image_to_array(vertical_image)
     start_of_whitespace = len(image_array) - 1
     while sum(image_array[start_of_whitespace]) == 0:
@@ -66,13 +73,40 @@ def crop_image(vertical_image):
     image_array = image_array * 255
     cropped_image = Image.fromarray(image_array.astype('uint8'))
     cropped_image = ImageOps.invert(cropped_image)
-    return cropped_image
 
-def create_lexigraph(word, font_index = get_random_font_index(), crop=False):
+    cropped_image = cropped_image.convert(mode="RGBA")
+    width, height = cropped_image.size
+    text_alpha = 255 - (seed**2 % 150) if seed != 0 else 255
+    for y in range(height):
+        for x in range(width):
+            r, g, b, a = cropped_image.getpixel((x, y))
+            new_alpha = int(255 - ((r + g + b) / 3)) \
+                    if r + g + b > 0 \
+                    else text_alpha
+            cropped_image.putpixel((x, y), (r, g, b, new_alpha))
+
+    background_id = seed % 16
+    background = Image.new(mode = "RGB", size = (HEIGHT, HEIGHT), color = (255,255,255)) \
+            if background_id == 0 \
+            else Image.open(f"paper_textures/{background_id:02d}.jpg")
+    if seed != 0:
+        b_w, b_h = background.size
+        background.resize((int(b_w / 2), int(b_h / 2)))
+    b_w, b_h = background.size
+    range_x, range_y = b_w - width, b_h - height
+    offset_x, offset_y = seed ** 3 % range_x, seed ** 4 % range_y
+    background = background.crop((0 + offset_x, 0 + offset_y, width + offset_x, height + offset_y))
+    background = background.convert(mode="RGBA")
+
+    image = Image.alpha_composite(background, cropped_image)
+    return image
+
+def create_lexigraph(word, font_index = get_random_font_index(), crop=False, seed=None):
+    actual_seed = random.randint(1, 1000) if seed == None else seed
     font = get_font(font_index)
-    horizontal_image = create_horizontal_image(word, font)
+    horizontal_image = create_horizontal_image(word, font, seed=actual_seed)
     vertical_image = rotate_image(horizontal_image)
-    if crop: return crop_image(vertical_image)
+    if crop: return crop_image(vertical_image, seed=actual_seed)
     return vertical_image
 
 def save_lexigraph(font, manchu, boundaries):
@@ -143,14 +177,16 @@ def get_lexigraph_array(font, manchu):
     return array
 
 def get_slices(font, manchu):
-    lexigraph = create_lexigraph(manchu, font)
+    lexigraph = create_lexigraph(manchu, font, crop=True)
+    lexigraph.show()
+    _, height = lexigraph.size
     array = image_to_array(lexigraph)
     slice_dimensions = get_slice_dimensions(font, manchu)
     row_labels = slice_dimensions_to_rows(manchu, slice_dimensions)
 
     slices = []
     non_blank_row_labels = []
-    for i in range(350 - 30):
+    for i in range(height - 20):
         start = i + 10
         end = start + constants.NUMBER_OF_ROWS
         slice = array[start:end]
@@ -208,5 +244,6 @@ def create_lexigraphy():
     connection.close()
 
 if __name__ == "__main__":
-    # create_lexigraphy()
-    get_slices(0, "ᠰᡳᠮᠨᡝᠪᡠᠮᠪᡳ")
+    for i in range(10):
+        get_random_marked_lexigraph()
+        # lexigraph = get_slices(0, corpus.get_random_word()['manchu'])

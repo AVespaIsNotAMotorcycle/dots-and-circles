@@ -8,7 +8,13 @@ The Manchu script is written top-to-bottom, left-to-right. All letters within a 
 
 # The Approach
 
+### Training Data
+
 Training data was generated synthetically using the [manchu-cake](https://github.com/OverflowCat/manchu-cake) dictionary. Each unique manchu word in the dictionary was stored in a SQLite database, and random words were pulled from the database and rendered in a random font. Each image of a word in a particular font (called a **lexigraph** from here on) had letter boundaries manually labelled. Each lexigraph is 50 pixels wide, and there are 10 pixels of whitespace on each side.
+
+Lexigraph backgrounds:
+https://pixelbuddha.net/textures/1139-5-seamless-paper-textures
+https://raduluchian.com/resources/crumpled-paper/
 
 As there are various styles of written Manchu, a lexigraph is first sorted into one of four **classes**. I defined the classes by comparing three features in various Manchu fonts: line weight, whether the letters romanized as "m" and "l" are connected to or disconnected from the center line, and whether the letters romanized as "a" and "e" are pointy or rounded. The actual classification is performed by an RNN, which I call the **Classifier**, which reads the image line by line.
 
