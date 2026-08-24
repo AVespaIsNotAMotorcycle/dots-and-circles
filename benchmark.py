@@ -8,6 +8,7 @@ from corpus import get_all_words
 from lexigraphy import FONTS, create_lexigraph
 
 from model1 import Model1
+from model2 import Model2
 
 word_count = 24973
 font_count = 11
@@ -71,11 +72,12 @@ def load_image(filename):
 def benchmark_train_accuracy(models):
     performance = []
 
-    data = load_train_data(500)
+    data = load_train_data(10)
 
     for index, batch in enumerate(data):
         batch_performance = {}
         for model in models:
+            print(model.name())
             accuracy, loss = model.train(batch)
             batch_performance[model.name()] = { 'accuracy': accuracy, 'loss': loss }
             model.save()
@@ -103,7 +105,8 @@ def benchmark_test_accuracy(models):
     return performance, len(data)
 
 model1 = Model1()
-models = [model1]
+model2 = Model2()
+models = [model2]
 performance = benchmark_train_accuracy(models)
 for batch in performance:
     print(batch)
