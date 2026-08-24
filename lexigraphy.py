@@ -91,7 +91,8 @@ def crop_image(vertical_image, seed=0):
             else Image.open(f"paper_textures/{background_id:02d}.jpg")
     if seed != 0:
         b_w, b_h = background.size
-        background.resize((int(b_w / 2), int(b_h / 2)))
+        divisor = 2 if background_id < 6 else 8
+        background.resize((int(b_w / divisor), int(b_h / divisor)))
     b_w, b_h = background.size
     range_x, range_y = b_w - width, b_h - height
     offset_x, offset_y = seed ** 3 % range_x, seed ** 4 % range_y
@@ -178,7 +179,6 @@ def get_lexigraph_array(font, manchu):
 
 def get_slices(font, manchu):
     lexigraph = create_lexigraph(manchu, font, crop=True)
-    lexigraph.show()
     _, height = lexigraph.size
     array = image_to_array(lexigraph)
     slice_dimensions = get_slice_dimensions(font, manchu)
