@@ -1,5 +1,6 @@
 from PIL import Image
 import numpy as np
+from Levenshtein import ratio
 
 from utils import to_abkai, to_norman
 from lexigraphy import image_to_array
@@ -9,11 +10,12 @@ from primary_ocr import NeuralNetwork
 from secondary_ocr import CTCNeuralNetwork
 from classifier import Classifier
 
+CLASSIFIER_FILENAME = './saved_nns/classifier.json'
+PRIMARY_FILENAME = './saved_nns/primary.json'
+SECONDARY_FILENAME = './saved_nns/secondary.json'
+
 class Model1():
     def __init__(self):
-        CLASSIFIER_FILENAME = './saved_nns/classifier.json'
-        PRIMARY_FILENAME = './saved_nns/primary.json'
-        SECONDARY_FILENAME = './saved_nns/secondary.json'
         
         num_hidden_nodes = 256
         
@@ -121,3 +123,24 @@ class Model1():
         if output == 'abkai': return to_abkai(manchu)
         if output == 'norman': return to_norman(manchu)
         return manchu
+
+    def train(self, batch):
+        successes = 0
+        loss = 0
+
+        for image, label in batch:
+            prediction = self.predict(image)
+            success = ratio(label, prediction)
+            successes += success
+            loss += 1 - success
+
+        accuracy = successes / len(batch)
+        return accuracy, loss
+
+    def save(self):
+        for l_class in self.l_classes:
+            self.primary_ocr[l_class].save(self.get_filename("primary", l_class))
+        
+            self.secondary_ocr[l_class].save(self.get_filename("secondary", l_class))
+        
+        self.classifier.save(CLASSIFIER_FILENAME)

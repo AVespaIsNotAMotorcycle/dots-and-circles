@@ -71,7 +71,7 @@ def load_image(filename):
 def benchmark_train_accuracy(models):
     performance = []
 
-    data = load_train_data(100)
+    data = load_train_data(500)
 
     for index, batch in enumerate(data):
         batch_performance = {}
@@ -104,4 +104,6 @@ def benchmark_test_accuracy(models):
 
 model1 = Model1()
 models = [model1]
-benchmark_train_accuracy(models)
+performance = benchmark_train_accuracy(models)
+for batch in performance:
+    print(batch)
