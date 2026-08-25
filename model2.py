@@ -28,11 +28,11 @@ class Model2():
         image = image.resize((self.width, int(height * factor)), Image.BICUBIC)
         background = Image.new('RGB', (self.width, self.height), (255, 255, 255, 255))
         background.paste(image)
-        return background
+        return background.convert(mode="L")
 
     def predict(self, image, output="manchu"):
-        image = self.resize_image(image)
         image = preprocess_image(image)
+        image = self.resize_image(image)
 
         x = np.array(image).reshape((self.size_in, 1))
         y = self.ann.forward(x)
@@ -53,6 +53,7 @@ class Model2():
     def label_string_to_array(self, label):
         labels = []
         for char in label:
+            if char not in ALPHABET: return None
             index = ALPHABET.index(char)
             labels.append(index)
         while len(labels) < 35:
@@ -63,6 +64,7 @@ class Model2():
         successes = 0
         loss = 0
         for image, label in batch:
+            label = label.ljust(35)
             y, x = self.predict(image)
             probs = self.softmax(y)
 
@@ -70,17 +72,18 @@ class Model2():
             word = ''
             for char in predictions:
                 word += ALPHABET[char]
-            successes += ratio(word, label)
+            successes += ratio(word.strip(), label.strip())
 
             labels = self.label_string_to_array(label)
+            if labels == None: continue
             loss += self.cross_entropy_loss(probs, labels)
 
             gradient = np.zeros(self.size_out)
             for i, j in enumerate(labels):
                 gradient[(i * len(ALPHABET)) + j] = -1 / probs[i][j]
             gradient = gradient.reshape((self.size_out, 1))
-            self.ann.backprop(x, y.reshape((self.size_out, 1)), gradient, 0.001)
-        return successes / len(batch), loss
+            self.ann.backprop(gradient, 0.001)
+        return successes / len(batch), loss / len(batch)
 
     def save(self):
         return
