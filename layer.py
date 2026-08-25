@@ -43,7 +43,12 @@ class Layer():
         z = u + b
         y = np.tanh(z)
 
-        dydz = 1 / np.cosh(z)**2
+        '''
+        In dydz, z is clipped so all values are between -7 and 7, since for values beyond
+        that range 1 / cosh(z) ** 2 will be zero, and as z increases there's a good chance
+        of getting warnings about an overflow.
+        '''
+        dydz = 1 / np.cosh(np.clip(z, -7, 7))**2
         dzdu = np.ones(np.shape(w))
         dudw = self.history[-1][0]
         dzdb = np.ones(np.shape(b))
