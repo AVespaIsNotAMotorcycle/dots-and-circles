@@ -29,26 +29,23 @@ class Layer():
 
     def forward(self, x):
         y = np.tanh(self.weight @ x + self.bias)
-        self.history.append(y)
+        self.history.append((x, y))
         return y
 
-    def backprop(self, x, y, dLdy, learn_rate):
-        assert np.shape(y) == np.shape(self.bias), \
-            (f"Layer.backprop expects y to have the same shape as the layer's output {np.shape(self.bias)}"
-             f", but it was instead of shape {np.shape(y)}")
+    def backprop(self, dLdy, learn_rate):
         assert np.shape(dLdy) == np.shape(self.bias), \
             (f"Layer.backprop expects dLdy to have the same shape as the layer's output "
              f"{np.shape(self.bias)}, but it was instead of shape {np.shape(dLdy)}")
 
         w = self.weight
         b = self.bias
-        u = w @ x
+        u = w @ self.history[-1][0]
         z = u + b
         y = np.tanh(z)
 
         dydz = 1 / np.cosh(z)**2
         dzdu = np.ones(np.shape(w))
-        dudw = x
+        dudw = self.history[-1][0]
         dzdb = np.ones(np.shape(b))
         dudx = w
 

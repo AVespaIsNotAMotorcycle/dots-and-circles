@@ -106,7 +106,7 @@ def test_backprop():
     dLdy = np.array([[out[0][0] - 1], [out[1][0]]])
 
     learn_rate = 0.2
-    layer.backprop(x, out, dLdy, learn_rate)
+    layer.backprop(dLdy, learn_rate)
     out = layer.forward(x)
     mse_loss_2 = sum((label - out)**2) / len(out)
 
@@ -127,7 +127,7 @@ def test_backprop():
         old_loss = new_loss
 
         dLdy = np.array([[out[0][0] - 1], [out[1][0]]])
-        layer.backprop(x, out, dLdy, learn_rate)
+        layer.backprop(dLdy, learn_rate)
     assert iteration < max_iter + 1
 
 def test_backprop_shape():
@@ -146,4 +146,4 @@ def test_backprop_shape():
         out = layer.forward(x)
 
         dLdy = np.zeros((size_out, 1))
-        layer.backprop(x, out, dLdy, 1)
+        layer.backprop(dLdy, 1)

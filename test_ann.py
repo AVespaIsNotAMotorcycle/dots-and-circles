@@ -49,7 +49,7 @@ def test_init():
             y = net.forward(x)
             assert np.isclose(y, expected).all()
 
-def test_backprop():
+def test_backprop_1():
     size_in = 3
     size_out = 3
     num_layers = 5
@@ -70,7 +70,30 @@ def test_backprop():
         dLdy[correct][0] -= 1
     
         learn_rate = 0.1
-        net.backprop(x, out, dLdy, learn_rate)
+        net.backprop(dLdy, learn_rate)
+
+def test_backprop_2():
+    size_in = 50 * 350
+    size_out = 37 * 35
+    num_layers = 3
+    net = ANN(size_in, size_out, num_layers)
+
+    x = np.ones((size_in, 1))
+    correct = 124
+    label = np.zeros((size_out, 1))
+    label[correct] = 1
+
+    prev_loss = np.inf
+    for _ in range(5):
+        out = net.forward(x)
+        mse_loss = sum((label - out)**2) / len(out)
+        assert mse_loss < prev_loss
+        prev_loss = mse_loss
+        dLdy = out
+        dLdy[correct][0] -= 1
+    
+        learn_rate = 0.1
+        net.backprop(dLdy, learn_rate)
 
 @pytest.fixture
 def setup_save_load():

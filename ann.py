@@ -32,11 +32,11 @@ class ANN():
             x = layer.forward(x)
         return x
 
-    def backprop(self, x, y, dLdy, learn_rate):
+    def backprop(self, dLdy, learn_rate):
         gradient = dLdy
         for i in range(len(self.layers)):
             index = len(self.layers) - i - 1
-            gradient = self.layers[index].backprop(x, y, dLdy, learn_rate)
+            gradient = self.layers[index].backprop(dLdy, learn_rate)
         return gradient
 
     def save(self, filename):
