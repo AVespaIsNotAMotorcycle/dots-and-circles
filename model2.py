@@ -7,6 +7,27 @@ from lexigraphy import preprocess_image
 from constants import ALPHABET
 from ann import ANN
 
+def softmax(y):
+    for index, row in enumerate(y):
+        y[index] = np.exp(row) / sum(np.exp(row))
+    return y
+
+def label_string_to_array(label):
+    labels = []
+    for char in label:
+        if char not in ALPHABET: return None
+        index = ALPHABET.index(char)
+        labels.append(index)
+    while len(labels) < 35:
+        labels.append(ALPHABET.index(' '))
+    return labels
+
+def cross_entropy_loss(probs, labels):
+    loss = 0
+    for index, row in enumerate(probs):
+        loss += -np.log(row[labels[index]])
+    return loss
+
 '''
 A simple ANN which views the whole image at once.
 '''
@@ -39,34 +60,13 @@ class Model2():
         y = y.reshape(35, (len(ALPHABET)))
         return y, x
 
-    def softmax(self, y):
-        for index, row in enumerate(y):
-            y[index] = np.exp(row) / sum(np.exp(row))
-        return y
-
-    def cross_entropy_loss(self, probs, labels):
-        loss = 0
-        for index, row in enumerate(probs):
-            loss += -np.log(row[labels[index]])
-        return loss
-
-    def label_string_to_array(self, label):
-        labels = []
-        for char in label:
-            if char not in ALPHABET: return None
-            index = ALPHABET.index(char)
-            labels.append(index)
-        while len(labels) < 35:
-            labels.append(ALPHABET.index(' '))
-        return labels
-
     def train(self, batch):
         successes = 0
         loss = 0
         for image, label in batch:
             label = label.ljust(35)
             y, x = self.predict(image)
-            probs = self.softmax(y)
+            probs = softmax(y)
 
             predictions = np.argmax(y, axis=1)
             word = ''
@@ -74,9 +74,9 @@ class Model2():
                 word += ALPHABET[char]
             successes += ratio(word.strip(), label.strip())
 
-            labels = self.label_string_to_array(label)
+            labels = label_string_to_array(label)
             if labels == None: continue
-            loss += self.cross_entropy_loss(probs, labels)
+            loss += cross_entropy_loss(probs, labels)
 
             gradient = np.zeros(self.size_out)
             for i, j in enumerate(labels):
