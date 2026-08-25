@@ -3,7 +3,9 @@ import re
 import random
 from PIL import Image
 from Levenshtein import ratio
+import matplotlib.pyplot as plt
 
+from constants import ALPHABET
 from corpus import get_all_words
 from lexigraphy import FONTS, create_lexigraph
 
@@ -23,7 +25,11 @@ def load_train_data(max_entries = 0):
     random.shuffle(words)
     if max_entries == 0: max_entries = len(words)
     for index, word in enumerate(words):
-        if index == max_entries: break
+        if len(data) >= max_entries * len(FONTS):
+            break
+        for char in word:
+            if char not in ALPHABET:
+                continue
 
         manchu = word[0]
         
@@ -69,22 +75,38 @@ def load_image(filename):
     image = Image.open(filename)
     return image
 
+def plot_train(performance):
+    for i, model in enumerate(performance[0].keys()):
+        x = []
+        y = []
+        for j, batch in enumerate(performance):
+            x.append(j + 1)
+            y.append(batch[model]['accuracy'])
+        plt.plot(x, y, label=model)
+
+    plt.legend(title="Accuracy per batch of 100 samples")
+    plt.show()
+
 def benchmark_train_accuracy(models):
     performance = []
 
-    data = load_train_data(10)
+    data = load_train_data(2000)
 
     for index, batch in enumerate(data):
         batch_performance = {}
         for model in models:
-            print(model.name())
             accuracy, loss = model.train(batch)
             batch_performance[model.name()] = { 'accuracy': accuracy, 'loss': loss }
             model.save()
-        if index % 10:
-            print(batch_performance)
+        if index % 5 == 0:
+            print(f"Batch {index + 1} ===============================================")
+            for key in batch_performance.keys():
+                print((f"{key} |"
+                       f" {batch_performance[key]['accuracy']:3.0%} |"
+                       f" {batch_performance[key]['loss']:,.2f}"))
         performance.append(batch_performance)
 
+    plot_train(performance)
     return performance
 
 def benchmark_test_accuracy(models):
@@ -92,7 +114,7 @@ def benchmark_test_accuracy(models):
     for model in models:
         performance[model.name()] = 0
 
-    data = load_test_data(500)
+    data = load_test_data(5)
     for entry in data:
         filename, label = entry
         image = load_image(filename)
@@ -106,7 +128,5 @@ def benchmark_test_accuracy(models):
 
 model1 = Model1()
 model2 = Model2()
-models = [model2]
+models = [model1, model2]
 performance = benchmark_train_accuracy(models)
-for batch in performance:
-    print(batch)
