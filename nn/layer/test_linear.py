@@ -29,3 +29,20 @@ class TestLinear:
             expected = np.ones((1, size_out)) * 2 * size_in
             assert np.shape(y) == np.shape(expected)
             assert np.array_equal(y, expected)
+
+    def test_bias(self):
+        for size_in, size_out in self.sizes:
+            weights = np.zeros((size_in, size_out))
+            bias = np.ones((1, size_out))
+
+            layer = Linear(size_in, size_out, weights=weights, bias=bias)
+            x = np.ones((1, size_in))
+            y = layer(x)
+            expected = np.ones((1, size_out))
+            assert np.array_equal(y, expected)
+
+            layer = Linear(size_in, size_out, weights=weights, use_bias=False)
+            x = np.ones((1, size_in))
+            y = layer(x)
+            expected = np.zeros((1, size_out))
+            assert np.array_equal(y, expected)

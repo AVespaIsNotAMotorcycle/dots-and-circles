@@ -23,7 +23,11 @@ class Linear(Layer):
         else:
             self.bias = np.zeros((1, size_out))
 
+        self.use_bias = use_bias
+
     def forward(self, x):
         y = x @ self.weights
-        z = y + self.bias
-        return z
+        if self.use_bias:
+            return y + self.bias
+        else:
+            return y
