@@ -11,4 +11,4 @@ class TestLinear:
         x = np.zeros((1, size_in))
         y = layer(x)
         expected = np.zeros((1, size_out))
-        assert y == expected
+        assert np.array_equal(y, expected)
