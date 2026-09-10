@@ -1,6 +1,6 @@
 import numpy as np
 
-class Layer:
+class Module:
     def __init__(self, size_in, size_out):
         self.size_in = size_in
         self.size_out = size_out

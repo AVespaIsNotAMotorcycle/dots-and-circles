@@ -1,8 +1,8 @@
 import numpy as np
 
-from layer import Layer
+from module import Module
 
-class Linear(Layer):
+class Linear(Module):
     def __init__(self, size_in, size_out,
                  weights=None, bias=None, use_bias=True):
         super().__init__(size_in, size_out)
