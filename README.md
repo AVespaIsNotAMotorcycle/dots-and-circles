@@ -30,3 +30,8 @@ Manchu-script words are passed on the the Lexigraph OCR.
 Given a lexigraph (an image of a word, i.e. the contents of a bounding box)
 returns the Unicode characters representing the word. Composed of one or more
 transformers, using CTC for loss calculation.
+
+#### Training Data
+
+A set of Manchu words was pulled from
+[kaikki](https://kaikki.org/dictionary/Manchu/index.html).
