@@ -1,6 +1,6 @@
 import numpy as np
 
-from GELU import GELU
+from nn.GELU import GELU
 
 class TestGELU:
     def test_one(self):

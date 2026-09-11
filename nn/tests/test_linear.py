@@ -1,6 +1,6 @@
 import numpy as np
 
-from linear import Linear
+from nn.linear import Linear
 
 class TestLinear:
     sizes = [(5, 9),
