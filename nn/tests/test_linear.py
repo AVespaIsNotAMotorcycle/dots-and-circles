@@ -46,3 +46,23 @@ class TestLinear:
             y = layer(x)
             expected = np.zeros((1, size_out))
             assert np.array_equal(y, expected)
+
+    def test_multiple_tokens(self):
+        size_in, size_out = 50, 10
+        np.random.seed(123)
+
+        layer = Linear(size_in, size_out)
+        for token_count in [1, 5, 20]:
+            x = np.random.rand(token_count, size_in)
+            y = layer(x)
+            assert np.shape(y) == (token_count, size_out)
+
+    def test_multiple_batches(self):
+        size_in, size_out, token_count = 50, 10, 20
+        np.random.seed(123)
+
+        layer = Linear(size_in, size_out)
+        for batch_size in [1, 5, 20]:
+            x = np.random.rand(batch_size, token_count, size_in)
+            y = layer(x)
+            assert np.shape(y) == (batch_size, token_count, size_out)
