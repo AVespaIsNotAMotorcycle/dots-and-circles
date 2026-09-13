@@ -4,8 +4,8 @@ import random
 from nn.Module import Module
 
 class Dropout(Module):
-    def __init__(self, size, drop_rate):
-        super().__init__(size, size)
+    def __init__(self, drop_rate):
+        super().__init__()
 
         assert drop_rate < 1, \
             f"Dropout cannot accept a drop rate >= 1 (drop rate was {drop_rate})"
@@ -16,7 +16,10 @@ class Dropout(Module):
         self.eps = 1e-7
 
     def forward(self, x):
-        size = self.size_in
+        shape = np.shape(x)
+        x = x.flatten()
+
+        size = np.size(x)
         drop_count = int(size * self.drop_rate)
         keep_count = size - drop_count
         drop = [0] * drop_count
@@ -30,4 +33,6 @@ class Dropout(Module):
         y_mean = np.mean(y)
         scale = x_mean / (y_mean + self.eps)
         y = y * scale
+
+        y = y.reshape(shape)
         return y

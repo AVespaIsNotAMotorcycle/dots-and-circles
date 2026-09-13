@@ -10,10 +10,10 @@ class TestDropout:
             size = (i + 1) ** 2
 
             with pytest.raises(Exception) as e:
-                dropout = Dropout(size, 1.)
+                dropout = Dropout(1.)
 
             with pytest.raises(Exception) as e:
-                dropout = Dropout(size, -1)
+                dropout = Dropout(-1)
 
     def test_forward(self):
         np.random.seed(123)
@@ -22,7 +22,7 @@ class TestDropout:
         for i in range(40):
             size = (i + 1) ** 2
             for drop_rate in drop_rates:
-                dropout = Dropout(size, drop_rate)
+                dropout = Dropout(drop_rate)
     
                 x = np.random.rand(1, size)
                 y = dropout(x)
