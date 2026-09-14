@@ -50,3 +50,7 @@ class Module:
         # Set gradients
         # Calculate dL_dx
         return dL_dx
+
+    def descend(self, delta):
+        for key in self.params.keys():
+            self.params[key] -= delta[key]

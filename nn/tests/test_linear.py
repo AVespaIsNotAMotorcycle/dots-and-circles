@@ -75,3 +75,34 @@ class TestLinear:
             assert len(params) == 2
             assert np.shape(params['weights']) == (size_in, size_out)
             assert np.shape(params['bias']) == (1, size_out)
+
+    def test_backprop(self):
+        size_in = 5
+        size_out = 3
+        np.random.seed(123)
+
+        x = np.random.rand(1, size_in)
+        y = np.zeros((1, size_out))
+        y[0][0] = 1.
+
+        layer = Linear(size_in, size_out)
+
+        last_mse_loss = None
+        for _ in range(5):
+            out = layer(x)
+
+            mse_loss = np.sum((y - out)**2, keepdims=True) / len(out)
+            dLdout = -2 * (1 - out)
+
+            layer.backward(dLdout)
+            grads = layer.gradients()
+
+            learn_rate = 0.01
+            delta = {}
+            for key in grads.keys():
+                delta[key] = grads[key] * learn_rate
+            layer.descend(delta)
+
+            if last_mse_loss != None:
+                assert mse_loss < last_mse_loss
+            last_mse_loss = mse_loss

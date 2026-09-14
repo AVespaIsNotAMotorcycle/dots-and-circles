@@ -26,8 +26,37 @@ class Linear(Module):
         self.use_bias = use_bias
 
     def forward(self, x):
+        self.last_x = x
         y = x @ self.params['weights']
         if self.use_bias:
             return y + self.params['bias']
         else:
             return y
+
+    def backward(self, dLdy):
+        '''
+        w = self.params['weights']
+        b = self.params['bias']
+        x = self.last_x
+        u = x @ w
+        y = u + b
+        '''
+        dydu = np.ones(np.shape(self.params['weights']))
+        dudw = self.last_x
+        dydb = np.ones(np.shape(self.params['bias']))
+        dudx = self.params['weights']
+
+        dLdu = dydu.T * dLdy.T
+        dLdw = dudw * dLdu
+        dLdw = dLdw.T
+        assert np.shape(dLdw) == np.shape(self.params['weights']), \
+            f"dLdw {np.shape(dLdw)} must have the same shape as" \
+            f"self.params['weights'] {np.shape(self.params['weights'])}."
+
+        dLdb = dydb * dLdy
+        dLdx = dudx * dydu * dLdy
+
+        self.grads['weights'] = dLdw
+        self.grads['bias'] = dLdb
+
+        return dLdx
