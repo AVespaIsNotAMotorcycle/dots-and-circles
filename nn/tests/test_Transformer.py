@@ -52,4 +52,3 @@ class TestTransformer():
             loss_history.append(mse_loss)
         for entry in loss_history:
             print(entry)
-        assert False
