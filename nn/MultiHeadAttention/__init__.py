@@ -57,3 +57,19 @@ class MultiHeadAttention(Module):
         context_vec = self.params['out_proj'](context_vec)
 
         return context_vec
+
+    def backward(self, dLdy):
+        print("MultiHeadAttention.backward is a placeholder - redo it soon!")
+        dLdw = self.params['out_proj'].backward(dLdy)
+        self.grads['out_proj'] = self.params['out_proj'].gradients()
+
+        dLdx = self.params['W_value'].backward(dLdw)
+        self.grads['W_value'] = self.params['W_value'].gradients()
+
+        self.params['W_key'].backward(dLdw)
+        self.grads['W_key'] = self.params['W_key'].gradients()
+
+        self.params['W_query'].backward(dLdw)
+        self.grads['W_query'] = self.params['W_query'].gradients()
+
+        return dLdx

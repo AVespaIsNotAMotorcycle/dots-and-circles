@@ -12,3 +12,10 @@ class Sequential(Module):
         for key, module in self.params.items():
             x = module(x)
         return x
+
+    def backward(self, dLdy):
+        dLdx = dLdy
+        for key, module in list(self.params.items())[::-1]:
+            dLdx = module.backward(dLdx)
+            self.grads[key] = module.gradients()
+        return dLdx

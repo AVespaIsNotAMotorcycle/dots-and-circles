@@ -19,3 +19,17 @@ class LayerNorm(Module):
         norm_x = numerator / denominator
 
         return self.params['scale'] * norm_x + self.params['shift']
+
+    def backward(self, dLdy):
+        print("LayerNorm.backward is a placeholder - redo it soon!")
+        '''
+        a = scale
+        b = shift
+        n = norm
+        y = a * n + b
+
+        n = 
+        '''
+        self.grads['scale'] = np.zeros(self.size_in)
+        self.grads['shift'] = np.zeros(self.size_in)
+        return dLdy

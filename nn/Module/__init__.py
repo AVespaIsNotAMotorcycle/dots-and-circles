@@ -31,7 +31,6 @@ class Module:
         # If item in dict is module m, it's m.parameters()
         out = {}
         for key, value in self.params.items():
-            print(type(value))
             if isinstance(value, np.ndarray):
                 if only_shape:
                     out[key] = np.shape(value)
@@ -53,4 +52,7 @@ class Module:
 
     def descend(self, delta):
         for key in self.params.keys():
-            self.params[key] -= delta[key]
+            if isinstance(self.params[key], np.ndarray):
+                self.params[key] -= delta[key]
+            else:
+                self.params[key].descend(delta[key])
