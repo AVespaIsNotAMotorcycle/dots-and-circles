@@ -4,7 +4,7 @@ from nn.GELU import GELU
 
 class TestGELU:
     def test_one(self):
-        gelu = GELU(1, 1)
+        gelu = GELU()
         pairs = [(-5, -2.2918e-7),
                  (-1, -0.158808),
                  (-0.752461, -0.170041),

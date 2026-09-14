@@ -3,8 +3,8 @@ import numpy as np
 from nn.Module import Module
 
 class GELU(Module):
-    def __init__(self, size_in, size_out):
-        super().__init__(size_in, size_out)
+    def __init__(self):
+        super().__init__()
 
     def forward(self, x):
         a = 0.5
