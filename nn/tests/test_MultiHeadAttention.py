@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import pytest
+import json
 
 from nn.MultiHeadAttention import MultiHeadAttention
 
@@ -47,3 +48,19 @@ class TestMultiHeadAttention:
         y = mha(x)
         assert not np.isnan(y).any()
         assert np.shape(y) == (batch_size, 6, size_out)
+
+    def test_parameters(self):
+        emb_dim = 3
+        size_in = emb_dim
+        num_heads = 4
+        size_out = emb_dim * num_heads
+        dropout = 0
+        context_length = 256
+
+        mha = MultiHeadAttention(size_in, size_out, context_length,
+                                 dropout, num_heads)
+
+        params = mha.parameters(only_shape=True)
+        # string = json.dumps(params, indent=4)
+        # print(string)
+        assert len(params.items()) == 4

@@ -16,18 +16,18 @@ class MultiHeadAttention(Module):
         
         self.num_heads = num_heads
         self.head_dim = size_out // num_heads
-        self.W_query = Linear(size_in, size_out, use_bias=qkv_bias)
-        self.W_key = Linear(size_in, size_out, use_bias=qkv_bias)
-        self.W_value = Linear(size_in, size_out, use_bias=qkv_bias)
-        self.out_proj = Linear(size_out, size_out)
+        self.params['W_query'] = Linear(size_in, size_out, use_bias=qkv_bias)
+        self.params['W_key'] = Linear(size_in, size_out, use_bias=qkv_bias)
+        self.params['W_value'] = Linear(size_in, size_out, use_bias=qkv_bias)
+        self.params['out_proj'] = Linear(size_out, size_out)
         self.dropout = Dropout(drop_rate)
         self.mask = np.triu(np.ones((context_length, context_length)), k=1)
 
     def forward(self, x):
         batch_size, num_tokens, size_in = np.shape(x)
-        keys = self.W_key(x)
-        queries = self.W_query(x)
-        values = self.W_value(x)
+        keys = self.params['W_key'](x)
+        queries = self.params['W_query'](x)
+        values = self.params['W_value'](x)
 
         keys = keys.reshape(batch_size, num_tokens,
                             self.num_heads, self.head_dim)
@@ -54,6 +54,6 @@ class MultiHeadAttention(Module):
         context_vec = context_vec.copy().reshape(
             batch_size, num_tokens, self.size_out
         )
-        context_vec = self.out_proj(context_vec)
+        context_vec = self.params['out_proj'](context_vec)
 
         return context_vec

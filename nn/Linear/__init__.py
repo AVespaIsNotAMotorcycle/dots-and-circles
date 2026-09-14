@@ -11,23 +11,23 @@ class Linear(Module):
             assert np.shape(weights) == (size_in, size_out), \
                 f"Expected weights to be of shape {(size_in, size_out)}," \
                 f"but it was {np.shape(weights)}"
-            self.weights = weights
+            self.params['weights'] = weights
         else:
-            self.weights = np.random.rand(size_in, size_out)
+            self.params['weights'] = np.random.rand(size_in, size_out)
 
         if bias is not None:
             assert np.shape(bias) == (1, size_out), \
                 f"Expected bias to be of shape {(1, size_out)}," \
                 f"but it was {np.shape(bias)}"
-            self.bias = bias
+            self.params['bias'] = bias
         else:
-            self.bias = np.zeros((1, size_out))
+            self.params['bias'] = np.zeros((1, size_out))
 
         self.use_bias = use_bias
 
     def forward(self, x):
-        y = x @ self.weights
+        y = x @ self.params['weights']
         if self.use_bias:
-            return y + self.bias
+            return y + self.params['bias']
         else:
             return y

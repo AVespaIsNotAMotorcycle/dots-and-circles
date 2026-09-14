@@ -7,8 +7,8 @@ class LayerNorm(Module):
         super().__init__(size, size)
         self.eps = 1e-7
 
-        self.scale = np.ones(size)
-        self.shift = np.zeros(size)
+        self.params['scale'] = np.ones(size)
+        self.params['shift'] = np.zeros(size)
 
     def forward(self, x):
         mean = np.mean(x)
@@ -18,4 +18,4 @@ class LayerNorm(Module):
         denominator = np.sqrt(var + self.eps) # Add epsilon to avoid sqrt(0)
         norm_x = numerator / denominator
 
-        return self.scale * norm_x + self.shift
+        return self.params['scale'] * norm_x + self.params['shift']

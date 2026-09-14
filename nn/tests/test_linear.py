@@ -66,3 +66,12 @@ class TestLinear:
             x = np.random.rand(batch_size, token_count, size_in)
             y = layer(x)
             assert np.shape(y) == (batch_size, token_count, size_out)
+
+    def test_parameters(self):
+        for size_in, size_out in self.sizes:
+            layer = Linear(size_in, size_out)
+            params = layer.parameters()
+
+            assert len(params) == 2
+            assert np.shape(params['weights']) == (size_in, size_out)
+            assert np.shape(params['bias']) == (1, size_out)

@@ -17,3 +17,15 @@ class TestLayerNorm:
             else:
                 assert np.isclose(np.var(y), 1)
             assert np.isclose(np.mean(y), 0)
+
+    def test_parameters(self):
+        np.random.seed(123)
+        for i in range(10):
+            size = (i + 1) ** 2
+            norm = LayerNorm(size)
+
+            params = norm.parameters()
+
+            assert len(params) == 2
+            assert np.shape(params['scale']) == (size,)
+            assert np.shape(params['shift']) == (size,)
