@@ -27,16 +27,26 @@ class Linear(Module):
 
     def forward(self, x):
         self.last_x = x
+        while np.shape(self.last_x) != (1, self.size_in):
+            self.last_x = np.mean(self.last_x, axis=0)
+            if sum(np.shape(self.last_x)) == self.size_in:
+                self.last_x = self.last_x.reshape(1, self.size_in)
+
         y = x @ self.params['weights']
         if self.use_bias:
             y += self.params['bias']
+
         self.last_y = y
+        while np.shape(self.last_y) != (1, self.size_out):
+            self.last_y = np.mean(self.last_y, axis=0)
+            if sum(np.shape(self.last_y)) == self.size_out:
+                self.last_y = self.last_y.reshape(1, self.size_out)
         return y
 
     def backward(self, dLdy):
-        assert np.shape(dLdy) == np.shape(self.last_y), \
-            f"Linear expects dLdy to have the same shape as y, "\
-            f"{np.shape(self.last_y)}, but it was {np.shape(dLdy)}"
+        assert np.shape(dLdy) == (1, self.size_out), \
+            f"Linear expects dLdy to have the shape (1, self.size_out), " \
+            f"{(1, self.size_out)}, but it was {np.shape(dLdy)}"
         '''
         w = self.params['weights']
         b = self.params['bias']
@@ -52,8 +62,10 @@ class Linear(Module):
         dLdu = dydu.T * dLdy.T
         dLdw = dudw * dLdu
         dLdw = dLdw.T
+        '''
         while len(np.shape(dLdw)) > len(np.shape(self.params['weights'])):
             dLdw = np.mean(dLdw, axis=-1)
+        '''
         assert np.shape(dLdw) == np.shape(self.params['weights']), \
             f"dLdw {np.shape(dLdw)} must have the same shape as " \
             f"self.params['weights'] {np.shape(self.params['weights'])}."
@@ -66,12 +78,12 @@ class Linear(Module):
             f"self.params['bias'] {np.shape(self.params['bias'])}."
         dLdx = dudx * dLdy
         dLdx = np.mean(dLdx, axis=-1, keepdims=True).T
-        dLdx = dLdx.reshape(np.shape(self.last_x))
+        dLdx = dLdx.reshape(np.shape(self.last_x)[-2:])
 
         self.grads['weights'] = dLdw
         self.grads['bias'] = dLdb
 
-        assert np.shape(dLdx) == np.shape(self.last_x), \
-            f"Linear expects dLdx to have the same shape as x, "\
-            f"({np.shape(self.last_x)}), but it was {np.shape(dLdx)}"
+        assert np.shape(dLdx) == (1, self.size_in), \
+            f"Linear expects dLdx to have the shape of (1, self.size_in), " \
+            f"{(1, self.size_in)}, but it was {np.shape(dLdx)}"
         return dLdx
