@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 
 from utils.softmax import softmax
 
@@ -24,3 +25,12 @@ class TestSoftmax():
                        [0.00010845, 0.00217829, 0.11893034, 0.87878293]]])
         out = softmax(x)
         assert np.isclose(y, out).all()
+
+    def test1d_overflow(self):
+        x = np.array([0, 1, 2, 3])
+        x = x * 2**16
+
+        # Assert that no overflow warning is emitted
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            out = softmax(x)
