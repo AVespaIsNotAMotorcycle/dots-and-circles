@@ -35,3 +35,15 @@ transformers, using CTC for loss calculation.
 
 A set of Manchu words was pulled from
 [kaikki](https://kaikki.org/dictionary/Manchu/index.html).
+
+## Roadmap
+
+- [ ] **Under the hood**:
+  - [x] **nn module**: provides the basis for the implementation of ANNs
+  - [ ] **loss module**: calculates loss and gradients
+  - [ ] **optim module**: updates parameters based on gradients
+- [ ] **Basic OCR**:
+  - [ ] **Simple synthetic training data generation**: black text on white background
+  - [ ] **Transformer OCR Model**: reads image line by line, outputs CTC string
+  - [ ] **CTC loss function**: generates loss values for TrOCR output
+  - [ ] **Simple training loop**: train TrOCR on synthetic data, graph results
