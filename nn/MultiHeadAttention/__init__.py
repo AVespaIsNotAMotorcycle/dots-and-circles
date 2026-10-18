@@ -6,14 +6,16 @@ from nn.Module import Module
 from nn.Linear import Linear
 from nn.Dropout import Dropout
 
+
 class MultiHeadAttention(Module):
+
     def __init__(self, size_in, size_out, context_length,
                  drop_rate, num_heads, qkv_bias=False):
         super().__init__(size_in, size_out)
-        assert(size_out % num_heads == 0), \
+        assert (size_out % num_heads == 0), \
             f"MultiHeadAttention expects size_out to be divisible by" \
             f"num_heads (size_out: {size_out}, num_heads: {num_heads})"
-        
+
         self.num_heads = num_heads
         self.head_dim = size_out // num_heads
         self.params['W_query'] = Linear(size_in, size_out, use_bias=qkv_bias)
@@ -36,11 +38,11 @@ class MultiHeadAttention(Module):
         queries = queries.reshape(batch_size, num_tokens,
                                   self.num_heads, self.head_dim)
 
-        keys = keys.transpose(0,2,1,3)
-        queries = queries.transpose(0,2,1,3)
-        values = values.transpose(0,2,1,3)
+        keys = keys.transpose(0, 2, 1, 3)
+        queries = queries.transpose(0, 2, 1, 3)
+        values = values.transpose(0, 2, 1, 3)
 
-        attn_scores = queries @ keys.transpose(0,1,3,2)
+        attn_scores = queries @ keys.transpose(0, 1, 3, 2)
 
         mask = self.mask[:num_tokens, :num_tokens]
         mask[mask == 1] = np.inf * -1
@@ -81,7 +83,11 @@ class MultiHeadAttention(Module):
         if np.shape(last_softmax)[-1] > 1:
             last_softmax = np.mean(last_softmax, axis=-1, keepdims=True)
 
-        dLdx = dLdy * ((values_x * ((-1 / queries_x * keys_x) * ((weights_query * keys_x) + (queries_x * weights_key)))) + (last_softmax * weights_value))
+        dydx = ((values_x
+                 * ((-1 / queries_x * keys_x)
+                    * ((weights_query * keys_x) + (queries_x * weights_key))))
+                + (last_softmax * weights_value))
+        dLdx = dLdy * dydx
 
         d_L_d_value = dLdy * last_softmax
         self.params['W_value'].backward(d_L_d_outproj)

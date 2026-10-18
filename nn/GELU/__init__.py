@@ -2,6 +2,7 @@ import numpy as np
 
 from nn.Module import Module
 
+
 class GELU(Module):
     def __init__(self):
         super().__init__()
@@ -21,10 +22,14 @@ class GELU(Module):
         return np.cosh(x)
 
     def backward(self, dLdy):
-        a = 0.5 * np.tanh((0.0356774 * self.last_x**3) \
-            + (0.797885 * self.last_x))
-        b = ((0.0535161 * self.last_x**3) + (0.398942 * self.last_x)) \
-            / self.cosh((0.0356774 * self.last_x**3) + (0.797885 * self.last_x))**2
+        a = 0.5 \
+            * np.tanh((0.0356774 * self.last_x**3) + (0.797885 * self.last_x))
+
+        lx = self.last_x
+        b_1 = ((0.0535161 * lx**3) + (0.398942 * lx))
+        b_2 = self.cosh((0.0356774 * lx**3) + (0.797885 * lx))
+        b = b_1 / b_2**2
+
         c = 0.5
         dydx = a + b + c
         dLdx = dydx * dLdy
@@ -36,5 +41,5 @@ class GELU(Module):
             f"GELU expects dLdx to have the (1, z), where z is the final" \
             f"dimension of the last x, "\
             f"(z = {np.shape(self.last_x)[-1]}), but it was {np.shape(dLdx)}."
-        
+
         return dLdx

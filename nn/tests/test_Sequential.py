@@ -5,6 +5,7 @@ from nn.Sequential import Sequential
 from nn.Linear import Linear
 from nn.GELU import GELU
 
+
 class TestSequential():
     def test_forward(self):
         size_in = 50

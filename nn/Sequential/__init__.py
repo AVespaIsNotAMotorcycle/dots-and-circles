@@ -2,6 +2,7 @@ import numpy as np
 
 from nn.Module import Module
 
+
 class Sequential(Module):
     def __init__(self, module_list):
         super().__init__()

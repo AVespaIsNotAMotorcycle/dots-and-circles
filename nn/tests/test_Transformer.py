@@ -3,6 +3,7 @@ import numpy as np
 from utils.softmax import softmax
 from nn.Transformer import Transformer
 
+
 def print_grad(grad, indent=0):
     for key, value in grad.items():
         print(' ' * indent * 2, key)
@@ -10,6 +11,7 @@ def print_grad(grad, indent=0):
             print(' ' * (indent + 1) * 2, np.shape(value))
         else:
             print_grad(value, indent=indent+1)
+
 
 def compute_delta(grads, learn_rate):
     delta = {}
@@ -22,11 +24,12 @@ def compute_delta(grads, learn_rate):
 
     return delta
 
+
 class TestTransformer():
     def run_test_SGD(self, batch_size, context_length, emb_dim):
         print('\n', batch_size, context_length, emb_dim)
         print("Total input embeddings:", batch_size * context_length * emb_dim)
-        
+
         np.random.seed(123)
         x = np.random.rand(batch_size, context_length, emb_dim)
         y = np.random.rand(batch_size, context_length, emb_dim)
@@ -39,7 +42,7 @@ class TestTransformer():
         for _ in range(iterations):
             out = transformer(x)
             probs = softmax(out)
-            
+
             p_c = np.zeros((batch_size, context_length))
             gradient = np.zeros((batch_size, context_length, emb_dim))
             for item in range(batch_size):
@@ -62,9 +65,12 @@ class TestTransformer():
             transformer.descend(delta)
 
             loss_history.append(cross_entropy_loss)
-        if np.isnan(loss_history[-1]): print("LOSS NAN")
-        if loss_history[0] > loss_history[-1]: print("Loss decreased")
-        if loss_history[0] < loss_history[-1]: print("Loss INCREASED")
+        if np.isnan(loss_history[-1]):
+            print("LOSS NAN")
+        if loss_history[0] > loss_history[-1]:
+            print("Loss decreased")
+        if loss_history[0] < loss_history[-1]:
+            print("Loss INCREASED")
         return loss_history[0] > loss_history[-1]
 
     def test_SGD(self):

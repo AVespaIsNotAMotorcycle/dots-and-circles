@@ -2,6 +2,7 @@ import numpy as np
 
 from nn.LayerNorm import LayerNorm
 
+
 class TestLayerNorm:
     def test_forward(self):
         np.random.seed(123)

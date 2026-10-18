@@ -4,6 +4,7 @@ import pytest
 
 from nn.Dropout import Dropout
 
+
 class TestDropout:
     def shapes_match(self, x, y):
         assert np.shape(y) == np.shape(x)
@@ -45,7 +46,7 @@ class TestDropout:
             size = (i + 1) ** 2
             for drop_rate in drop_rates:
                 dropout = Dropout(drop_rate)
-    
+
                 x = np.random.rand(1, size)
                 y = dropout(x)
 

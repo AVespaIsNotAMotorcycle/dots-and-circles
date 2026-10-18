@@ -2,6 +2,7 @@ import numpy as np
 
 from nn.Module import Module
 
+
 class Linear(Module):
     def __init__(self, size_in, size_out,
                  weights=None, bias=None, use_bias=True):

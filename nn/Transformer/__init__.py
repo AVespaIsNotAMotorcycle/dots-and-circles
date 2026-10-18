@@ -6,6 +6,7 @@ from nn.LayerNorm import LayerNorm
 from nn.MultiHeadAttention import MultiHeadAttention
 from nn.Sequential import Sequential
 
+
 class FeedForward(Module):
     def __init__(self, emb_dim):
         super().__init__(size_in=emb_dim, size_out=emb_dim)
@@ -22,6 +23,7 @@ class FeedForward(Module):
         dLdx = self.params['layers'].backward(dLdy)
         self.grads['layers'] = self.params['layers'].gradients()
         return dLdx
+
 
 class Transformer(Module):
     def __init__(self, emb_dim, context_length,

@@ -2,6 +2,7 @@ import numpy as np
 
 from nn.GELU import GELU
 
+
 class TestGELU:
     def test_one(self):
         gelu = GELU()

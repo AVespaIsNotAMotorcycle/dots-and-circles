@@ -3,14 +3,17 @@ import random
 
 from nn.Module import Module
 
+
 class Dropout(Module):
     def __init__(self, drop_rate):
         super().__init__()
 
         assert drop_rate < 1, \
-            f"Dropout cannot accept a drop rate >= 1 (drop rate was {drop_rate})"
+            f"Dropout cannot accept a drop rate >= 1" \
+            f"(drop rate was {drop_rate})"
         assert drop_rate >= 0, \
-            "Dropout expects a positive drop rate (drop_rate was {drop_rate})"
+            f"Dropout expects a positive drop rate" \
+            f"(drop_rate was {drop_rate})"
 
         self.drop_rate = drop_rate
         self.eps = 1e-7

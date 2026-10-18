@@ -2,6 +2,7 @@ import numpy as np
 
 from nn.Linear import Linear
 
+
 class TestLinear:
     sizes = [(5, 9),
              (1, 1),
@@ -103,6 +104,6 @@ class TestLinear:
                 delta[key] = grads[key] * learn_rate
             layer.descend(delta)
 
-            if last_mse_loss != None:
+            if last_mse_loss is not None:
                 assert mse_loss < last_mse_loss
             last_mse_loss = mse_loss

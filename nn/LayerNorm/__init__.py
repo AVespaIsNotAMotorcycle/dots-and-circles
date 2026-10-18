@@ -2,6 +2,7 @@ import numpy as np
 
 from nn.Module import Module
 
+
 class LayerNorm(Module):
     def __init__(self, size):
         super().__init__(size, size)
@@ -18,7 +19,7 @@ class LayerNorm(Module):
         var = np.var(x)
 
         numerator = x - mean
-        denominator = np.sqrt(var + self.eps) # Add epsilon to avoid sqrt(0)
+        denominator = np.sqrt(var + self.eps)   # Add epsilon to avoid sqrt(0)
         norm_x = numerator / denominator
 
         '''
@@ -34,7 +35,7 @@ class LayerNorm(Module):
         n = norm
         y = a * n + b
 
-        n = 
+        n =
         '''
         '''
         self.grads['scale'] = np.zeros(self.size_in)
