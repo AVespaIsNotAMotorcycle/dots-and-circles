@@ -59,27 +59,27 @@ Another problem downstream of this is that, to make things marginally easier, I 
 
 | Before                                                              | After                                                               |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| <img width="640" height="480" alt="image" src="./ocr/run001.png" /> | <img width="640" height="480" alt="image" src="./ocr/run002.png" /> |
+| <img width="640" height="480" alt="image" src="./ocr/run_graphs/run001.png" /> | <img width="640" height="480" alt="image" src="./ocr/run_graphs/run002.png" /> |
 
 Since I hadn't yet implemented CTC loss calculation and was just using Cross-Entropy Loss, the misalignment between input tokens (rows of pixels) and output (characters) was causing issues. Because there was a causal attention mask in the multi-head attention module, the OCR model was attempting to output characters corresponding to parts of the image it hadn't yet seen. Postponing the inevitable CTC implementation, I added an option to disable the mask, which marginally improved accuracy.
 
 | Before                                                              | After                                                               |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| <img width="640" height="480" alt="image" src="./ocr/run002.png" /> | <img width="640" height="480" alt="image" src="./ocr/run003.png" /> |
+| <img width="640" height="480" alt="image" src="./ocr/run_graphs/run002.png" /> | <img width="640" height="480" alt="image" src="./ocr/run_graphs/run003.png" /> |
 
 I then tried updating the learn rate throughout training, starting with a high value, 0.1, which drops over time so that it's about 0.0027 by the end of the first epoch.
 
 | Before                                                              | After                                                               |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| <img width="640" height="480" alt="image" src="./ocr/run003.png" /> | <img width="640" height="480" alt="image" src="./ocr/run004.png" /> |
+| <img width="640" height="480" alt="image" src="./ocr/run_graphs/run003.png" /> | <img width="640" height="480" alt="image" src="./ocr/run_graphs/run004.png" /> |
 
 Next, tokens were changed from being one row of pixels to four, which are then compressed by a factor of four by being run through a linear layer.
 
 | Before                                                              | After                                                               |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| <img width="640" height="480" alt="image" src="./ocr/run004.png" /> | <img width="640" height="480" alt="image" src="./ocr/run005.png" /> |
+| <img width="640" height="480" alt="image" src="./ocr/run_graphs/run004.png" /> | <img width="640" height="480" alt="image" src="./ocr/run_graphs/run005.png" /> |
 
 Positional encoding (non-learned, sinosoidal) was added.
 The model was then split into an A and B variant: A stayed the same, and B got readout tokens.
 Model B initially learned faster, but plateaued with an accuracy around .2, and Model A quickly caught up and plateaued at the same point.
-<img width="1280" height="960" alt="image" src="./ocr/run007.png" />
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run007.png" />
