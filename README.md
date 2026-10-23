@@ -49,7 +49,7 @@ A set of Manchu words was pulled from
   - [ ] **Simple training loop**: train TrOCR on synthetic data, graph results
 
 
-# Notes
+# Progress
 
 There's no automatic differentiation. This means that backpropogation must be manually implemented for each Module, and has resulted in some errors. For example, I forgot to account for shortcut layers around the attention and MLP blocks of the Transformer, so the gradients were off. Claude caught that in a later pass.
 
@@ -58,3 +58,10 @@ Another problem downstream of this is that, to make things marginally easier, I 
 | Before                                                              | After                                                               |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | <img width="640" height="480" alt="image" src="./ocr/run001.png" /> | <img width="640" height="480" alt="image" src="./ocr/run002.png" /> |
+
+Since I hadn't yet implemented CTC loss calculation and was just using Cross-Entropy Loss, the misalignment between input tokens (rows of pixels) and output (characters) was causing issues. Because there was a causal attention mask in the multi-head attention module, the OCR model was attempting to output characters corresponding to parts of the image it hadn't yet seen. Postponing the inevitable CTC implementation, I added an option to disable the mask, which marginally improved accuracy.
+
+| Before                                                              | After                                                               |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| <img width="640" height="480" alt="image" src="./ocr/run002.png" /> | <img width="640" height="480" alt="image" src="./ocr/run003.png" /> |
+

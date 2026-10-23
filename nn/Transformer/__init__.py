@@ -27,7 +27,7 @@ class FeedForward(Module):
 
 class Transformer(Module):
     def __init__(self, emb_dim, context_length,
-                 num_heads=1, drop_rate=0, qkv_bias=False):
+                 num_heads=1, drop_rate=0, qkv_bias=False, causal_mask=True):
         super().__init__(size_in=emb_dim, size_out=emb_dim)
         self.params['norm1'] = LayerNorm(emb_dim)
         self.params['attention'] = MultiHeadAttention(
@@ -37,6 +37,7 @@ class Transformer(Module):
             num_heads=num_heads,
             drop_rate=drop_rate,
             qkv_bias=qkv_bias,
+            causal_mask=causal_mask,
         )
         self.params['norm2'] = LayerNorm(emb_dim)
         self.params['ff'] = FeedForward(emb_dim)

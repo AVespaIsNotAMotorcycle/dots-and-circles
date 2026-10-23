@@ -65,3 +65,21 @@ class TestMultiHeadAttention:
         # string = json.dumps(params, indent=4)
         # print(string)
         assert len(params.items()) == 4
+
+    def test_causal_mask(self):
+        # With the mask, changing a later token can't affect earlier outputs;
+        # without it, it changes every output
+        np.random.seed(123)
+        num_tokens = 6
+        x = np.random.randn(2, num_tokens, 4)
+        changed = x.copy()
+        changed[:, -1] += 1
+
+        for causal_mask in [True, False]:
+            mha = MultiHeadAttention(4, 8, 16, 0, 2,
+                                     causal_mask=causal_mask)
+            y = mha(x)
+            y_changed = mha(changed)
+            earlier_unchanged = np.allclose(y[:, :-1], y_changed[:, :-1])
+            assert earlier_unchanged == causal_mask
+            assert not np.allclose(y[:, -1], y_changed[:, -1])

@@ -10,7 +10,7 @@ from nn.Dropout import Dropout
 class MultiHeadAttention(Module):
 
     def __init__(self, size_in, size_out, context_length,
-                 drop_rate, num_heads, qkv_bias=False):
+                 drop_rate, num_heads, qkv_bias=False, causal_mask=True):
         super().__init__(size_in, size_out)
         assert (size_out % num_heads == 0), \
             f"MultiHeadAttention expects size_out to be divisible by" \
@@ -23,6 +23,7 @@ class MultiHeadAttention(Module):
         self.params['W_value'] = Linear(size_in, size_out, use_bias=qkv_bias)
         self.params['out_proj'] = Linear(size_out, size_out)
         self.dropout = Dropout(drop_rate)
+        self.causal_mask = causal_mask
         self.mask = np.triu(np.ones((context_length, context_length)), k=1)
 
     def forward(self, x):
@@ -44,10 +45,12 @@ class MultiHeadAttention(Module):
 
         attn_scores = queries @ keys.transpose(0, 1, 3, 2)
 
-        mask = self.mask[:num_tokens, :num_tokens]
-        mask[mask == 1] = np.inf * -1
-        np.nan_to_num(mask, copy=False, neginf=np.inf*-1)
-        attn_scores = attn_scores + mask
+        # Without the causal mask, every token can attend to every other
+        if self.causal_mask:
+            mask = self.mask[:num_tokens, :num_tokens]
+            mask[mask == 1] = np.inf * -1
+            np.nan_to_num(mask, copy=False, neginf=np.inf*-1)
+            attn_scores = attn_scores + mask
 
         attn_weights = softmax(attn_scores / keys.shape[-1]**0.5)
         self.last_softmax = attn_weights
