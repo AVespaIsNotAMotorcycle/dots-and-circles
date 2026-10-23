@@ -152,3 +152,14 @@ class CTCLoss(LossFunction):
 
         # loss() is the mean over the batch
         return gradient / batch_size
+
+    def __call__(self, x, y, label, token_counts):
+        loss = self.loss(x, y, label, token_counts)
+
+        dLdy = self.loss_gradient(x, y, label, token_counts)
+        self.module.backward(dLdy)
+        # Modules reuse their grads dict, so copy it to keep history intact
+        gradient = copy.deepcopy(self.module.gradients())
+
+        self._history.append((loss, gradient))
+        return loss, gradient
