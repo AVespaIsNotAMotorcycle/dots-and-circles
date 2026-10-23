@@ -83,3 +83,51 @@ class TestMultiHeadAttention:
             earlier_unchanged = np.allclose(y[:, :-1], y_changed[:, :-1])
             assert earlier_unchanged == causal_mask
             assert not np.allclose(y[:, -1], y_changed[:, -1])
+
+    def test_padding_mask(self):
+        # What's in an item's padding tokens can't affect its real tokens
+        np.random.seed(123)
+        lengths = [6, 3, 1]
+        x = np.random.randn(3, 6, 4)
+        changed = x.copy()
+        for item, length in enumerate(lengths):
+            changed[item, length:] = np.random.randn(6 - length, 4) * 100
+
+        for causal_mask in [True, False]:
+            mha = MultiHeadAttention(4, 8, 16, 0, 2,
+                                     causal_mask=causal_mask)
+            mha.set_lengths(lengths)
+            y = mha(x)
+            y_changed = mha(changed)
+            for item, length in enumerate(lengths):
+                assert np.allclose(y[item, :length],
+                                   y_changed[item, :length])
+
+            # Without the padding mask, the changed padding does leak in
+            mha.set_lengths(None)
+            if not causal_mask:
+                assert not np.allclose(mha(x)[1, :3], mha(changed)[1, :3])
+
+    def test_full_lengths_match_no_mask(self):
+        np.random.seed(123)
+        x = np.random.randn(2, 5, 4)
+        mha = MultiHeadAttention(4, 8, 16, 0, 2, causal_mask=False)
+        y = mha(x)
+        mha.set_lengths([5, 5])
+        assert np.allclose(mha(x), y)
+
+    def test_lengths_checked(self):
+        mha = MultiHeadAttention(4, 8, 16, 0, 2)
+        x = np.random.randn(2, 5, 4)
+        for lengths in [[5], [5, 0]]:
+            mha.set_lengths(lengths)
+            with pytest.raises(AssertionError):
+                mha(x)
+
+    def test_set_lengths_reaches_nested_attention(self):
+        from nn.Sequential import Sequential
+        from nn.Transformer import Transformer
+        transformers = [Transformer(8, 16, num_heads=2) for _ in range(2)]
+        Sequential(transformers).set_lengths([3, 4])
+        for transformer in transformers:
+            assert transformer.params['attention'].lengths == [3, 4]

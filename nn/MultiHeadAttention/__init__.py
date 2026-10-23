@@ -25,6 +25,15 @@ class MultiHeadAttention(Module):
         self.dropout = Dropout(drop_rate)
         self.causal_mask = causal_mask
         self.mask = np.triu(np.ones((context_length, context_length)), k=1)
+        self.lengths = None
+
+    def set_lengths(self, lengths):
+        '''
+        lengths: number of real tokens in each batch item; the rest are
+        padding, which no token attends to. None disables the padding mask.
+        '''
+        super().set_lengths(lengths)
+        self.lengths = lengths
 
     def forward(self, x):
         batch_size, num_tokens, size_in = np.shape(x)
@@ -51,6 +60,19 @@ class MultiHeadAttention(Module):
             mask[mask == 1] = np.inf * -1
             np.nan_to_num(mask, copy=False, neginf=np.inf*-1)
             attn_scores = attn_scores + mask
+
+        # Padding mask: no token attends to an item's padding tokens. Only
+        # keys are masked; padding tokens' own outputs are ignored by the loss
+        if self.lengths is not None:
+            lengths = np.asarray(self.lengths)
+            assert np.shape(lengths) == (batch_size,), \
+                f"Expected {batch_size} lengths, one per batch item, " \
+                f"but got {np.shape(lengths)}"
+            assert np.all(lengths >= 1), \
+                "Every batch item needs at least one real token"
+            padding = np.arange(num_tokens)[None, :] >= lengths[:, None]
+            attn_scores = np.where(padding[:, None, None, :],
+                                   -np.inf, attn_scores)
 
         attn_weights = softmax(attn_scores / keys.shape[-1]**0.5)
         self.last_softmax = attn_weights

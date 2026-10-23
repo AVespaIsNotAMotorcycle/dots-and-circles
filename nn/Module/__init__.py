@@ -51,6 +51,13 @@ class Module:
         # Calculate dL_dx
         return dL_dx
 
+    def set_lengths(self, lengths):
+        # Passes each batch item's number of real (non-padding) tokens down
+        # to every submodule; modules that need it override this
+        for value in self.params.values():
+            if isinstance(value, Module):
+                value.set_lengths(lengths)
+
     def descend(self, delta):
         for key in self.params.keys():
             if isinstance(self.params[key], np.ndarray):

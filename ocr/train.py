@@ -103,17 +103,26 @@ def image_to_array(image):
     array[:image.height] = 255 - np.asarray(image, dtype=np.uint8)
     return array.reshape(CONTEXT_LENGTH, TOKEN_DIM)
 
+def token_count(image):
+    '''
+    Number of tokens in image_to_array's output that hold part of the image
+    rather than padding. A token that's only partly image counts as real.
+    '''
+    height = min(image.height, IMAGE_HEIGHT)
+    return -(-height // ROWS_PER_TOKEN)
+
 def generate_batches(seeds, batch_size=64):
     '''
     Converts seeds into words and images, and returns them as an array of
     batches.
 
     Batch: array of length batch_size, where each item is an Entry.
-    Entry: tuple of form (Image, Label).
+    Entry: tuple of form (Image, Label, Length).
     Image: PIL Image converted to a grayscale array,
         made with training_data/__init__.py
     Label: An array of one-hot vectors, each one representing a character
         in the word.
+    Length: The number of tokens in Image that aren't padding.
     '''
     batches = []
     for start in range(0, len(seeds), batch_size):
@@ -121,22 +130,27 @@ def generate_batches(seeds, batch_size=64):
         batch = []
         for seed in seeds[start:start + batch_size]:
             image, word = generate(seed)
-            batch.append((image_to_array(image), word_to_array(word)))
+            batch.append((image_to_array(image), word_to_array(word),
+                          token_count(image)))
         batches.append(batch)
     return batches
 
-def train_on_batch(model, loss_function, optimizer, batch, train=False):
-    images = np.array([image for image, _ in batch]) / 255
+def predict(model, entries):
+    # Runs the model on entries, masking each one's padding tokens
+    images = np.array([image for image, _, _ in entries]) / 255
+    model.set_lengths([length for _, _, length in entries])
+    return images, model(images)
 
+def train_on_batch(model, loss_function, optimizer, batch, train=False):
     # Step 1: Forward Propogate
-    y = model(images)
+    images, y = predict(model, batch)
 
     # Step 2: Calculate Accuracy and Loss
     # Output token i predicts character i, so only the first len(label)
     # tokens (the word and its end marker) are scored. The rest are
     # labelled -1, which the loss ignores.
     labels = np.full(np.shape(y)[:-1], -1)
-    for item, (_, label) in enumerate(batch):
+    for item, (_, label, _) in enumerate(batch):
         labels[item, :len(label)] = np.argmax(label, axis=-1)
     scored = labels >= 0
 
@@ -188,11 +202,10 @@ def show_predictions(model, batches, count=5):
     '''
     entries = random.sample([entry for batch in batches for entry in batch],
                             count)
-    images = np.array([image for image, _ in entries]) / 255
-    predictions = model(images)
+    _, predictions = predict(model, entries)
 
     print("Word -> Prediction")
-    for (_, label), prediction in zip(entries, predictions):
+    for (_, label, _), prediction in zip(entries, predictions):
         word = array_to_word(label)
         guess = array_to_word(prediction)
         mark = "✓" if guess == word else "✗"

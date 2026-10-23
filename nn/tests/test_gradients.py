@@ -97,17 +97,22 @@ class TestGradients:
     def test_multi_head_attention(self):
         for drop_rate in [0., 0.2]:
             for causal_mask in [True, False]:
-                mha = MultiHeadAttention(size_in=6, size_out=8,
-                                         context_length=8,
-                                         drop_rate=drop_rate, num_heads=2,
-                                         qkv_bias=True,
-                                         causal_mask=causal_mask)
-                check_gradients(mha, np.random.randn(2, 5, 6))
+                for lengths in [None, [5, 2]]:
+                    mha = MultiHeadAttention(size_in=6, size_out=8,
+                                             context_length=8,
+                                             drop_rate=drop_rate,
+                                             num_heads=2, qkv_bias=True,
+                                             causal_mask=causal_mask)
+                    mha.set_lengths(lengths)
+                    check_gradients(mha, np.random.randn(2, 5, 6))
 
     def test_transformer(self):
         for drop_rate in [0., 0.2]:
             for causal_mask in [True, False]:
-                transformer = Transformer(emb_dim=8, context_length=8,
-                                          num_heads=2, drop_rate=drop_rate,
-                                          causal_mask=causal_mask)
-                check_gradients(transformer, np.random.randn(2, 4, 8))
+                for lengths in [None, [4, 1]]:
+                    transformer = Transformer(emb_dim=8, context_length=8,
+                                              num_heads=2,
+                                              drop_rate=drop_rate,
+                                              causal_mask=causal_mask)
+                    transformer.set_lengths(lengths)
+                    check_gradients(transformer, np.random.randn(2, 4, 8))
