@@ -14,6 +14,6 @@ class SGD(Optimizer):
             if isinstance(grads[key], np.ndarray):
                 delta[key] = grads[key] * self.learn_rate
             else:
-                delta[key] = self.delta(grads[key], self.learn_rate)
+                delta[key] = self.delta(grads[key])
 
         return delta

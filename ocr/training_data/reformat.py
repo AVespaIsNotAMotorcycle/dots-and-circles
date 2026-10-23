@@ -24,15 +24,11 @@ print(f"{len(lexicon)} unique words in lexicon.")
 print(f"{len(alphabet)} unique letters in alphabet.")
 
 alphabet = sorted(list(alphabet))
-with open("alphabet.json", "w") as file:
-    for letter in alphabet:
-        file.write(letter + '\n')
+with open("alphabet.json", "w", encoding="utf-8") as file:
+    json.dump(alphabet, file, ensure_ascii=False, indent=4)
+    file.write('\n')
 
 lexicon = sorted(list(lexicon))
 with open("lexicon.json", "w", encoding="utf-8") as file:
     json.dump(lexicon, file, ensure_ascii=False, indent=4)
     file.write('\n')
-
-with open("alphabet.json", "r") as file:
-    content = file.read().split('\n')
-print(content)

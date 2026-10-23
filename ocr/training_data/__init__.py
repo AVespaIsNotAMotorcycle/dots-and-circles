@@ -22,9 +22,14 @@ fonts = sorted(
 
 
 def generate(seed):
-    rng = random.Random(seed)
-    word = rng.choice(lexicon)
-    font = ImageFont.truetype(rng.choice(fonts), RENDER_SIZE)
+    # Each integer seed maps to one (word, font) pair, so seeds
+    # 0 to len(lexicon) * len(fonts) - 1 cover every pair exactly once.
+    if not isinstance(seed, int):
+        seed = random.Random(seed).randrange(len(lexicon) * len(fonts))
+    word = lexicon[seed % len(lexicon)]
+    font = ImageFont.truetype(
+        fonts[seed // len(lexicon) % len(fonts)], RENDER_SIZE
+    )
 
     # Fonts lay Manchu out horizontally, so render it that way first.
     left, top, right, bottom = font.getbbox(word)
