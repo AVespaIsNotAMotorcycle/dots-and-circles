@@ -7,6 +7,7 @@ from nn.GELU import GELU
 from nn.LayerNorm import LayerNorm
 from nn.Linear import Linear
 from nn.MultiHeadAttention import MultiHeadAttention
+from nn.PositionalEmbedding import PositionalEmbedding
 from nn.Sequential import Sequential
 from nn.Transformer import Transformer
 
@@ -81,6 +82,13 @@ class TestGradients:
     def test_dropout(self):
         for drop_rate in [0., 0.3]:
             check_gradients(Dropout(drop_rate), np.random.rand(2, 3, 4) + 0.5)
+
+    def test_positional_embedding(self):
+        for learned in [False, True]:
+            # Fewer tokens than context_length, so unused rows are covered
+            module = PositionalEmbedding(6, context_length=8,
+                                         learned=learned)
+            check_gradients(module, np.random.randn(2, 5, 6))
 
     def test_sequential(self):
         seq = Sequential([Linear(4, 6), GELU(), Linear(6, 3)])

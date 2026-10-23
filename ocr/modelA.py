@@ -2,15 +2,18 @@ from nn.Transformer import Transformer
 from nn.Sequential import Sequential
 from nn.Linear import Linear
 from nn.Module import Module
+from nn.PositionalEmbedding import PositionalEmbedding
 
 class ModelA(Module):
     def __init__(self, depth = 2, emb_dim = 32, context_length = 64,
                  num_heads = 4, num_classes = 45, causal_mask = False,
-                 token_dim = 128):
+                 token_dim = 128, learned_positions = False):
         super().__init__(size_in=token_dim, size_out=num_classes)
 
-        # Maps each token's pixels to an embedding
-        modules = [Linear(token_dim, emb_dim)]
+        # Maps each token's pixels to an embedding, then marks its position
+        modules = [Linear(token_dim, emb_dim),
+                   PositionalEmbedding(emb_dim, context_length,
+                                       learned=learned_positions)]
         for i in range(depth):
             transformer = Transformer(emb_dim, context_length, num_heads,
                                       causal_mask=causal_mask)
