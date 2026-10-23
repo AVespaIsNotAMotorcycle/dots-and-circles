@@ -107,5 +107,43 @@ class CTCLoss(LossFunction):
 
         return loss / batch_size
 
+    def gradient_per_image(self, y, label, token_count):
+        '''
+        dL/dy for one image's real tokens, where L = -log(p) / len(label)
+        and y is the logits.
+
+        gamma[t, k] is the probability that class k is emitted at time t,
+        given that the output spells the label. The gradient is
+        probs - gamma: like cross entropy's probs - one_hot, but with a soft
+        target worked out from alpha and beta.
+        '''
+        mod_label = self.add_blanks(label)
+
+        alpha = self.forward(y[:token_count], mod_label)
+        beta = self.backward(y[:token_count], mod_label)
+        y_probs = softmax(y[:token_count])
+        probs = alpha[-1][-1] + alpha[-1][-2]
+
+        # alpha and beta both include y_probs at (t, s), so divide it out once
+        occupancy = alpha * beta / y_probs[:, mod_label]
+
+        # Blanks (and repeated letters) appear at several states, so each
+        # class collects the occupancy of every state that emits it
+        gamma = np.zeros(np.shape(y_probs))
+        np.add.at(gamma.T, mod_label, occupancy.T)
+        gamma = gamma / probs
+
+        return (y_probs - gamma) / len(label)
+
     def loss_gradient(self, x, y, label, token_counts):
-        raise NotImplementedError
+        batch_size = np.shape(y)[0]
+
+        # Padding tokens don't affect the loss, so their gradient stays 0
+        gradient = np.zeros(np.shape(y))
+        for index in range(batch_size):
+            token_count = token_counts[index]
+            gradient[index, :token_count] = self.gradient_per_image(
+                y[index], label[index], token_count)
+
+        # loss() is the mean over the batch
+        return gradient / batch_size

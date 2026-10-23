@@ -168,7 +168,6 @@ class TestCTCLoss:
                                      token_counts)
         assert np.isclose(loss, loss_changed)
 
-    '''
     # loss_gradient()
 
     def gradient_case(self):
@@ -211,4 +210,3 @@ class TestCTCLoss:
         x, y, labels, token_counts = self.gradient_case()
         gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
         assert np.allclose(np.sum(gradient, axis=-1), 0)
-    '''
