@@ -30,7 +30,8 @@ else:
     except ValueError:
         pass
 
-image = generate(seed)
+image, word = generate(seed)
+print(f"Word: {word}")
 if args.save:
     output = args.output or f"{seed}.png"
     image.save(output)

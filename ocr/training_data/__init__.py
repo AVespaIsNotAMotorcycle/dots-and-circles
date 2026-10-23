@@ -41,4 +41,4 @@ def generate(seed):
     canvas = canvas.rotate(-90, expand=True)
 
     height = max(1, round(canvas.height * WIDTH / canvas.width))
-    return canvas.resize((WIDTH, height), Image.LANCZOS)
+    return canvas.resize((WIDTH, height), Image.LANCZOS), word
