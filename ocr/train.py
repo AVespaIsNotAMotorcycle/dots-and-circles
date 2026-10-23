@@ -8,9 +8,11 @@ import numpy as np
 from PIL import Image
 
 from loss.CrossEntropyLoss import CrossEntropyLoss
+from loss.CTCLoss import CTCLoss
 from optim.SGD import SGD
 from ocr.modelA import ModelA
 from ocr.modelB import ModelB
+from ocr.modelC import ModelC
 from ocr.training_data import WIDTH, fonts, generate, lexicon
 
 FONT_COUNT = len(fonts)
@@ -26,7 +28,8 @@ with open(os.path.join(directory, "training_data", "alphabet.json"),
           "r", encoding="utf-8") as file:
     alphabet = json.load(file)
 letter_indices = {letter: index for index, letter in enumerate(alphabet)}
-# The extra character that marks the end of a word
+# The extra character that marks the end of a word. CTC models use this
+# class as their blank instead.
 END = len(alphabet)
 NUM_CLASSES = len(alphabet) + 1
 # Positions the longest label needs: its letters plus the end marker
@@ -93,6 +96,45 @@ def array_to_word(array):
         word += alphabet[index]
     return word
 
+def ctc_decode(array, length, blank):
+    '''
+    Reads a CTC model's output for one image: the most likely class at each
+    of its length real tokens, with repeats merged and blanks dropped.
+    '''
+    word = ""
+    previous = None
+    for index in np.argmax(array[:length], axis=-1):
+        if index != previous and index != blank:
+            word += alphabet[index]
+        previous = index
+    return word
+
+def read_words(model, y, entries):
+    # Decodes the model's outputs y for entries into words
+    if getattr(model, "uses_ctc", False):
+        return [ctc_decode(prediction, length, model.blank)
+                for prediction, (_, _, length) in zip(y, entries)]
+    return [array_to_word(prediction) for prediction in y]
+
+def edit_distance(a, b):
+    '''
+    The fewest single-letter insertions, deletions and substitutions that
+    turn a into b.
+    '''
+    previous = list(range(len(b) + 1))
+    for i, letter_a in enumerate(a, start=1):
+        current = [i]
+        for j, letter_b in enumerate(b, start=1):
+            current.append(min(previous[j] + 1,
+                               current[j - 1] + 1,
+                               previous[j - 1] + (letter_a != letter_b)))
+        previous = current
+    return previous[-1]
+
+def character_accuracy(guess, word):
+    # 1 for an exact reading, falling with each wrong letter, floored at 0
+    return max(0, 1 - edit_distance(guess, word) / len(word))
+
 def image_to_array(image):
     '''
     Converts a word image to an array of shape (CONTEXT_LENGTH, TOKEN_DIM),
@@ -149,25 +191,35 @@ def train_on_batch(model, loss_function, optimizer, batch, train=False):
     images, y = predict(model, batch)
 
     # Step 2: Calculate Accuracy and Loss
-    # Output token i predicts character i, so only the first len(label)
-    # tokens (the word and its end marker) are scored. The rest are
-    # labelled -1, which the loss ignores.
-    labels = np.full(np.shape(y)[:-1], -1)
-    for item, (_, label, _) in enumerate(batch):
-        assert len(label) <= np.shape(y)[1], \
-            f"A label needs {len(label)} positions, but the model only " \
-            f"outputs {np.shape(y)[1]}"
-        labels[item, :len(label)] = np.argmax(label, axis=-1)
-    scored = labels >= 0
+    words = [array_to_word(label) for _, label, _ in batch]
+    guesses = read_words(model, y, batch)
+    accuracy = np.mean([character_accuracy(guess, word)
+                        for guess, word in zip(guesses, words)])
 
-    predictions = np.argmax(y, axis=-1)
-    accuracy = np.mean(predictions[scored] == labels[scored])
+    if getattr(model, "uses_ctc", False):
+        # CTC labels are just the letters, with no end marker; the loss
+        # only uses each image's real tokens
+        labels = [list(np.argmax(label[:-1], axis=-1))
+                  for _, label, _ in batch]
+        extra = ([length for _, _, length in batch],)
+    else:
+        # Output token i predicts character i, so only the first
+        # len(label) tokens (the word and its end marker) are scored. The
+        # rest are labelled -1, which the loss ignores.
+        labels = np.full(np.shape(y)[:-1], -1)
+        for item, (_, label, _) in enumerate(batch):
+            assert len(label) <= np.shape(y)[1], \
+                f"A label needs {len(label)} positions, but the model " \
+                f"only outputs {np.shape(y)[1]}"
+            labels[item, :len(label)] = np.argmax(label, axis=-1)
+        extra = ()
+
     if not train:
-        loss = loss_function.loss(images, y, labels)
+        loss = loss_function.loss(images, y, labels, *extra)
         return accuracy, loss
 
     # Step 3: Calculate Gradients
-    loss, grads = loss_function(images, y, labels)
+    loss, grads = loss_function(images, y, labels, *extra)
 
     # Step 4: Optimize
     model.descend(optimizer(grads))
@@ -218,8 +270,7 @@ def show_predictions(models, batches, count=5):
     guesses = {}
     for name, model in models.items():
         _, predictions = predict(model, entries)
-        guesses[name] = [array_to_word(prediction)
-                         for prediction in predictions]
+        guesses[name] = read_words(model, predictions, entries)
 
     print("Word -> " + " | ".join(f"Model {name}" for name in models))
     for item, (_, label, _) in enumerate(entries):
@@ -232,7 +283,8 @@ def show_predictions(models, batches, count=5):
         print(f"{word} -> " + " | ".join(readings))
 
 def get_learn_rate(batch_count, initial_rate):
-    return initial_rate / ((0.001 * batch_count) + 1)
+    # return initial_rate / ((0.001 * batch_count) + 1)
+    return initial_rate
 
 def train(epochs = 3, learn_rate = 0.001):
     train_set, test_set = generate_seeds()
@@ -242,19 +294,25 @@ def train(epochs = 3, learn_rate = 0.001):
     test_set = generate_batches(test_set)
     batch_count = len(train_set) + len(test_set)
 
-    # Both models train side by side on the same batches, in the same order
+    # The models train side by side on the same batches, in the same order
     models = {
-        "A": ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-                    num_classes=NUM_CLASSES, depth=4),
+        # "A": ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        #             num_classes=NUM_CLASSES, depth=4),
         "B": ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
                     num_classes=NUM_CLASSES, depth=4,
                     num_readouts=MAX_LABEL_LENGTH),
+        "C": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=4, blank=END),
     }
     runs = {}
     for name, model in models.items():
+        if getattr(model, "uses_ctc", False):
+            loss_function = CTCLoss(model, blank=model.blank)
+        else:
+            loss_function = CrossEntropyLoss(model)
         runs[name] = {
             "model": model,
-            "loss_function": CrossEntropyLoss(model),
+            "loss_function": loss_function,
             "optimizer": SGD(learn_rate, max_norm=5),
             "train_history": [],
             "test_history": [],

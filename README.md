@@ -83,3 +83,6 @@ Positional encoding (non-learned, sinosoidal) was added.
 The model was then split into an A and B variant: A stayed the same, and B got readout tokens.
 Model B initially learned faster, but plateaued with an accuracy around .2, and Model A quickly caught up and plateaued at the same point.
 <img width="1280" height="960" alt="image" src="./ocr/run_graphs/run007.png" />
+
+CTC loss was implemented, and a CTC model (Model C) was compared against Model B (readout tokens).
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run009.png" />
