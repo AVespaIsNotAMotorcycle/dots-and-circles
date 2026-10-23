@@ -31,63 +31,32 @@ class Linear(Module):
 
     def forward(self, x):
         self.last_x = x
-        while np.shape(self.last_x) != (1, self.size_in):
-            self.last_x = np.mean(self.last_x, axis=0)
-            if sum(np.shape(self.last_x)) == self.size_in:
-                self.last_x = self.last_x.reshape(1, self.size_in)
 
         y = x @ self.params['weights']
         if self.use_bias:
-            y += self.params['bias']
-
-        self.last_y = y
-        while np.shape(self.last_y) != (1, self.size_out):
-            self.last_y = np.mean(self.last_y, axis=0)
-            if sum(np.shape(self.last_y)) == self.size_out:
-                self.last_y = self.last_y.reshape(1, self.size_out)
+            y = y + self.params['bias']
         return y
 
     def backward(self, dLdy):
-        assert np.shape(dLdy) == (1, self.size_out), \
-            f"Linear expects dLdy to have the shape (1, self.size_out), " \
-            f"{(1, self.size_out)}, but it was {np.shape(dLdy)}"
+        assert np.shape(dLdy)[:-1] == np.shape(self.last_x)[:-1] \
+            and np.shape(dLdy)[-1] == self.size_out, \
+            f"Linear expects dLdy to match the shape of its last output, " \
+            f"{np.shape(self.last_x)[:-1] + (self.size_out,)}, " \
+            f"but it was {np.shape(dLdy)}"
         '''
-        w = self.params['weights']
-        b = self.params['bias']
-        x = self.last_x
-        u = x @ w
-        y = u + b
+        y = x @ w + b
+
+        Every token's output uses the same w and b, so their gradients are
+        summed over all tokens (and batches).
         '''
-        dydu = np.ones(np.shape(self.params['weights']))
-        dudw = self.last_x
-        dydb = np.ones(np.shape(self.params['bias']))
-        dudx = self.params['weights']
+        x = self.last_x.reshape(-1, self.size_in)
+        dLdy_flat = np.reshape(dLdy, (-1, self.size_out))
 
-        dLdu = dydu.T * dLdy.T
-        dLdw = dudw * dLdu
-        dLdw = dLdw.T
-        '''
-        while len(np.shape(dLdw)) > len(np.shape(self.params['weights'])):
-            dLdw = np.mean(dLdw, axis=-1)
-        '''
-        assert np.shape(dLdw) == np.shape(self.params['weights']), \
-            f"dLdw {np.shape(dLdw)} must have the same shape as " \
-            f"self.params['weights'] {np.shape(self.params['weights'])}."
+        self.grads['weights'] = x.T @ dLdy_flat
+        if self.use_bias:
+            self.grads['bias'] = np.sum(dLdy_flat, axis=0, keepdims=True)
+        else:
+            self.grads['bias'] = np.zeros(np.shape(self.params['bias']))
 
-        dLdb = dydb * dLdy
-        while len(np.shape(dLdb)) > len(np.shape(self.params['bias'])):
-            dLdb = np.mean(dLdb, axis=0)
-        assert np.shape(dLdb) == np.shape(self.params['bias']), \
-            f"dLdb {np.shape(dLdb)} must have the same shape as " \
-            f"self.params['bias'] {np.shape(self.params['bias'])}."
-        dLdx = dudx * dLdy
-        dLdx = np.mean(dLdx, axis=-1, keepdims=True).T
-        dLdx = dLdx.reshape(np.shape(self.last_x)[-2:])
-
-        self.grads['weights'] = dLdw
-        self.grads['bias'] = dLdb
-
-        assert np.shape(dLdx) == (1, self.size_in), \
-            f"Linear expects dLdx to have the shape of (1, self.size_in), " \
-            f"{(1, self.size_in)}, but it was {np.shape(dLdx)}"
+        dLdx = dLdy @ self.params['weights'].T
         return dLdx

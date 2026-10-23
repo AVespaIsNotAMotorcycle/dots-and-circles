@@ -40,26 +40,28 @@ class Transformer(Module):
         )
         self.params['norm2'] = LayerNorm(emb_dim)
         self.params['ff'] = FeedForward(emb_dim)
-        self.drop_shortcut = Dropout(drop_rate)
+        # Separate instances, since each remembers its own mask for backward
+        self.drop_shortcut1 = Dropout(drop_rate)
+        self.drop_shortcut2 = Dropout(drop_rate)
 
     def forward(self, x):
         shortcut = x
         x = self.params['norm1'](x)
         x = self.params['attention'](x)
-        x = self.drop_shortcut(x)
+        x = self.drop_shortcut1(x)
         x = x + shortcut
 
         shortcut = x
         x = self.params['norm2'](x)
         x = self.params['ff'](x)
-        x = self.drop_shortcut(x)
+        x = self.drop_shortcut2(x)
         x = x + shortcut
         return x
 
     def backward(self, gradient):
-        # Dropout rescales to preserve the mean, so its gradient is passed
-        # straight through. Each shortcut adds its gradient back in.
+        # Each shortcut adds its gradient back in.
         shortcut = gradient
+        gradient = self.drop_shortcut2.backward(gradient)
         gradient = self.params['ff'].backward(gradient)
         self.grads['ff'] = self.params['ff'].gradients()
 
@@ -68,6 +70,7 @@ class Transformer(Module):
         gradient = gradient + shortcut
 
         shortcut = gradient
+        gradient = self.drop_shortcut1.backward(gradient)
         gradient = self.params['attention'].backward(gradient)
         self.grads['attention'] = self.params['attention'].gradients()
 

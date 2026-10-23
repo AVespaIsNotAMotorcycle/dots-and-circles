@@ -38,7 +38,7 @@ A set of Manchu words was pulled from
 
 ## Roadmap
 
-- [ ] **Under the hood**:
+- [x] **Under the hood**:
   - [x] **nn module**: provides the basis for the implementation of ANNs
   - [x] **loss module**: calculates loss and gradients
   - [x] **optim module**: updates parameters based on gradients
@@ -52,3 +52,9 @@ A set of Manchu words was pulled from
 # Notes
 
 There's no automatic differentiation. This means that backpropogation must be manually implemented for each Module, and has resulted in some errors. For example, I forgot to account for shortcut layers around the attention and MLP blocks of the Transformer, so the gradients were off. Claude caught that in a later pass.
+
+Another problem downstream of this is that, to make things marginally easier, I averaged out loss and gradients when doing backprop. Tests still showed decreasing loss, so I figured it was fine. However, when trying to train the actual OCR model, accuracy stalled out quickly, so I had to undo it. Compare before and after this change:
+
+Before: run001.png
+
+After: run002.png

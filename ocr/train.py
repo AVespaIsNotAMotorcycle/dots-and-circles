@@ -128,22 +128,21 @@ def train_on_batch(model, loss_function, optimizer, batch, train=False):
 
     # Step 2: Calculate Accuracy and Loss
     # Output token i predicts character i, so only the first len(label)
-    # tokens (the word and its end marker) are scored.
-    outputs = []
-    labels = []
+    # tokens (the word and its end marker) are scored. The rest are
+    # labelled -1, which the loss ignores.
+    labels = np.full(np.shape(y)[:-1], -1)
     for item, (_, label) in enumerate(batch):
-        outputs.append(y[item, :len(label)])
-        labels.append(np.argmax(label, axis=-1))
-    outputs = np.concatenate(outputs)
-    labels = np.concatenate(labels)
+        labels[item, :len(label)] = np.argmax(label, axis=-1)
+    scored = labels >= 0
 
-    accuracy = np.mean(np.argmax(outputs, axis=-1) == labels)
+    predictions = np.argmax(y, axis=-1)
+    accuracy = np.mean(predictions[scored] == labels[scored])
     if not train:
-        loss = loss_function.loss(images, outputs, labels)
+        loss = loss_function.loss(images, y, labels)
         return accuracy, loss
 
     # Step 3: Calculate Gradients
-    loss, grads = loss_function(images, outputs, labels)
+    loss, grads = loss_function(images, y, labels)
 
     # Step 4: Optimize
     model.descend(optimizer(grads))
@@ -227,4 +226,4 @@ def train(epochs = 3, learn_rate = 0.001):
 
 
 if __name__ == "__main__":
-    train(epochs=2)
+    train(epochs=1)

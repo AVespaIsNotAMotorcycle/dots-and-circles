@@ -33,13 +33,9 @@ class GELU(Module):
         c = 0.5
         dydx = a + b + c
         dLdx = dydx * dLdy
-        while sum(np.shape(dLdx)) > np.shape(self.last_x)[-1]:
-            dLdx = np.mean(dLdx, axis=0)
-        dLdx = dLdx.reshape(1, np.shape(self.last_x)[-1])
 
-        assert np.shape(dLdx) == (1, np.shape(self.last_x)[-1]), \
-            f"GELU expects dLdx to have the (1, z), where z is the final" \
-            f"dimension of the last x, "\
-            f"(z = {np.shape(self.last_x)[-1]}), but it was {np.shape(dLdx)}."
+        assert np.shape(dLdx) == np.shape(self.last_x), \
+            f"GELU expects dLdy to have the shape of the last x, " \
+            f"{np.shape(self.last_x)}, but it was {np.shape(dLdy)}."
 
         return dLdx

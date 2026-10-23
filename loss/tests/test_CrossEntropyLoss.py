@@ -59,20 +59,60 @@ class TestCrossEntropyLoss:
             label = np.random.randint(0, num_classes,
                                       (batch_size, context_length))
 
-            expected = np.zeros(num_classes)
+            expected = np.zeros(np.shape(y))
             for item in range(batch_size):
                 for token in range(context_length):
                     exp = np.exp(y[item][token])
                     probs = exp / np.sum(exp)
                     probs[label[item][token]] -= 1
-                    expected += probs
+                    expected[item][token] = probs
             expected /= batch_size * context_length
 
             gradient = loss_function.loss_gradient(None, y, label)
-            assert np.shape(gradient) == (1, num_classes)
-            assert np.allclose(gradient[0], expected)
-            # Each row of probs - one_hot sums to 0, so the mean does too
-            assert np.isclose(np.sum(gradient), 0)
+            assert np.shape(gradient) == np.shape(y)
+            assert np.allclose(gradient, expected)
+            # Each row of probs - one_hot sums to 0
+            assert np.allclose(np.sum(gradient, axis=-1), 0)
+
+    def test_ignored_labels(self):
+        # Labels below 0 contribute nothing to the loss or gradient
+        loss_function = CrossEntropyLoss(None)
+        y = np.random.rand(2, 5, 4)
+        label = np.random.randint(0, 4, (2, 5))
+        label[0, 3:] = -1
+        label[1, 1:] = -1
+        valid = label >= 0
+
+        loss = loss_function.loss(None, y, label)
+        expected = loss_function.loss(None, y[valid], label[valid])
+        assert np.isclose(loss, expected)
+
+        gradient = loss_function.loss_gradient(None, y, label)
+        assert np.shape(gradient) == np.shape(y)
+        assert np.all(gradient[~valid] == 0)
+        assert np.allclose(
+            gradient[valid],
+            loss_function.loss_gradient(None, y[valid], label[valid]))
+
+    def test_numerical_gradient(self):
+        loss_function = CrossEntropyLoss(None)
+        y = np.random.randn(2, 3, 5)
+        label = np.random.randint(0, 5, (2, 3))
+        label[1, 2] = -1
+
+        eps = 1e-6
+        expected = np.zeros(np.shape(y))
+        for index in np.ndindex(np.shape(y)):
+            original = y[index]
+            y[index] = original + eps
+            plus = loss_function.loss(None, y, label)
+            y[index] = original - eps
+            minus = loss_function.loss(None, y, label)
+            y[index] = original
+            expected[index] = (plus - minus) / (2 * eps)
+
+        gradient = loss_function.loss_gradient(None, y, label)
+        assert np.allclose(gradient, expected, atol=1e-7)
 
     def test_descend(self):
         size_in = 8

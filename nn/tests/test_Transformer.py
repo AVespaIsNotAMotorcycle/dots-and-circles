@@ -53,9 +53,7 @@ class TestTransformer():
                     gradient[item][token][index] = -1 / prob
             cross_entropy_loss = np.log(p_c) * -1
             cross_entropy_loss = np.mean(cross_entropy_loss)
-            gradient = np.mean(gradient, axis=0)
-            gradient = np.mean(gradient, axis=0)
-            gradient = gradient.reshape(1, emb_dim)
+            gradient /= batch_size * context_length
 
             transformer.backward(gradient)
             grads = transformer.gradients()

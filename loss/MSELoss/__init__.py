@@ -13,11 +13,5 @@ class MSELoss(LossFunction):
         return mse
 
     def loss_gradient(self, x, y, label):
-        gradient = -2 * (label - y)
-        print(gradient)
-        # Modules expect dL/dy of shape (1, size_out), so average the rest
-        num_classes = np.shape(gradient)[-1]
-        gradient = gradient.reshape(-1, num_classes)
-        gradient = np.mean(gradient, axis=0, keepdims=True)
-        print(gradient)
+        gradient = -2 * (label - y) / len(y)
         return gradient

@@ -53,6 +53,11 @@ class MultiHeadAttention(Module):
         self.last_softmax = attn_weights
         attn_weights = self.dropout(attn_weights)
 
+        self.last_keys = keys
+        self.last_queries = queries
+        self.last_values = values
+        self.last_attn_weights = attn_weights
+
         context_vec = (attn_weights @ values).transpose(0, 2, 1, 3)
         context_vec = context_vec.copy().reshape(
             batch_size, num_tokens, self.size_out
@@ -61,49 +66,50 @@ class MultiHeadAttention(Module):
 
         return context_vec
 
+    def split_heads(self, x):
+        # (batch, tokens, size_out) -> (batch, heads, tokens, head_dim)
+        batch_size, num_tokens, _ = np.shape(x)
+        x = x.reshape(batch_size, num_tokens, self.num_heads, self.head_dim)
+        return x.transpose(0, 2, 1, 3)
+
+    def merge_heads(self, x):
+        # (batch, heads, tokens, head_dim) -> (batch, tokens, size_out)
+        batch_size, _, num_tokens, _ = np.shape(x)
+        x = x.transpose(0, 2, 1, 3)
+        return x.reshape(batch_size, num_tokens, self.size_out)
+
     def backward(self, dLdy):
-        assert np.shape(dLdy) == (1, self.size_out)
-        d_L_d_outproj = self.params['out_proj'].backward(dLdy)
+        '''
+        S = Q @ K^T / sqrt(head_dim) + mask
+        A = dropout(softmax(S))
+        C = A @ V
+        y = out_proj(C)
+        '''
+        dLdC = self.params['out_proj'].backward(dLdy)
         self.grads['out_proj'] = self.params['out_proj'].gradients()
+        dLdC = self.split_heads(dLdC)
 
-        values_x = self.params['W_value'].last_y
-        keys_x = self.params['W_key'].last_y
-        queries_x = self.params['W_query'].last_y
+        dLdA = dLdC @ self.last_values.transpose(0, 1, 3, 2)
+        dLdV = self.last_attn_weights.transpose(0, 1, 3, 2) @ dLdC
 
-        weights_value = self.params['W_value'].parameters()['weights']
-        weights_value = np.mean(weights_value, axis=0).reshape(1, self.size_in)
+        dLdA = self.dropout.backward(dLdA)
+        # Softmax: each row's outputs share one denominator, so the gradient
+        # of every score depends on the whole row
+        A = self.last_softmax
+        dLdS = A * (dLdA - np.sum(dLdA * A, axis=-1, keepdims=True))
+        dLdS = dLdS / self.head_dim**0.5
 
-        weights_key = self.params['W_key'].parameters()['weights']
-        weights_key = np.mean(weights_key, axis=0).reshape(1, self.size_in)
+        dLdQ = dLdS @ self.last_keys
+        dLdK = dLdS.transpose(0, 1, 3, 2) @ self.last_queries
 
-        weights_query = self.params['W_query'].parameters()['weights']
-        weights_query = np.mean(weights_query, axis=0).reshape(1, self.size_in)
-
-        last_softmax = self.last_softmax.T
-        if np.shape(last_softmax)[-1] > 1:
-            last_softmax = np.mean(last_softmax, axis=-1, keepdims=True)
-
-        dydx = ((values_x
-                 * ((-1 / queries_x * keys_x)
-                    * ((weights_query * keys_x) + (queries_x * weights_key))))
-                + (last_softmax * weights_value))
-        dLdx = dLdy * dydx
-
-        d_L_d_value = dLdy * last_softmax
-        self.params['W_value'].backward(d_L_d_outproj)
-        self.grads['W_value'] = self.params['W_value'].gradients()
-
-        d_L_d_key = d_L_d_outproj * weights_query
-        self.params['W_key'].backward(d_L_d_key)
-        self.grads['W_key'] = self.params['W_key'].gradients()
-
-        d_L_d_query = d_L_d_outproj * weights_key
-        self.params['W_query'].backward(d_L_d_query)
+        # x feeds all three projections, so its gradient is their sum
+        dLdx = self.params['W_query'].backward(self.merge_heads(dLdQ))
         self.grads['W_query'] = self.params['W_query'].gradients()
 
-        while sum(np.shape(dLdx)) > self.size_in:
-            dLdx = np.mean(dLdx, axis=0)
-        dLdx = dLdx.reshape(1, self.size_in)
-        assert np.shape(dLdx) == (1, self.size_in)
+        dLdx = dLdx + self.params['W_key'].backward(self.merge_heads(dLdK))
+        self.grads['W_key'] = self.params['W_key'].gradients()
+
+        dLdx = dLdx + self.params['W_value'].backward(self.merge_heads(dLdV))
+        self.grads['W_value'] = self.params['W_value'].gradients()
 
         return dLdx
