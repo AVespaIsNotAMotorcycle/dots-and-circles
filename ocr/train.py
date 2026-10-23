@@ -181,6 +181,23 @@ def graph(train_history, test_history, window=5):
     accuracy_axis.legend()
     plt.show()
 
+def show_predictions(model, batches, count=5):
+    '''
+    Prints count random words from batches alongside the model's reading of
+    their images.
+    '''
+    entries = random.sample([entry for batch in batches for entry in batch],
+                            count)
+    images = np.array([image for image, _ in entries]) / 255
+    predictions = model(images)
+
+    print("Word -> Prediction")
+    for (_, label), prediction in zip(entries, predictions):
+        word = array_to_word(label)
+        guess = array_to_word(prediction)
+        mark = "✓" if guess == word else "✗"
+        print(f"{mark} {word} -> {guess or '(empty)'}")
+
 def get_learn_rate(batch_count, initial_rate):
     return initial_rate / ((0.1 * batch_count) + 1)
 
@@ -234,6 +251,9 @@ def train(epochs = 3, learn_rate = 0.001):
                 log_batch(epoch, batch_number, train_accuracy, train_loss,
                     test_accuracy, test_loss)
 
+    # Test words, so these are images the model hasn't trained on. Printed
+    # before graph, since plt.show() blocks until the window is closed.
+    show_predictions(model, test_set)
     graph(train_history, test_history)
 
 
