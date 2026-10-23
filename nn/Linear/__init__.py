@@ -14,7 +14,10 @@ class Linear(Module):
                 f"but it was {np.shape(weights)}"
             self.params['weights'] = weights
         else:
-            self.params['weights'] = np.random.rand(size_in, size_out)
+            # Zero-centred and scaled by 1/sqrt(size_in), so outputs keep
+            # roughly the same scale as inputs instead of growing each layer
+            self.params['weights'] = (np.random.randn(size_in, size_out)
+                                      / np.sqrt(size_in))
 
         if bias is not None:
             assert np.shape(bias) == (1, size_out), \
