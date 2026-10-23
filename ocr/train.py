@@ -176,6 +176,9 @@ def graph(train_history, test_history, window=5):
     accuracy_axis.legend()
     plt.show()
 
+def get_learn_rate(batch_count):
+    return 0.1 / ((0.1 * batch_count) + 1)
+
 def train(epochs = 3, learn_rate = 0.001):
     train_set, test_set = generate_seeds()
 
@@ -194,6 +197,8 @@ def train(epochs = 3, learn_rate = 0.001):
         train_index = 0
         test_index = 0
         for batch_number in range(batch_count):
+            optimizer.set_rate(
+                    get_learn_rate(len(train_history) + len(test_history)))
             # Batches from each set are spaced across the whole epoch, so
             # whichever set runs out first leaves the rest to the other.
             step = epoch * batch_count + batch_number
@@ -226,4 +231,4 @@ def train(epochs = 3, learn_rate = 0.001):
 
 
 if __name__ == "__main__":
-    train(epochs=1)
+    train(epochs=1, learn_rate=0.1)

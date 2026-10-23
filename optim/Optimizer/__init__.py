@@ -13,3 +13,6 @@ class Optimizer:
         delta = self.delta(grads)
         self.delta_history.append(delta)
         return delta
+
+    def set_rate(self, learn_rate):
+        self.learn_rate = learn_rate

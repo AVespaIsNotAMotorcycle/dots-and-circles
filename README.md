@@ -51,6 +51,8 @@ A set of Manchu words was pulled from
 
 # Progress
 
+I didn't start using Claude code until after the `nn` module was fully implemented, since I wanted to work through it myself.
+
 There's no automatic differentiation. This means that backpropogation must be manually implemented for each Module, and has resulted in some errors. For example, I forgot to account for shortcut layers around the attention and MLP blocks of the Transformer, so the gradients were off. Claude caught that in a later pass.
 
 Another problem downstream of this is that, to make things marginally easier, I averaged out loss and gradients when doing backprop. Tests still showed decreasing loss, so I figured it was fine. However, when trying to train the actual OCR model, accuracy stalled out quickly, so I had to undo it. Compare before and after this change:
@@ -65,3 +67,8 @@ Since I hadn't yet implemented CTC loss calculation and was just using Cross-Ent
 | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | <img width="640" height="480" alt="image" src="./ocr/run002.png" /> | <img width="640" height="480" alt="image" src="./ocr/run003.png" /> |
 
+I then tried updating the learn rate throughout training, starting with a high value, 0.1, which drops over time so that it's about 0.0027 by the end of the first epoch.
+
+| Before                                                              | After                                                               |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| <img width="640" height="480" alt="image" src="./ocr/run003.png" /> | <img width="640" height="480" alt="image" src="./ocr/run004.png" /> |
