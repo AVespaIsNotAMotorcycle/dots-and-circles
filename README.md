@@ -55,6 +55,6 @@ There's no automatic differentiation. This means that backpropogation must be ma
 
 Another problem downstream of this is that, to make things marginally easier, I averaged out loss and gradients when doing backprop. Tests still showed decreasing loss, so I figured it was fine. However, when trying to train the actual OCR model, accuracy stalled out quickly, so I had to undo it. Compare before and after this change:
 
-Before: run001.png
-
-After: run002.png
+| Before                                                              | After                                                               |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| <img width="640" height="480" alt="image" src="./ocr/run001.png" /> | <img width="640" height="480" alt="image" src="./ocr/run002.png" /> |
