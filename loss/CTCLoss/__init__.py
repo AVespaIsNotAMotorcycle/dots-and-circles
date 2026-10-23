@@ -1,10 +1,15 @@
 import numpy as np
 
 from loss.LossFunction import LossFunction
-from utils.softmax import softmax
+from utils.softmax import log_softmax
 
 
 class CTCLoss(LossFunction):
+    '''
+    Everything is in log space: products of many small probabilities would
+    otherwise underflow to 0. Multiplying becomes adding logs, adding
+    becomes np.logaddexp, and 0 (unreachable) becomes -inf.
+    '''
     def __init__(self, module, blank):
         super().__init__(module)
         # blank is the index of the output prob corresponding
@@ -12,19 +17,20 @@ class CTCLoss(LossFunction):
         self.blank = blank
 
     def forward(self, y, mod_label):
-        probs = softmax(y)
+        # Returns log(alpha)
+        log_probs = log_softmax(y)
 
         states = len(mod_label)
         times = len(y)
 
-        alpha = np.zeros((times, states))
-        alpha[0][0] = probs[0][self.blank]
-        alpha[0][1] = probs[0][mod_label[1]]
+        alpha = np.full((times, states), -np.inf)
+        alpha[0][0] = log_probs[0][self.blank]
+        alpha[0][1] = log_probs[0][mod_label[1]]
         for t in range(1, times):
             for s in range(states):
                 first = alpha[t-1][s]
-                second = 0
-                third = 0
+                second = -np.inf
+                third = -np.inf
 
                 if s > 0:
                     second = alpha[t-1][s-1]
@@ -34,28 +40,30 @@ class CTCLoss(LossFunction):
                         if mod_label[s] != mod_label[s-2]:
                             third = alpha[t-1][s-2]
 
-                factor = probs[t][mod_label[s]]
-                alpha[t][s] = (first + second + third) * factor
+                factor = log_probs[t][mod_label[s]]
+                alpha[t][s] = np.logaddexp(np.logaddexp(first, second),
+                                           third) + factor
 
         return alpha
 
     def backward(self, y, mod_label):
-        probs = softmax(y)
+        # Returns log(beta)
+        log_probs = log_softmax(y)
 
         states = len(mod_label)
         times = len(y)
 
-        beta = np.zeros((times, states))
-        beta[-1][-1] = probs[-1][self.blank]
-        beta[-1][-2] = probs[-1][mod_label[-2]]
+        beta = np.full((times, states), -np.inf)
+        beta[-1][-1] = log_probs[-1][self.blank]
+        beta[-1][-2] = log_probs[-1][mod_label[-2]]
         for delta_t in range(1, times):
             t = times - delta_t - 1
             for delta_s in range(states):
                 s = states - delta_s - 1
 
                 first = beta[t+1][s]
-                second = 0
-                third = 0
+                second = -np.inf
+                third = -np.inf
 
                 if s + 1 < states:
                     second = beta[t+1][s+1]
@@ -65,9 +73,10 @@ class CTCLoss(LossFunction):
                         if mod_label[s] != mod_label[s+2]:
                             third = beta[t+1][s+2]
 
-                factor = probs[t][mod_label[s]]
+                factor = log_probs[t][mod_label[s]]
 
-                beta[t][s] = (first + second + third) * factor
+                beta[t][s] = np.logaddexp(np.logaddexp(first, second),
+                                          third) + factor
 
         return beta
 
@@ -86,15 +95,10 @@ class CTCLoss(LossFunction):
         mod_label = self.add_blanks(label)
 
         alpha = self.forward(y[:token_count], mod_label)
-        beta = self.backward(y[:token_count], mod_label)
-        y_probs = softmax(y[:token_count])
 
-        probs = 0
-        for s in range(len(mod_label)):
-            numerator = alpha[-1][s] * beta[-1][s]
-            denomenator = y_probs[-1][mod_label[s]]
-            probs += numerator / denomenator
-        loss = -np.log(probs) / len(label)
+        # Paths end on the last letter or the trailing blank
+        log_p = np.logaddexp(alpha[-1][-1], alpha[-1][-2])
+        loss = -log_p / len(label)
         return loss
 
     def loss(self, x, y, label, token_counts):
@@ -121,19 +125,20 @@ class CTCLoss(LossFunction):
 
         alpha = self.forward(y[:token_count], mod_label)
         beta = self.backward(y[:token_count], mod_label)
-        y_probs = softmax(y[:token_count])
-        probs = alpha[-1][-1] + alpha[-1][-2]
+        log_probs = log_softmax(y[:token_count])
+        log_p = np.logaddexp(alpha[-1][-1], alpha[-1][-2])
 
-        # alpha and beta both include y_probs at (t, s), so divide it out once
-        occupancy = alpha * beta / y_probs[:, mod_label]
+        # alpha and beta both include y's probability at (t, s), so
+        # subtract its log once
+        occupancy = alpha + beta - log_probs[:, mod_label]
 
         # Blanks (and repeated letters) appear at several states, so each
         # class collects the occupancy of every state that emits it
-        gamma = np.zeros(np.shape(y_probs))
-        np.add.at(gamma.T, mod_label, occupancy.T)
-        gamma = gamma / probs
+        gamma = np.full(np.shape(log_probs), -np.inf)
+        np.logaddexp.at(gamma.T, mod_label, occupancy.T)
+        gamma = np.exp(gamma - log_p)
 
-        return (y_probs - gamma) / len(label)
+        return (np.exp(log_probs) - gamma) / len(label)
 
     def loss_gradient(self, x, y, label, token_counts):
         batch_size = np.shape(y)[0]

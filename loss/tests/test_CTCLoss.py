@@ -57,18 +57,25 @@ class TestCTCLoss:
     def random_logits(self, *shape):
         return np.random.randn(*shape, NUM_CLASSES)
 
+    # forward() and backward() return log tables; these give probabilities,
+    # so the checks below can compare against brute force directly
+    def alpha(self, y, label):
+        return np.exp(self.ctc.forward(y, self.ctc.add_blanks(label)))
+
+    def beta(self, y, label):
+        return np.exp(self.ctc.backward(y, self.ctc.add_blanks(label)))
+
     # forward()
 
     def test_forward_shape(self):
         for label, T in CASES:
-            alpha = self.ctc.forward(self.random_logits(T),
-                                     self.ctc.add_blanks(label))
+            alpha = self.alpha(self.random_logits(T), label)
             assert np.shape(alpha) == (T, 2 * len(label) + 1)
 
     def test_forward_first_row(self):
         y = self.random_logits(4)
         probs = softmax(y)
-        alpha = self.ctc.forward(y, self.ctc.add_blanks([B, A]))
+        alpha = self.alpha(y, [B, A])
         assert np.isclose(alpha[0, 0], probs[0, BLANK])
         assert np.isclose(alpha[0, 1], probs[0, B])
         assert np.all(alpha[0, 2:] == 0)
@@ -76,7 +83,7 @@ class TestCTCLoss:
     def test_forward_matches_brute_force(self):
         for label, T in CASES:
             y = self.random_logits(T)
-            alpha = self.ctc.forward(y, self.ctc.add_blanks(label))
+            alpha = self.alpha(y, label)
             p = alpha[-1, -1] + alpha[-1, -2]
             assert np.isclose(p, brute_force(softmax(y), label)), \
                 f"label {label}, {T} tokens"
@@ -85,28 +92,26 @@ class TestCTCLoss:
         # AA over 3 tokens: A _ A is the only valid path
         y = self.random_logits(3)
         probs = softmax(y)
-        alpha = self.ctc.forward(y, self.ctc.add_blanks([A, A]))
+        alpha = self.alpha(y, [A, A])
         expected = probs[0, A] * probs[1, BLANK] * probs[2, A]
         assert np.isclose(alpha[-1, -1] + alpha[-1, -2], expected)
 
     def test_forward_too_short(self):
         # AA over 2 tokens is impossible: the As need a blank between them
-        alpha = self.ctc.forward(self.random_logits(2),
-                                 self.ctc.add_blanks([A, A]))
+        alpha = self.alpha(self.random_logits(2), [A, A])
         assert alpha[-1, -1] + alpha[-1, -2] == 0
 
     # backward()
 
     def test_backward_shape(self):
         for label, T in CASES:
-            beta = self.ctc.backward(self.random_logits(T),
-                                     self.ctc.add_blanks(label))
+            beta = self.beta(self.random_logits(T), label)
             assert np.shape(beta) == (T, 2 * len(label) + 1)
 
     def test_backward_last_row(self):
         y = self.random_logits(4)
         probs = softmax(y)
-        beta = self.ctc.backward(y, self.ctc.add_blanks([B, A]))
+        beta = self.beta(y, [B, A])
         assert np.isclose(beta[-1, -1], probs[-1, BLANK])
         assert np.isclose(beta[-1, -2], probs[-1, A])
         assert np.all(beta[-1, :-2] == 0)
@@ -114,7 +119,7 @@ class TestCTCLoss:
     def test_backward_matches_brute_force(self):
         for label, T in CASES:
             y = self.random_logits(T)
-            beta = self.ctc.backward(y, self.ctc.add_blanks(label))
+            beta = self.beta(y, label)
             p = beta[0, 0] + beta[0, 1]
             assert np.isclose(p, brute_force(softmax(y), label)), \
                 f"label {label}, {T} tokens"
@@ -125,8 +130,8 @@ class TestCTCLoss:
         for label, T in CASES:
             y = self.random_logits(T)
             probs = softmax(y)
-            alpha = self.ctc.forward(y, self.ctc.add_blanks(label))
-            beta = self.ctc.backward(y, self.ctc.add_blanks(label))
+            alpha = self.alpha(y, label)
+            beta = self.beta(y, label)
             p = brute_force(probs, label)
             emitted = probs[:, extend(label)]
             for t in range(T):
@@ -210,3 +215,32 @@ class TestCTCLoss:
         x, y, labels, token_counts = self.gradient_case()
         gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
         assert np.allclose(np.sum(gradient, axis=-1), 0)
+
+    # Log space
+
+    def test_confident_outputs_stay_finite(self):
+        # In plain probabilities, p underflowed to 0 here, which made the
+        # loss inf and the gradient nan
+        labels = [[A, B, A, B, A], [B, B]]
+        token_counts = [60, 64]
+        x, y = dummy_x(2, 64), self.random_logits(2, 64) * 30
+
+        loss = self.ctc.loss(x, y, labels, token_counts)
+        gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
+        assert np.isfinite(loss)
+        assert np.all(np.isfinite(gradient))
+        assert np.allclose(np.sum(gradient, axis=-1), 0)
+
+    def test_confident_single_path_exact(self):
+        # AA over 3 tokens: A _ A is the only path, so the loss is exactly
+        # minus the sum of those three log-probabilities, halved for the
+        # label length. Large logits make the path's probability tiny.
+        y = self.random_logits(1, 3) * 100
+        shifted = y[0] - np.max(y[0], axis=-1, keepdims=True)
+        log_probs = shifted - np.log(np.sum(np.exp(shifted), axis=-1,
+                                            keepdims=True))
+        expected = -(log_probs[0, A] + log_probs[1, BLANK]
+                     + log_probs[2, A]) / 2
+
+        loss = self.ctc.loss(dummy_x(1, 3), y, [[A, A]], [3])
+        assert np.isclose(loss, expected)

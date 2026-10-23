@@ -1,7 +1,7 @@
 import numpy as np
 import warnings
 
-from utils.softmax import softmax
+from utils.softmax import softmax, log_softmax
 
 class TestSoftmax():
     def test1d(self):
@@ -34,3 +34,24 @@ class TestSoftmax():
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             out = softmax(x)
+
+
+class TestLogSoftmax():
+    def test_matches_softmax(self):
+        np.random.seed(123)
+        x = np.random.randn(2, 3, 5) * 3
+        assert np.allclose(np.exp(log_softmax(x)), softmax(x))
+
+    def test_large_values(self):
+        # softmax would round the small probabilities to 0, so its log
+        # would be -inf; log_softmax stays finite and exact
+        x = np.array([0., 1000., 2000.])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            out = log_softmax(x)
+        assert np.allclose(out, [-2000., -1000., 0.])
+
+    def test_rows_normalised(self):
+        np.random.seed(123)
+        x = np.random.randn(4, 6) * 50
+        assert np.allclose(np.sum(np.exp(log_softmax(x)), axis=-1), 1)
