@@ -1,5 +1,4 @@
 import numpy as np
-import random
 
 from nn.Module import Module
 
@@ -24,12 +23,9 @@ class Dropout(Module):
 
         size = np.size(x)
         drop_count = int(size * self.drop_rate)
-        keep_count = size - drop_count
-        drop = [0] * drop_count
-        keep = [1] * keep_count
-        mask = drop + keep
-        random.shuffle(mask)
-        mask = np.array(mask)
+        mask = np.ones(size)
+        mask[:drop_count] = 0
+        np.random.shuffle(mask)
 
         y = np.multiply(x, mask)
         x_mean = np.mean(x)
