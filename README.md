@@ -72,3 +72,9 @@ I then tried updating the learn rate throughout training, starting with a high v
 | Before                                                              | After                                                               |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | <img width="640" height="480" alt="image" src="./ocr/run003.png" /> | <img width="640" height="480" alt="image" src="./ocr/run004.png" /> |
+
+Next, tokens were changed from being one row of pixels to four, which are then compressed by a factor of four by being run through a linear layer.
+
+| Before                                                              | After                                                               |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| <img width="640" height="480" alt="image" src="./ocr/run004.png" /> | <img width="640" height="480" alt="image" src="./ocr/run005.png" /> |

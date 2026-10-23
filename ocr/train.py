@@ -14,7 +14,11 @@ from ocr.training_data import WIDTH, fonts, generate, lexicon
 
 FONT_COUNT = len(fonts)
 WORD_COUNT = len(lexicon)
-CONTEXT_LENGTH = 256
+IMAGE_HEIGHT = 256
+# Each token is a group of this many pixel rows, flattened
+ROWS_PER_TOKEN = 4
+TOKEN_DIM = ROWS_PER_TOKEN * WIDTH
+CONTEXT_LENGTH = IMAGE_HEIGHT // ROWS_PER_TOKEN
 
 directory = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(directory, "training_data", "alphabet.json"),
@@ -88,15 +92,16 @@ def array_to_word(array):
 
 def image_to_array(image):
     '''
-    Converts a word image to an array of shape (CONTEXT_LENGTH, WIDTH), where
-    each row is one token. Ink is high and background is 0. Short images are
-    padded with blank rows; tall ones are scaled down to fit.
+    Converts a word image to an array of shape (CONTEXT_LENGTH, TOKEN_DIM),
+    where each token is ROWS_PER_TOKEN pixel rows laid end to end. Ink is
+    high and background is 0. Short images are padded with blank rows to
+    IMAGE_HEIGHT; tall ones are scaled down to fit.
     '''
-    if image.height > CONTEXT_LENGTH:
-        image = image.resize((WIDTH, CONTEXT_LENGTH), Image.LANCZOS)
-    array = np.zeros((CONTEXT_LENGTH, WIDTH), dtype=np.uint8)
+    if image.height > IMAGE_HEIGHT:
+        image = image.resize((WIDTH, IMAGE_HEIGHT), Image.LANCZOS)
+    array = np.zeros((IMAGE_HEIGHT, WIDTH), dtype=np.uint8)
     array[:image.height] = 255 - np.asarray(image, dtype=np.uint8)
-    return array
+    return array.reshape(CONTEXT_LENGTH, TOKEN_DIM)
 
 def generate_batches(seeds, batch_size=64):
     '''
@@ -176,8 +181,8 @@ def graph(train_history, test_history, window=5):
     accuracy_axis.legend()
     plt.show()
 
-def get_learn_rate(batch_count):
-    return 0.1 / ((0.1 * batch_count) + 1)
+def get_learn_rate(batch_count, initial_rate):
+    return initial_rate / ((0.1 * batch_count) + 1)
 
 def train(epochs = 3, learn_rate = 0.001):
     train_set, test_set = generate_seeds()
@@ -187,7 +192,8 @@ def train(epochs = 3, learn_rate = 0.001):
     test_set = generate_batches(test_set)
     batch_count = len(train_set) + len(test_set)
 
-    model = ModelA(context_length=CONTEXT_LENGTH, num_classes=NUM_CLASSES)
+    model = ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                   num_classes=NUM_CLASSES)
     loss_function = CrossEntropyLoss(model)
     optimizer = SGD(learn_rate)
 
@@ -198,7 +204,8 @@ def train(epochs = 3, learn_rate = 0.001):
         test_index = 0
         for batch_number in range(batch_count):
             optimizer.set_rate(
-                    get_learn_rate(len(train_history) + len(test_history)))
+                    get_learn_rate(len(train_history) + len(test_history),
+                    learn_rate))
             # Batches from each set are spaced across the whole epoch, so
             # whichever set runs out first leaves the rest to the other.
             step = epoch * batch_count + batch_number
@@ -231,4 +238,4 @@ def train(epochs = 3, learn_rate = 0.001):
 
 
 if __name__ == "__main__":
-    train(epochs=1, learn_rate=0.1)
+    train(epochs=1, learn_rate=0.03)
