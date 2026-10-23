@@ -155,14 +155,22 @@ def log_batch(epoch, batch_number, train_accuracy, train_loss,
           f"train accuracy {train_accuracy:.3f}, loss {train_loss:.4f} | "
           f"test accuracy {test_accuracy:.3f}, loss {test_loss:.4f}")
 
-def graph(train_history, test_history):
+def moving_average(values, window):
+    window = min(window, len(values))
+    return np.convolve(values, np.ones(window) / window, mode="valid")
+
+def graph(train_history, test_history, window=5):
     train_history = np.array(train_history)
     test_history = np.array(test_history)
 
     figure, (accuracy_axis, loss_axis) = plt.subplots(2, 1, sharex=True)
     for history, label in ((train_history, "train"), (test_history, "test")):
-        accuracy_axis.plot(history[:, 0], history[:, 1], label=label)
-        loss_axis.plot(history[:, 0], history[:, 2], label=label)
+        # Each point averages a batch with the window - 1 batches before it
+        steps = history[min(window, len(history)) - 1:, 0]
+        accuracy_axis.plot(steps, moving_average(history[:, 1], window),
+                           label=label)
+        loss_axis.plot(steps, moving_average(history[:, 2], window),
+                       label=label)
     accuracy_axis.set_ylabel("Accuracy")
     loss_axis.set_ylabel("Loss")
     loss_axis.set_xlabel("Batch")
@@ -219,4 +227,4 @@ def train(epochs = 3, learn_rate = 0.001):
 
 
 if __name__ == "__main__":
-    train(epochs=1)
+    train(epochs=2)
