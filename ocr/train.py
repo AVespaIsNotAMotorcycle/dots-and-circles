@@ -223,7 +223,7 @@ def train(epochs = 3, learn_rate = 0.001):
     batch_count = len(train_set) + len(test_set)
 
     model = ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-                   num_classes=NUM_CLASSES)
+                   num_classes=NUM_CLASSES, depth=4)
     loss_function = CrossEntropyLoss(model)
     optimizer = SGD(learn_rate, max_norm=5)
 
@@ -271,4 +271,4 @@ def train(epochs = 3, learn_rate = 0.001):
 
 
 if __name__ == "__main__":
-    train(epochs=1, learn_rate=0.03)
+    train(epochs=2, learn_rate=0.1)
