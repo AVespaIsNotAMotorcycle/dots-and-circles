@@ -8,7 +8,9 @@ from nn.LayerNorm import LayerNorm
 from nn.Linear import Linear
 from nn.MultiHeadAttention import MultiHeadAttention
 from nn.PositionalEmbedding import PositionalEmbedding
+from nn.ReadoutTokens import ReadoutTokens
 from nn.Sequential import Sequential
+from nn.TakeFirst import TakeFirst
 from nn.Transformer import Transformer
 
 
@@ -89,6 +91,12 @@ class TestGradients:
             module = PositionalEmbedding(6, context_length=8,
                                          learned=learned)
             check_gradients(module, np.random.randn(2, 5, 6))
+
+    def test_readout_tokens(self):
+        check_gradients(ReadoutTokens(3, 6), np.random.randn(2, 5, 6))
+
+    def test_take_first(self):
+        check_gradients(TakeFirst(3), np.random.randn(2, 5, 6))
 
     def test_sequential(self):
         seq = Sequential([Linear(4, 6), GELU(), Linear(6, 3)])

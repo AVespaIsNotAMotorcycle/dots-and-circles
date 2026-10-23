@@ -78,3 +78,8 @@ Next, tokens were changed from being one row of pixels to four, which are then c
 | Before                                                              | After                                                               |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | <img width="640" height="480" alt="image" src="./ocr/run004.png" /> | <img width="640" height="480" alt="image" src="./ocr/run005.png" /> |
+
+Positional encoding (non-learned, sinosoidal) was added.
+The model was then split into an A and B variant: A stayed the same, and B got readout tokens.
+Model B initially learned faster, but plateaued with an accuracy around .2, and Model A quickly caught up and plateaued at the same point.
+<img width="1280" height="960" alt="image" src="./ocr/run007.png" />

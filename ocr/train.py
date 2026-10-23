@@ -10,6 +10,7 @@ from PIL import Image
 from loss.CrossEntropyLoss import CrossEntropyLoss
 from optim.SGD import SGD
 from ocr.modelA import ModelA
+from ocr.modelB import ModelB
 from ocr.training_data import WIDTH, fonts, generate, lexicon
 
 FONT_COUNT = len(fonts)
@@ -28,6 +29,8 @@ letter_indices = {letter: index for index, letter in enumerate(alphabet)}
 # The extra character that marks the end of a word
 END = len(alphabet)
 NUM_CLASSES = len(alphabet) + 1
+# Positions the longest label needs: its letters plus the end marker
+MAX_LABEL_LENGTH = max(len(word) for word in lexicon) + 1
 
 def generate_seeds(validation_set = False):
     train_proportion = 0.7
@@ -151,6 +154,9 @@ def train_on_batch(model, loss_function, optimizer, batch, train=False):
     # labelled -1, which the loss ignores.
     labels = np.full(np.shape(y)[:-1], -1)
     for item, (_, label, _) in enumerate(batch):
+        assert len(label) <= np.shape(y)[1], \
+            f"A label needs {len(label)} positions, but the model only " \
+            f"outputs {np.shape(y)[1]}"
         labels[item, :len(label)] = np.argmax(label, axis=-1)
     scored = labels >= 0
 
@@ -167,9 +173,9 @@ def train_on_batch(model, loss_function, optimizer, batch, train=False):
     model.descend(optimizer(grads))
     return accuracy, loss
 
-def log_batch(epoch, batch_number, train_accuracy, train_loss,
+def log_batch(name, epoch, batch_number, train_accuracy, train_loss,
               test_accuracy, test_loss):
-    print(f"Epoch {epoch + 1}, batch {batch_number:>4} | "
+    print(f"Model {name}, epoch {epoch + 1}, batch {batch_number:>4} | "
           f"train accuracy {train_accuracy:.3f}, loss {train_loss:.4f} | "
           f"test accuracy {test_accuracy:.3f}, loss {test_loss:.4f}")
 
@@ -177,42 +183,56 @@ def moving_average(values, window):
     window = min(window, len(values))
     return np.convolve(values, np.ones(window) / window, mode="valid")
 
-def graph(train_history, test_history, window=5):
-    train_history = np.array(train_history)
-    test_history = np.array(test_history)
-
+def graph(runs, window=5):
+    '''
+    runs: {name: run}, where each run has a "train_history" and a
+    "test_history". Each model gets its own colour; train is solid and
+    test is dashed.
+    '''
     figure, (accuracy_axis, loss_axis) = plt.subplots(2, 1, sharex=True)
-    for history, label in ((train_history, "train"), (test_history, "test")):
-        # Each point averages a batch with the window - 1 batches before it
-        steps = history[min(window, len(history)) - 1:, 0]
-        accuracy_axis.plot(steps, moving_average(history[:, 1], window),
-                           label=label)
-        loss_axis.plot(steps, moving_average(history[:, 2], window),
-                       label=label)
+    for index, (name, run) in enumerate(runs.items()):
+        for history, label, style in (
+                (run["train_history"], "train", "-"),
+                (run["test_history"], "test", "--")):
+            history = np.array(history)
+            # Each point averages a batch with the window - 1 batches before
+            steps = history[min(window, len(history)) - 1:, 0]
+            accuracy_axis.plot(steps, moving_average(history[:, 1], window),
+                               style, color=f"C{index}",
+                               label=f"{name} {label}")
+            loss_axis.plot(steps, moving_average(history[:, 2], window),
+                           style, color=f"C{index}", label=f"{name} {label}")
     accuracy_axis.set_ylabel("Accuracy")
     loss_axis.set_ylabel("Loss")
     loss_axis.set_xlabel("Batch")
     accuracy_axis.legend()
     plt.show()
 
-def show_predictions(model, batches, count=5):
+def show_predictions(models, batches, count=5):
     '''
-    Prints count random words from batches alongside the model's reading of
-    their images.
+    Prints count random words from batches alongside each model's reading of
+    their images. models: {name: model}; all read the same words.
     '''
     entries = random.sample([entry for batch in batches for entry in batch],
                             count)
-    _, predictions = predict(model, entries)
+    guesses = {}
+    for name, model in models.items():
+        _, predictions = predict(model, entries)
+        guesses[name] = [array_to_word(prediction)
+                         for prediction in predictions]
 
-    print("Word -> Prediction")
-    for (_, label, _), prediction in zip(entries, predictions):
+    print("Word -> " + " | ".join(f"Model {name}" for name in models))
+    for item, (_, label, _) in enumerate(entries):
         word = array_to_word(label)
-        guess = array_to_word(prediction)
-        mark = "✓" if guess == word else "✗"
-        print(f"{mark} {word} -> {guess or '(empty)'}")
+        readings = []
+        for name in models:
+            guess = guesses[name][item]
+            mark = "✓" if guess == word else "✗"
+            readings.append(f"{mark} {guess or '(empty)'}")
+        print(f"{word} -> " + " | ".join(readings))
 
 def get_learn_rate(batch_count, initial_rate):
-    return initial_rate / ((0.1 * batch_count) + 1)
+    return initial_rate / ((0.001 * batch_count) + 1)
 
 def train(epochs = 3, learn_rate = 0.001):
     train_set, test_set = generate_seeds()
@@ -222,52 +242,66 @@ def train(epochs = 3, learn_rate = 0.001):
     test_set = generate_batches(test_set)
     batch_count = len(train_set) + len(test_set)
 
-    model = ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-                   num_classes=NUM_CLASSES, depth=4)
-    loss_function = CrossEntropyLoss(model)
-    optimizer = SGD(learn_rate, max_norm=5)
+    # Both models train side by side on the same batches, in the same order
+    models = {
+        "A": ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=4),
+        "B": ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=4,
+                    num_readouts=MAX_LABEL_LENGTH),
+    }
+    runs = {}
+    for name, model in models.items():
+        runs[name] = {
+            "model": model,
+            "loss_function": CrossEntropyLoss(model),
+            "optimizer": SGD(learn_rate, max_norm=5),
+            "train_history": [],
+            "test_history": [],
+        }
 
-    train_history = []
-    test_history = []
     for epoch in range(epochs):
         train_index = 0
         test_index = 0
         for batch_number in range(batch_count):
-            optimizer.set_rate(
-                    get_learn_rate(len(train_history) + len(test_history),
-                    learn_rate))
             # Batches from each set are spaced across the whole epoch, so
             # whichever set runs out first leaves the rest to the other.
             step = epoch * batch_count + batch_number
             train_left = train_index < len(train_set)
             test_left = test_index < len(test_set)
-            if test_left and (batch_number % 10 > 7 or not train_left):
+            testing = test_left and (batch_number % 10 > 7 or not train_left)
+            if testing:
                 batch = test_set[test_index]
-                accuracy, loss = train_on_batch(
-                    model, loss_function, optimizer, batch, train=False)
-                test_history.append([step, accuracy, loss])
                 test_index += 1
             else:
                 batch = train_set[train_index]
-                accuracy, loss = train_on_batch(
-                    model, loss_function, optimizer, batch, train=True)
-                train_history.append([step, accuracy, loss])
                 train_index += 1
-            # Nothing to report until both sets have been run at least once
-            if batch_number % 10 == 0 and train_history and test_history:
-                test_numbers = test_history[-1]
-                _, test_accuracy, test_loss = test_numbers
 
-                train_numbers = train_history[-1]
-                _, train_accuracy, train_loss = train_numbers
+            for name, run in runs.items():
+                train_history = run["train_history"]
+                test_history = run["test_history"]
+                run["optimizer"].set_rate(
+                        get_learn_rate(len(train_history) + len(test_history),
+                        learn_rate))
+                accuracy, loss = train_on_batch(
+                    run["model"], run["loss_function"], run["optimizer"],
+                    batch, train=not testing)
+                if testing:
+                    test_history.append([step, accuracy, loss])
+                else:
+                    train_history.append([step, accuracy, loss])
 
-                log_batch(epoch, batch_number, train_accuracy, train_loss,
-                    test_accuracy, test_loss)
+                # Nothing to report until both sets have been run once
+                if batch_number % 10 == 0 and train_history and test_history:
+                    _, test_accuracy, test_loss = test_history[-1]
+                    _, train_accuracy, train_loss = train_history[-1]
+                    log_batch(name, epoch, batch_number, train_accuracy,
+                              train_loss, test_accuracy, test_loss)
 
-    # Test words, so these are images the model hasn't trained on. Printed
+    # Test words, so these are images the models haven't trained on. Printed
     # before graph, since plt.show() blocks until the window is closed.
-    show_predictions(model, test_set)
-    graph(train_history, test_history)
+    show_predictions(models, test_set)
+    graph(runs)
 
 
 if __name__ == "__main__":
