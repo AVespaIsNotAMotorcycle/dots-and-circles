@@ -57,16 +57,22 @@ class Transformer(Module):
         return x
 
     def backward(self, gradient):
+        # Dropout rescales to preserve the mean, so its gradient is passed
+        # straight through. Each shortcut adds its gradient back in.
+        shortcut = gradient
         gradient = self.params['ff'].backward(gradient)
         self.grads['ff'] = self.params['ff'].gradients()
 
         gradient = self.params['norm2'].backward(gradient)
         self.grads['norm2'] = self.params['norm2'].gradients()
+        gradient = gradient + shortcut
 
+        shortcut = gradient
         gradient = self.params['attention'].backward(gradient)
         self.grads['attention'] = self.params['attention'].gradients()
 
         gradient = self.params['norm1'].backward(gradient)
         self.grads['norm1'] = self.params['norm1'].gradients()
+        gradient = gradient + shortcut
 
         return gradient

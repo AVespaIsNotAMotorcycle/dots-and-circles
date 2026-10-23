@@ -40,10 +40,15 @@ A set of Manchu words was pulled from
 
 - [ ] **Under the hood**:
   - [x] **nn module**: provides the basis for the implementation of ANNs
-  - [ ] **loss module**: calculates loss and gradients
-  - [ ] **optim module**: updates parameters based on gradients
+  - [x] **loss module**: calculates loss and gradients
+  - [x] **optim module**: updates parameters based on gradients
 - [ ] **Basic OCR**:
-  - [ ] **Simple synthetic training data generation**: black text on white background
+  - [x] **Simple synthetic training data generation**: black text on white background
   - [ ] **Transformer OCR Model**: reads image line by line, outputs CTC string
   - [ ] **CTC loss function**: generates loss values for TrOCR output
   - [ ] **Simple training loop**: train TrOCR on synthetic data, graph results
+
+
+# Notes
+
+There's no automatic differentiation. This means that backpropogation must be manually implemented for each Module, and has resulted in some errors. For example, I forgot to account for shortcut layers around the attention and MLP blocks of the Transformer, so the gradients were off. Claude caught that in a later pass.
