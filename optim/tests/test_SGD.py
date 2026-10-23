@@ -32,3 +32,22 @@ class TestSGD:
             if last_loss is not None:
                 assert loss < last_loss
             last_loss = loss
+
+    def test_clipping(self):
+        # Nested like a module's grads; combined norm is sqrt(9 + 16) = 5
+        grads = {'a': np.array([3., 0.]),
+                 'inner': {'b': np.array([[0., 4.]])}}
+
+        # Above max_norm: scaled down together to max_norm, same direction
+        delta = SGD(0.5, max_norm=1)(grads)
+        assert np.allclose(delta['a'], np.array([3., 0.]) / 5 * 0.5)
+        assert np.allclose(delta['inner']['b'], np.array([[0., 4.]]) / 5 * 0.5)
+
+        # At or below max_norm, or with no max_norm: plain SGD
+        for sgd in [SGD(0.5, max_norm=5), SGD(0.5, max_norm=10), SGD(0.5)]:
+            delta = sgd(grads)
+            assert np.allclose(delta['a'], grads['a'] * 0.5)
+            assert np.allclose(delta['inner']['b'], grads['inner']['b'] * 0.5)
+
+        # The gradients passed in are left unchanged
+        assert np.array_equal(grads['a'], np.array([3., 0.]))

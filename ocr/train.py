@@ -195,7 +195,7 @@ def train(epochs = 3, learn_rate = 0.001):
     model = ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
                    num_classes=NUM_CLASSES)
     loss_function = CrossEntropyLoss(model)
-    optimizer = SGD(learn_rate)
+    optimizer = SGD(learn_rate, max_norm=5)
 
     train_history = []
     test_history = []
