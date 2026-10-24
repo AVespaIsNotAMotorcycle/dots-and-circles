@@ -99,3 +99,5 @@ Then followed with a 10-epoch run with 4- and 8-transformer variants of Models B
 Model C clearly has better accuracy, with the 4-transformer Model C beating the 8-transformer Model B.
 There's also a large gap between C-8 and C4.
 <img width="1280" height="960" alt="image" src="./ocr/run_graphs/run011.png" />
+For comparison, I ran a C-16 version as well:
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run012.png" />
