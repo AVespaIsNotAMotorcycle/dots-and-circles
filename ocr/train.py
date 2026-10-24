@@ -1,11 +1,17 @@
-# Run from the repository root with: python -m ocr.train
-# or (faster) OPENBLAS_NUM_THREADS=1 .venv/bin/python -m ocr.train
+# Run from the repository root with: .venv/bin/python -m ocr.train
+
+import os
+# Each model trains on its own thread, so numpy's BLAS shouldn't start 16
+# threads of its own per matrix multiply too; they'd fight over the cores.
+# This only works if it's set before numpy is first imported.
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 import csv
 import gc
 import json
-import os
 import random
+import threading
+import traceback
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -343,19 +349,20 @@ def train(epochs = 3, learn_rate = 0.001):
 
 def run_models(run_directory, epochs, learn_rate):
     '''
-    Trains the models, logging every batch's results to log.csv as it goes
-    and saving each model's weights at the end of every epoch, so a crash
-    loses at most the current epoch's training and none of the log.
-    Everything it makes is local, so it's all freed when it returns.
+    Trains the models, one thread each, logging every batch's results to
+    log.csv as it goes and saving each model's weights at the end of every
+    epoch, so a crash loses at most the current epoch's training and none
+    of the log. Everything it makes is local, so it's all freed when it
+    returns.
     '''
     train_set, test_set = generate_seeds()
 
     print("Generating batches...")
     train_set = generate_batches(train_set)
     test_set = generate_batches(test_set)
-    batch_count = len(train_set) + len(test_set)
 
-    # The models train side by side on the same batches, in the same order
+    # The models train side by side, each on its own thread, on the same
+    # batches in the same order
     models = {
         # "A": ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=4),
@@ -395,57 +402,102 @@ def run_models(run_directory, epochs, learn_rate):
             "model": model,
             "loss_function": loss_function,
             "optimizer": SGD(learn_rate, max_norm=5),
-            # The latest [accuracy, loss] from each set, for printing
-            "last": {"train": None, "test": None},
+            # Set by the model's thread if it crashes
+            "failed": False,
         }
 
+    # One log for every model. Threads write rows to it in whatever order
+    # they finish batches, so the lock stops two rows being written at once.
     log_file = open(os.path.join(run_directory, "log.csv"), "w", newline="")
     log = csv.writer(log_file)
     log.writerow(LOG_COLUMNS)
+    log_lock = threading.Lock()
 
-    for epoch in range(epochs):
-        train_index = 0
-        test_index = 0
-        for batch_number in range(batch_count):
-            # Batches from each set are spaced across the whole epoch, so
-            # whichever set runs out first leaves the rest to the other.
-            step = epoch * batch_count + batch_number
-            train_left = train_index < len(train_set)
-            test_left = test_index < len(test_set)
-            testing = test_left and (batch_number % 10 > 7 or not train_left)
-            if testing:
-                batch = test_set[test_index]
-                test_index += 1
-            else:
-                batch = train_set[train_index]
-                train_index += 1
+    # Each model trains on its own thread, over the same batches in the same
+    # order. numpy releases Python's GIL inside most array operations, so
+    # the threads really do run at the same time for much of each batch.
+    # They're daemon threads, so Ctrl+C ends the whole program rather than
+    # waiting for them; the log is already on disk by then.
+    threads = []
+    for name, run in runs.items():
+        thread = threading.Thread(
+            target=train_model, daemon=True,
+            args=(name, run, train_set, test_set, epochs, learn_rate,
+                  run_directory, log, log_file, log_lock))
+        thread.start()
+        threads.append(thread)
+    for thread in threads:
+        # A join with a timeout, in a loop, so Ctrl+C still reaches this
+        # (main) thread while it waits
+        while thread.is_alive():
+            thread.join(timeout=0.5)
+    log_file.close()
 
-            set_name = "test" if testing else "train"
-            for name, run in runs.items():
+    # Test words, so these are images the models haven't trained on.
+    # Models whose thread crashed are left out.
+    finished = {name: run["model"] for name, run in runs.items()
+                if not run["failed"]}
+    if finished:
+        show_predictions(finished, test_set)
+
+def epoch_schedule(train_set, test_set):
+    '''
+    Yields (batch_number, testing, batch) for one epoch. Batches from each
+    set are spaced across the whole epoch, so whichever set runs out first
+    leaves the rest to the other. Every model's thread gets the same order.
+    '''
+    train_index = 0
+    test_index = 0
+    for batch_number in range(len(train_set) + len(test_set)):
+        train_left = train_index < len(train_set)
+        test_left = test_index < len(test_set)
+        testing = test_left and (batch_number % 10 > 7 or not train_left)
+        if testing:
+            batch = test_set[test_index]
+            test_index += 1
+        else:
+            batch = train_set[train_index]
+            train_index += 1
+        yield batch_number, testing, batch
+
+def train_model(name, run, train_set, test_set, epochs, learn_rate,
+                run_directory, log, log_file, log_lock):
+    '''
+    Runs on its own thread: trains one model for every epoch, logging each
+    batch and saving the weights after each epoch. An error stops only this
+    model; it's printed, and the other models carry on.
+    '''
+    batch_count = len(train_set) + len(test_set)
+    # The latest [accuracy, loss] from each set, for printing
+    last = {"train": None, "test": None}
+    try:
+        for epoch in range(epochs):
+            for batch_number, testing, batch in epoch_schedule(train_set,
+                                                               test_set):
+                step = epoch * batch_count + batch_number
+                set_name = "test" if testing else "train"
                 run["optimizer"].set_rate(get_learn_rate(step, learn_rate))
                 accuracy, loss = train_on_batch(
                     run["model"], run["loss_function"], run["optimizer"],
                     batch, train=not testing)
-                log.writerow([name, step, set_name, accuracy, loss])
-                run["last"][set_name] = [accuracy, loss]
 
+                with log_lock:
+                    log.writerow([name, step, set_name, accuracy, loss])
+                    # Write each batch to disk now, so a crash can't lose it
+                    log_file.flush()
+
+                last[set_name] = [accuracy, loss]
                 # Nothing to report until both sets have been run once
-                train_last, test_last = run["last"]["train"], \
-                    run["last"]["test"]
-                if batch_number % 10 == 0 and train_last and test_last:
-                    log_batch(name, epoch, batch_number, *train_last,
-                              *test_last)
-            # Write each batch to disk now, so a crash can't lose it
-            log_file.flush()
+                if batch_number % 10 == 0 and last["train"] and last["test"]:
+                    log_batch(name, epoch, batch_number, *last["train"],
+                              *last["test"])
 
-        # Overwrites the last epoch's weights
-        for name, run in runs.items():
+            # Overwrites the last epoch's weights
             run["model"].save_weights(weights_path(run_directory, name))
-    log_file.close()
-
-    # Test words, so these are images the models haven't trained on
-    show_predictions(models, test_set)
-
+    except Exception:
+        run["failed"] = True
+        print(f"Model {name} crashed; the other models will carry on.\n"
+              f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
     train(epochs=5, learn_rate=0.1)
