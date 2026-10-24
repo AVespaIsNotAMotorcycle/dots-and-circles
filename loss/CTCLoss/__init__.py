@@ -18,67 +18,148 @@ class CTCLoss(LossFunction):
         # to a blank character.
         self.blank = blank
 
+    def can_skip(self, mod_label):
+        '''
+        can_skip[s] is True when a path may jump from state s-2 straight to
+        state s, skipping the blank at s-1. That's allowed when:
+          - s >= 2 (there is a state two to the left), and
+          - l'[s] is a letter, not a blank (blanks can't be skipped *to*;
+            the blank at s-1 is the only thing being skipped over), and
+          - l'[s] != l'[s-2], i.e. the two letters differ. For a doubled
+            letter like "AA", skipping the blank between them would merge
+            them into a single A, so the blank is mandatory.
+
+        This only depends on the label, not on time, so it's worked out
+        once instead of being re-checked for every (t, s) cell.
+
+        Example, label [A, B, B] -> l' = [_, A, _, B, _, B, _]:
+            s:        0  1  2  3  4  5  6
+            l'[s]:    _  A  _  B  _  B  _
+            can_skip: F  F  F  T  F  F  F
+        (s=1 has no s-2; s=3 can skip A->B; s=5 can't, since B == B.)
+        '''
+        label = np.array(mod_label)
+        can_skip = np.zeros(len(label), dtype=bool)
+        # label[2:] lines up each state with label[:-2], the state two to
+        # its left
+        can_skip[2:] = (label[2:] != self.blank) & (label[2:] != label[:-2])
+        return can_skip
+
     def forward(self, y, mod_label):
-        # Returns log(alpha)
+        '''
+        Returns log(alpha), shape (times, states).
+
+        alpha[t, s] is the probability of all path prefixes over tokens
+        0..t that end in state s, including y's probability at (t, s).
+
+        The recurrence is:
+            alpha[t, s] = logaddexp(alpha[t-1, s],      # stay on s
+                                    alpha[t-1, s-1],    # step from s-1
+                                    alpha[t-1, s-2])    # skip from s-2,
+                                                        #   if can_skip[s]
+                          + log y[t, l'[s]]
+
+        Every cell in row t only reads row t-1, never other cells in row t.
+        So instead of looping over s, a whole row is computed at once from
+        shifted copies of the previous row. Only the loop over t remains,
+        since row t needs row t-1 to be finished first.
+        '''
         log_probs = log_softmax(y)
 
         states = len(mod_label)
         times = len(y)
 
+        # emit[t, s] = log y[t, l'[s]]: the log probability of emitting
+        # state s's character at token t. Indexing the columns with the
+        # whole label picks out every state's column at once; blanks (and
+        # repeated letters) just pick the same column more than once.
+        emit = log_probs[:, mod_label]
+        can_skip = self.can_skip(mod_label)
+
+        # -inf is log(0): states not (yet) reachable. Paths must start on
+        # the leading blank (s=0) or the first letter (s=1), so only those
+        # two are reachable at t=0.
         alpha = np.full((times, states), -np.inf)
-        alpha[0][0] = log_probs[0][self.blank]
-        alpha[0][1] = log_probs[0][mod_label[1]]
+        alpha[0, :2] = emit[0, :2]
+
         for t in range(1, times):
-            for s in range(states):
-                first = alpha[t-1][s]
-                second = -np.inf
-                third = -np.inf
+            # stay[s] = alpha[t-1, s]
+            stay = alpha[t-1]
 
-                if s > 0:
-                    second = alpha[t-1][s-1]
+            # step[s] = alpha[t-1, s-1]: shift the row one place right.
+            # State 0 has nothing to its left, so it gets -inf (log 0).
+            #   stay = [a0  a1  a2  a3 ...]
+            #   step = [-inf a0  a1  a2 ...]
+            step = np.concatenate(([-np.inf], stay[:-1]))
 
-                if s > 1:
-                    if mod_label[s] != self.blank:
-                        if mod_label[s] != mod_label[s-2]:
-                            third = alpha[t-1][s-2]
+            # skip[s] = alpha[t-1, s-2]: shift two places right, then
+            # block it (-inf) wherever skipping isn't allowed.
+            #   skip = [-inf -inf a0  a1 ...]
+            skip = np.concatenate(([-np.inf, -np.inf], stay[:-2]))
+            skip = np.where(can_skip, skip, -np.inf)
 
-                factor = log_probs[t][mod_label[s]]
-                alpha[t][s] = np.logaddexp(np.logaddexp(first, second),
-                                           third) + factor
+            # Sum the three ways in (logaddexp is + in log space), then
+            # multiply by the emission probability (+ in log space).
+            # np.logaddexp(-inf, -inf) is -inf, so unreachable states stay
+            # unreachable without any special cases.
+            alpha[t] = np.logaddexp(np.logaddexp(stay, step), skip) + emit[t]
 
         return alpha
 
     def backward(self, y, mod_label):
-        # Returns log(beta)
+        '''
+        Returns log(beta), shape (times, states).
+
+        beta[t, s] is the probability of all path suffixes over tokens
+        t..T-1 that start in state s, including y's probability at (t, s).
+        (So alpha and beta both include it; see gradient_per_image.)
+
+        This is forward() mirrored: paths now arrive from the right, and
+        the loop runs backwards in time:
+            beta[t, s] = logaddexp(beta[t+1, s],        # stay on s
+                                   beta[t+1, s+1],      # step to s+1
+                                   beta[t+1, s+2])      # skip to s+2,
+                                                        #   if allowed
+                         + log y[t, l'[s]]
+        '''
         log_probs = log_softmax(y)
 
         states = len(mod_label)
         times = len(y)
 
+        emit = log_probs[:, mod_label]
+
+        # Moving s -> s+2 is the same jump that forward() checks at state
+        # s+2, so it's allowed exactly when can_skip[s+2] is. Shift the
+        # mask two places left; the last two states have no s+2.
+        #   can_skip       = [c0 c1 c2 c3 c4 ...]
+        #   can_skip_ahead = [c2 c3 c4 ... False False]
+        can_skip_ahead = np.concatenate((self.can_skip(mod_label)[2:],
+                                         [False, False]))
+
+        # Paths must end on the last letter (s=-2) or the trailing blank
+        # (s=-1), so only those two have a suffix at the last token.
         beta = np.full((times, states), -np.inf)
-        beta[-1][-1] = log_probs[-1][self.blank]
-        beta[-1][-2] = log_probs[-1][mod_label[-2]]
-        for delta_t in range(1, times):
-            t = times - delta_t - 1
-            for delta_s in range(states):
-                s = states - delta_s - 1
+        beta[-1, -2:] = emit[-1, -2:]
 
-                first = beta[t+1][s]
-                second = -np.inf
-                third = -np.inf
+        # t runs from times-2 down to 0
+        for t in range(times - 2, -1, -1):
+            # stay[s] = beta[t+1, s]
+            stay = beta[t+1]
 
-                if s + 1 < states:
-                    second = beta[t+1][s+1]
+            # step[s] = beta[t+1, s+1]: shift the row one place left. The
+            # last state has nothing to its right, so it gets -inf.
+            #   stay = [... b3  b4  b5  b6]
+            #   step = [... b4  b5  b6  -inf]
+            step = np.concatenate((stay[1:], [-np.inf]))
 
-                if s + 2 < states:
-                    if mod_label[s] != self.blank:
-                        if mod_label[s] != mod_label[s+2]:
-                            third = beta[t+1][s+2]
+            # skip[s] = beta[t+1, s+2]: shift two places left, then block
+            # it wherever skipping isn't allowed.
+            #   skip = [... b5  b6  -inf -inf]
+            skip = np.concatenate((stay[2:], [-np.inf, -np.inf]))
+            skip = np.where(can_skip_ahead, skip, -np.inf)
 
-                factor = log_probs[t][mod_label[s]]
-
-                beta[t][s] = np.logaddexp(np.logaddexp(first, second),
-                                          third) + factor
+            beta[t] = np.logaddexp(np.logaddexp(stay, step), skip) + emit[t]
 
         return beta
 
