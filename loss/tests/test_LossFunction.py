@@ -48,7 +48,7 @@ class TestLossFunction:
 
     def test_history(self):
         layer = Linear(self.size_in, self.size_out)
-        loss_function = SquaredError(layer)
+        loss_function = SquaredError(layer, keep_history=True)
         assert loss_function.history() == []
 
         results = []

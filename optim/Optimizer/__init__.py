@@ -1,6 +1,11 @@
 class Optimizer:
-    def __init__(self, learn_rate):
+    def __init__(self, learn_rate, keep_history=False):
+        '''
+        keep_history: if True, every call records its gradients and delta.
+        Off by default, since each entry is as big as the model.
+        '''
         self.learn_rate = learn_rate
+        self.keep_history = keep_history
         self.grads_history = []
         self.delta_history = []
 
@@ -9,9 +14,10 @@ class Optimizer:
         raise NotImplementedError
 
     def __call__(self, grads):
-        self.grads_history.append(grads)
         delta = self.delta(grads)
-        self.delta_history.append(delta)
+        if self.keep_history:
+            self.grads_history.append(grads)
+            self.delta_history.append(delta)
         return delta
 
     def set_rate(self, learn_rate):

@@ -4,13 +4,13 @@ from optim.Optimizer import Optimizer
 
 
 class SGD(Optimizer):
-    def __init__(self, learn_rate, max_norm=None):
+    def __init__(self, learn_rate, max_norm=None, keep_history=False):
         '''
         max_norm: if set, gradients are scaled down together whenever their
         combined norm (over every parameter) is larger than this, so one bad
         batch can't take an oversized step.
         '''
-        super().__init__(learn_rate)
+        super().__init__(learn_rate, keep_history)
         self.max_norm = max_norm
 
     def squared_norm(self, grads):

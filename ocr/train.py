@@ -1,4 +1,8 @@
 # Run from the repository root with: python -m ocr.train
+# or (faster) OPENBLAS_NUM_THREADS=1 .venv/bin/python -m ocr.train
+
+import csv
+import gc
 import json
 import os
 import random
@@ -24,6 +28,10 @@ TOKEN_DIM = ROWS_PER_TOKEN * WIDTH
 CONTEXT_LENGTH = IMAGE_HEIGHT // ROWS_PER_TOKEN
 
 directory = os.path.dirname(os.path.abspath(__file__))
+# Each run gets its own numbered folder here, holding its log, weights and
+# graph
+RUNS_DIRECTORY = os.path.join(directory, "runs")
+LOG_COLUMNS = ["model", "step", "set", "accuracy", "loss"]
 with open(os.path.join(directory, "training_data", "alphabet.json"),
           "r", encoding="utf-8") as file:
     alphabet = json.load(file)
@@ -235,18 +243,55 @@ def moving_average(values, window):
     window = min(window, len(values))
     return np.convolve(values, np.ones(window) / window, mode="valid")
 
-def graph(runs, window=5):
+def new_run_directory():
     '''
-    runs: {name: run}, where each run has a "train_history" and a
-    "test_history". Each model gets its own colour; train is solid and
-    test is dashed.
+    Makes and returns ocr/runs/runNNN, numbered one past the highest run so
+    far (counting the older graphs in run_graphs too).
     '''
+    numbers = [0]
+    for folder in (RUNS_DIRECTORY, os.path.join(directory, "run_graphs")):
+        if os.path.isdir(folder):
+            for name in os.listdir(folder):
+                if name.startswith("run") and name[3:6].isdigit():
+                    numbers.append(int(name[3:6]))
+    run_directory = os.path.join(RUNS_DIRECTORY, f"run{max(numbers) + 1:03}")
+    os.makedirs(run_directory)
+    return run_directory
+
+def weights_path(run_directory, name):
+    # Model names can contain "/", e.g. "C-8/128"
+    return os.path.join(run_directory,
+                        f"weights_{name.replace('/', '-')}.npz")
+
+def read_log(run_directory):
+    '''
+    Reads a run's log.csv into {model: {"train": rows, "test": rows}}, where
+    rows is an array of [step, accuracy, loss].
+    '''
+    histories = {}
+    with open(os.path.join(run_directory, "log.csv"), newline="") as file:
+        for row in csv.DictReader(file):
+            sets = histories.setdefault(row["model"],
+                                        {"train": [], "test": []})
+            sets[row["set"]].append([int(row["step"]),
+                                     float(row["accuracy"]),
+                                     float(row["loss"])])
+    return {name: {key: np.array(rows) for key, rows in sets.items()}
+            for name, sets in histories.items()}
+
+def graph(run_directory, window=5):
+    '''
+    Graphs a run from its log.csv, and saves the graph to the run's folder.
+    Each model gets its own colour; train is solid and test is dashed.
+    Works on any run folder, including one from a run that crashed.
+    '''
+    histories = read_log(run_directory)
     figure, (accuracy_axis, loss_axis) = plt.subplots(2, 1, sharex=True)
-    for index, (name, run) in enumerate(runs.items()):
-        for history, label, style in (
-                (run["train_history"], "train", "-"),
-                (run["test_history"], "test", "--")):
-            history = np.array(history)
+    for index, (name, sets) in enumerate(histories.items()):
+        for label, style in (("train", "-"), ("test", "--")):
+            history = sets[label]
+            if len(history) == 0:
+                continue
             # Each point averages a batch with the window - 1 batches before
             steps = history[min(window, len(history)) - 1:, 0]
             accuracy_axis.plot(steps, moving_average(history[:, 1], window),
@@ -258,6 +303,7 @@ def graph(runs, window=5):
     loss_axis.set_ylabel("Loss")
     loss_axis.set_xlabel("Batch")
     accuracy_axis.legend()
+    figure.savefig(os.path.join(run_directory, "graph.png"))
     plt.show()
 
 def show_predictions(models, batches, count=5):
@@ -287,6 +333,21 @@ def get_learn_rate(batch_count, initial_rate):
     return initial_rate
 
 def train(epochs = 3, learn_rate = 0.001):
+    run_directory = new_run_directory()
+    print(f"Saving this run to {run_directory}")
+    run_models(run_directory, epochs, learn_rate)
+    # run_models has returned, so its batches and models are unreachable;
+    # collect them now, before graphing
+    gc.collect()
+    graph(run_directory)
+
+def run_models(run_directory, epochs, learn_rate):
+    '''
+    Trains the models, logging every batch's results to log.csv as it goes
+    and saving each model's weights at the end of every epoch, so a crash
+    loses at most the current epoch's training and none of the log.
+    Everything it makes is local, so it's all freed when it returns.
+    '''
     train_set, test_set = generate_seeds()
 
     print("Generating batches...")
@@ -313,8 +374,16 @@ def train(epochs = 3, learn_rate = 0.001):
         #             num_classes=NUM_CLASSES, depth=4, blank=END),
         # "C-8": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=8, blank=END),
-        "C-16": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-                    num_classes=NUM_CLASSES, depth=16, blank=END),
+        # "C-16": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        #             num_classes=NUM_CLASSES, depth=16, blank=END),
+        "C-8/32": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=32),
+        "C-16/32": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=16, blank=END, emb_dim=32),
+        "C-8/64": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64),
+        "C-8/128": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=128),
     }
     runs = {}
     for name, model in models.items():
@@ -326,9 +395,13 @@ def train(epochs = 3, learn_rate = 0.001):
             "model": model,
             "loss_function": loss_function,
             "optimizer": SGD(learn_rate, max_norm=5),
-            "train_history": [],
-            "test_history": [],
+            # The latest [accuracy, loss] from each set, for printing
+            "last": {"train": None, "test": None},
         }
+
+    log_file = open(os.path.join(run_directory, "log.csv"), "w", newline="")
+    log = csv.writer(log_file)
+    log.writerow(LOG_COLUMNS)
 
     for epoch in range(epochs):
         train_index = 0
@@ -347,32 +420,32 @@ def train(epochs = 3, learn_rate = 0.001):
                 batch = train_set[train_index]
                 train_index += 1
 
+            set_name = "test" if testing else "train"
             for name, run in runs.items():
-                train_history = run["train_history"]
-                test_history = run["test_history"]
-                run["optimizer"].set_rate(
-                        get_learn_rate(len(train_history) + len(test_history),
-                        learn_rate))
+                run["optimizer"].set_rate(get_learn_rate(step, learn_rate))
                 accuracy, loss = train_on_batch(
                     run["model"], run["loss_function"], run["optimizer"],
                     batch, train=not testing)
-                if testing:
-                    test_history.append([step, accuracy, loss])
-                else:
-                    train_history.append([step, accuracy, loss])
+                log.writerow([name, step, set_name, accuracy, loss])
+                run["last"][set_name] = [accuracy, loss]
 
                 # Nothing to report until both sets have been run once
-                if batch_number % 10 == 0 and train_history and test_history:
-                    _, test_accuracy, test_loss = test_history[-1]
-                    _, train_accuracy, train_loss = train_history[-1]
-                    log_batch(name, epoch, batch_number, train_accuracy,
-                              train_loss, test_accuracy, test_loss)
+                train_last, test_last = run["last"]["train"], \
+                    run["last"]["test"]
+                if batch_number % 10 == 0 and train_last and test_last:
+                    log_batch(name, epoch, batch_number, *train_last,
+                              *test_last)
+            # Write each batch to disk now, so a crash can't lose it
+            log_file.flush()
 
-    # Test words, so these are images the models haven't trained on. Printed
-    # before graph, since plt.show() blocks until the window is closed.
+        # Overwrites the last epoch's weights
+        for name, run in runs.items():
+            run["model"].save_weights(weights_path(run_directory, name))
+    log_file.close()
+
+    # Test words, so these are images the models haven't trained on
     show_predictions(models, test_set)
-    graph(runs)
 
 
 if __name__ == "__main__":
-    train(epochs=10, learn_rate=0.1)
+    train(epochs=5, learn_rate=0.1)

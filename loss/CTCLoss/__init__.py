@@ -12,8 +12,8 @@ class CTCLoss(LossFunction):
     otherwise underflow to 0. Multiplying becomes adding logs, adding
     becomes np.logaddexp, and 0 (unreachable) becomes -inf.
     '''
-    def __init__(self, module, blank):
-        super().__init__(module)
+    def __init__(self, module, blank, keep_history=False):
+        super().__init__(module, keep_history)
         # blank is the index of the output prob corresponding
         # to a blank character.
         self.blank = blank
@@ -238,8 +238,10 @@ class CTCLoss(LossFunction):
     def __call__(self, x, y, label, token_counts):
         loss, dLdy = self.loss_gradient(x, y, label, token_counts)
         self.module.backward(dLdy)
-        # Modules reuse their grads dict, so copy it to keep history intact
-        gradient = copy.deepcopy(self.module.gradients())
-
-        self._history.append((loss, gradient))
+        gradient = self.module.gradients()
+        if self.keep_history:
+            # Modules reuse their grads dict, so copy it to keep history
+            # intact
+            gradient = copy.deepcopy(gradient)
+            self._history.append((loss, gradient))
         return loss, gradient

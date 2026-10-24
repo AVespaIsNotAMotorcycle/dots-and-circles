@@ -41,6 +41,38 @@ class Module:
                 out[key] = value.parameters(only_shape=only_shape)
         return out
 
+    def flat_parameters(self, prefix=""):
+        # Returns {path: array} for every param, e.g.
+        # {"layers.0_Linear.weights": ...}. The arrays are the live params,
+        # not copies, so writing into them changes the model.
+        out = {}
+        for key, value in self.params.items():
+            if isinstance(value, np.ndarray):
+                out[prefix + key] = value
+            else:
+                out.update(value.flat_parameters(prefix + key + "."))
+        return out
+
+    def save_weights(self, path):
+        # Saves every param to an .npz file, keyed by its path
+        np.savez(path, **self.flat_parameters())
+
+    def load_weights(self, path):
+        # Loads params saved by save_weights into this model, which must
+        # have the same structure
+        params = self.flat_parameters()
+        with np.load(path) as saved:
+            assert set(saved.files) == set(params), \
+                f"Saved params don't match the model's. Missing: " \
+                f"{sorted(set(params) - set(saved.files))}, unexpected: " \
+                f"{sorted(set(saved.files) - set(params))}"
+            for key, value in params.items():
+                assert np.shape(saved[key]) == np.shape(value), \
+                    f"{key} has shape {np.shape(value)}, but the saved one " \
+                    f"is {np.shape(saved[key])}"
+                # Copy in place, so modules keep their own arrays
+                value[...] = saved[key]
+
     def gradients(self):
         # self.gradients is same shape as self.parameters
         return self.grads

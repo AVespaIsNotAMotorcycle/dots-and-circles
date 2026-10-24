@@ -118,7 +118,7 @@ class TestCrossEntropyLoss:
         size_in = 8
         num_classes = 4
         layer = Linear(size_in, num_classes)
-        loss_function = CrossEntropyLoss(layer)
+        loss_function = CrossEntropyLoss(layer, keep_history=True)
         x = np.random.rand(1, size_in)
         label = np.array([2])
 

@@ -6,8 +6,8 @@ from utils.softmax import softmax
 
 class CrossEntropyLoss(LossFunction):
     # Positions with a label below 0 are ignored, e.g. padding
-    def __init__(self, module):
-        super().__init__(module)
+    def __init__(self, module, keep_history=False):
+        super().__init__(module, keep_history)
 
     def loss(self, x, y, label):
         # y: logits of shape (..., num_classes), label: class indices (...)
