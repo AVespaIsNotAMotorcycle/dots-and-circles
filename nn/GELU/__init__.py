@@ -9,11 +9,8 @@ class GELU(Module):
 
     def forward(self, x):
         self.last_x = x
-        a = 0.5
-        b = x
-        c = 1 + np.tanh(((2 / np.pi) ** .5) * (x + 0.044715 * (x**3)))
-        y = a * b * c
-        return y
+        self.last_tanh = np.tanh(0.7978845 * (x + (0.044715 * x**3)))
+        return 0.5 * x * (1 + self.last_tanh)
 
     def cosh(self, x):
         # np.cosh will overflow if values are too high
@@ -24,14 +21,14 @@ class GELU(Module):
     def backward(self, dLdy):
         lx = self.last_x
         lx3 = lx * lx * lx
-        a = 0.5 * np.tanh((0.0356774 * lx3) + (0.797885 * lx))
+
+        a = 0.5 * self.last_tanh
 
         b_1 = ((0.0535161 * lx3) + (0.398942 * lx))
         b_2 = self.cosh((0.0356774 * lx3) + (0.797885 * lx))
         b = b_1 / b_2**2
 
-        c = 0.5
-        dydx = a + b + c
+        dydx = a + b + 0.5
         dLdx = dydx * dLdy
 
         assert np.shape(dLdx) == np.shape(self.last_x), \
