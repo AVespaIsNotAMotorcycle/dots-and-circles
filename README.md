@@ -55,7 +55,11 @@ I didn't start using Claude code until after the `nn` module was fully implement
 
 There's no automatic differentiation. This means that backpropogation must be manually implemented for each Module, and has resulted in some errors. For example, I forgot to account for shortcut layers around the attention and MLP blocks of the Transformer, so the gradients were off. Claude caught that in a later pass.
 
-Another problem downstream of this is that, to make things marginally easier, I averaged out loss and gradients when doing backprop. Tests still showed decreasing loss, so I figured it was fine. However, when trying to train the actual OCR model, accuracy stalled out quickly, so I had to undo it. Compare before and after this change:
+Another problem downstream of this is that, to make things marginally easier, I averaged out loss and gradients when doing backprop.
+Tests still showed decreasing loss, so I figured it was fine.
+However, when trying to train the actual OCR model, accuracy stalled out quickly, so I had to undo it.
+Accuracy here is measured as the percentage of the first n output characters which are correct, where n is the length of the actual word.
+Compare before and after this change:
 
 | Before                                                              | After                                                               |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -85,4 +89,13 @@ Model B initially learned faster, but plateaued with an accuracy around .2, and 
 <img width="1280" height="960" alt="image" src="./ocr/run_graphs/run007.png" />
 
 CTC loss was implemented, and a CTC model (Model C) was compared against Model B (readout tokens).
+Accuracy here is measured as `1 - edit_distance(guess, word) / len(word)`.
 <img width="1280" height="960" alt="image" src="./ocr/run_graphs/run009.png" />
+
+Accuracy seemed to be increasing slightly at the end of the 2-epoch run comparing B and C, so I trained a 4-transformer and 8-transformer variant of C for 5 epochs.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run010.png" />
+
+Then followed with a 10-epoch run with 4- and 8-transformer variants of Models B and C.
+Model C clearly has better accuracy, with the 4-transformer Model C beating the 8-transformer Model B.
+There's also a large gap between C-8 and C4.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run011.png" />

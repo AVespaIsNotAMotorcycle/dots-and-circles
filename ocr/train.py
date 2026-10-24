@@ -298,11 +298,21 @@ def train(epochs = 3, learn_rate = 0.001):
     models = {
         # "A": ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=4),
-        "B": ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "B": ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        #             num_classes=NUM_CLASSES, depth=4,
+        #             num_readouts=MAX_LABEL_LENGTH),
+        "B-4": ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
                     num_classes=NUM_CLASSES, depth=4,
                     num_readouts=MAX_LABEL_LENGTH),
-        "C": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        "B-8": ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=8,
+                    num_readouts=MAX_LABEL_LENGTH),
+        # "C": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        #             num_classes=NUM_CLASSES, depth=4, blank=END),
+        "C-4": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
                     num_classes=NUM_CLASSES, depth=4, blank=END),
+        "C-8": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=8, blank=END),
     }
     runs = {}
     for name, model in models.items():
@@ -363,4 +373,4 @@ def train(epochs = 3, learn_rate = 0.001):
 
 
 if __name__ == "__main__":
-    train(epochs=2, learn_rate=0.1)
+    train(epochs=10, learn_rate=0.1)
