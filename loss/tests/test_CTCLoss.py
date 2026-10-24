@@ -169,8 +169,8 @@ class TestCTCLoss:
             changed[i, count:] = self.random_logits(6 - count) * 100
 
         loss = self.ctc.loss(dummy_x(2, 6), y, labels, token_counts)
-        loss_changed = self.ctc.loss(dummy_x(2, 6), changed, labels,
-                                     token_counts)
+        loss_changed = self.ctc.loss(dummy_x(2, 6), changed,
+                                     labels, token_counts)
         assert np.isclose(loss, loss_changed)
 
     # loss_gradient()
@@ -183,7 +183,7 @@ class TestCTCLoss:
 
     def test_gradient_shape(self):
         x, y, labels, token_counts = self.gradient_case()
-        gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
+        _, gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
         assert np.shape(gradient) == np.shape(y)
 
     def test_gradient_numerical(self):
@@ -194,18 +194,18 @@ class TestCTCLoss:
         for index in np.ndindex(np.shape(y)):
             original = y[index]
             y[index] = original + eps
-            plus = self.ctc.loss(x, y, labels, token_counts)
+            plus, _ = self.ctc.loss_gradient(x, y, labels, token_counts)
             y[index] = original - eps
-            minus = self.ctc.loss(x, y, labels, token_counts)
+            minus, _ = self.ctc.loss_gradient(x, y, labels, token_counts)
             y[index] = original
             expected[index] = (plus - minus) / (2 * eps)
 
-        gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
+        _, gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
         assert np.allclose(gradient, expected, atol=1e-6)
 
     def test_gradient_zero_on_padding(self):
         x, y, labels, token_counts = self.gradient_case()
-        gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
+        _, gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
         for i, count in enumerate(token_counts):
             assert np.all(gradient[i, count:] == 0)
 
@@ -213,7 +213,7 @@ class TestCTCLoss:
         # Shifting every logit in a row by the same amount doesn't change
         # softmax, so each row's gradient sums to 0
         x, y, labels, token_counts = self.gradient_case()
-        gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
+        _, gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
         assert np.allclose(np.sum(gradient, axis=-1), 0)
 
     # Log space
@@ -225,8 +225,7 @@ class TestCTCLoss:
         token_counts = [60, 64]
         x, y = dummy_x(2, 64), self.random_logits(2, 64) * 30
 
-        loss = self.ctc.loss(x, y, labels, token_counts)
-        gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
+        loss, gradient = self.ctc.loss_gradient(x, y, labels, token_counts)
         assert np.isfinite(loss)
         assert np.all(np.isfinite(gradient))
         assert np.allclose(np.sum(gradient, axis=-1), 0)
@@ -242,5 +241,5 @@ class TestCTCLoss:
         expected = -(log_probs[0, A] + log_probs[1, BLANK]
                      + log_probs[2, A]) / 2
 
-        loss = self.ctc.loss(dummy_x(1, 3), y, [[A, A]], [3])
+        loss, _ = self.ctc.loss_gradient(dummy_x(1, 3), y, [[A, A]], [3])
         assert np.isclose(loss, expected)

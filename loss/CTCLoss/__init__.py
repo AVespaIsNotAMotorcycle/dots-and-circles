@@ -164,35 +164,23 @@ class CTCLoss(LossFunction):
         return beta
 
     def add_blanks(self, label):
+        # The label, with blanks inserted at the start and end, and between
+        # each letter.
         mod_label = [self.blank]
         for char in label:
             mod_label.append(char)
             mod_label.append(self.blank)
         return mod_label
 
-    def loss_per_image(self, y, label, token_count):
+    def loss_per_image(self, label, token_count, log_p):
         assert token_count >= len(label)
 
-        # The label, with blanks inserted at the start and end, and between
-        # each letter.
-        mod_label = self.add_blanks(label)
-
-        alpha = self.forward(y[:token_count], mod_label)
-
-        # Paths end on the last letter or the trailing blank
-        log_p = np.logaddexp(alpha[-1][-1], alpha[-1][-2])
         loss = -log_p / len(label)
         return loss
 
     def loss(self, x, y, label, token_counts):
-        batch_size, context_length, emb_dim = np.shape(x)
-
-        loss = 0
-        for index in range(batch_size):
-            token_count = token_counts[index]
-            loss += self.loss_per_image(y[index], label[index], token_count)
-
-        return loss / batch_size
+        loss, _ = self.loss_gradient(x, y, label, token_counts)
+        return loss
 
     def gradient_per_image(self, y, label, token_count):
         '''
@@ -208,8 +196,12 @@ class CTCLoss(LossFunction):
 
         alpha = self.forward(y[:token_count], mod_label)
         beta = self.backward(y[:token_count], mod_label)
-        log_probs = log_softmax(y[:token_count])
+
+        # Paths end on the last letter or the trailing blank
         log_p = np.logaddexp(alpha[-1][-1], alpha[-1][-2])
+        loss = self.loss_per_image(label, token_count, log_p)
+
+        log_probs = log_softmax(y[:token_count])
 
         # alpha and beta both include y's probability at (t, s), so
         # subtract its log once
@@ -221,25 +213,30 @@ class CTCLoss(LossFunction):
         np.logaddexp.at(gamma.T, mod_label, occupancy.T)
         gamma = np.exp(gamma - log_p)
 
-        return (np.exp(log_probs) - gamma) / len(label)
+        return loss, (np.exp(log_probs) - gamma) / len(label)
 
     def loss_gradient(self, x, y, label, token_counts):
+        # Note: unlike other loss functions, returns (loss, gradient)
+        #       instead of just gradient
         batch_size = np.shape(y)[0]
 
+        loss = 0
         # Padding tokens don't affect the loss, so their gradient stays 0
         gradient = np.zeros(np.shape(y))
         for index in range(batch_size):
             token_count = token_counts[index]
-            gradient[index, :token_count] = self.gradient_per_image(
+            img_loss, img_grad = self.gradient_per_image(
                 y[index], label[index], token_count)
+            gradient[index, :token_count] = img_grad
+            loss += img_loss
 
         # loss() is the mean over the batch
-        return gradient / batch_size
+        loss = loss / batch_size
+        gradient = gradient / batch_size
+        return loss, gradient
 
     def __call__(self, x, y, label, token_counts):
-        loss = self.loss(x, y, label, token_counts)
-
-        dLdy = self.loss_gradient(x, y, label, token_counts)
+        loss, dLdy = self.loss_gradient(x, y, label, token_counts)
         self.module.backward(dLdy)
         # Modules reuse their grads dict, so copy it to keep history intact
         gradient = copy.deepcopy(self.module.gradients())
