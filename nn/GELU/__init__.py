@@ -22,12 +22,12 @@ class GELU(Module):
         return np.cosh(x)
 
     def backward(self, dLdy):
-        a = 0.5 \
-            * np.tanh((0.0356774 * self.last_x**3) + (0.797885 * self.last_x))
-
         lx = self.last_x
-        b_1 = ((0.0535161 * lx**3) + (0.398942 * lx))
-        b_2 = self.cosh((0.0356774 * lx**3) + (0.797885 * lx))
+        lx3 = lx * lx * lx
+        a = 0.5 * np.tanh((0.0356774 * lx3) + (0.797885 * lx))
+
+        b_1 = ((0.0535161 * lx3) + (0.398942 * lx))
+        b_2 = self.cosh((0.0356774 * lx3) + (0.797885 * lx))
         b = b_1 / b_2**2
 
         c = 0.5
