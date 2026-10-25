@@ -127,3 +127,42 @@ Next was a comparison of the efficacy of various learning rates for Adam (and on
 This was a 3-epoch run, and both models seemed about equivalent, which makes sense, since they didn't diverge until around epoch 10 in earlier runs.
 Adam with learning rates of 1e-3 and 3e-3 performed better than SGD and Adam with learning rate of 3e-4. 1e-3 and 3e-3 seemed about equivalent.
 <img width="1280" height="960" alt="image" src="./ocr/run_graphs/run021.png" />
+
+Learning rates of 1e-3 and 3e-3 were chosen for a 30-epoch run. Models trained with 3e-3 had better accuracy than 1e-3 at the end of the run,
+and Model D slightly outperformed Model C with a learning rate of 3e-3. Model D massively outperformed Model C with a rate of 1e-3.
+The difference between Model D and C appears to be overfitting: both variants of Model C had lower accuracy on test data than training data,
+though in the 3e-3 variant the difference was small.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run022.png" />
+
+A look into the word-level accuracy (that is, what percentage of words were guessed entirely correctly) for D-8/64(lr=3e-3) showed that
+the model predicted 78.9% of words correctly. Of the misses, 16% are off only by free variation selectors (FVS). In the Mongolian Unicode block,
+of which Manchu is a subset, there are four characters which are invisible, and serve only to modify the preceding character.
+- U+180B MONGOLIAN FREE VARIATION SELECTOR ONE (FSV1)
+- U+180C MONGOLIAN FREE VARIATION SELECTOR TWO (FSV2)
+- U+180D MONGOLIAN FREE VARIATION SELECTOR THREE (FSV3)
+- U+180E MONGOLIAN VOWEL SEPARATOR (MVS)
+- U+180F MONGOLIAN FREE VARIATION SELECTOR FOUR (FSV4)
+The training data, assembled from the Kaikki dictionary, contains some words with FVS1 and FVS2.
+Sometimes the presence of an FVS makes a meaningful difference to the appearance of the word, but not always:
+| Font     | FVS  | With FVS                                                               | Without                                                                |
+| -------- | ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| ShuKai   | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_2_L1" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_2_L2" /> |
+| -------- | ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| ZhengHei | FVS2 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_4_L1" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_4_L2" /> |
+| -------- | ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| GuFeng | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_2_L1" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_2_L2" /> |
+| -------- | ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| YaBai  | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_1_L1" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_1_L2" /> |
+
+A bigger factor in accuracy is word length: the percentage of guesses which are completely correct drops as the number of characters in the label increases.
+Partially this inevitable, as the more characters there are in a label, the more chances there are to make an error, and even one error means that the whole
+word is marked as wrong. However, the model also consistently performs worse on characters which are lower in the image.
+For comparison, 2000 short words (<=24 tokens, i.e. <=96px tall) were tested with various degrees of padding at the top.
+The more padding was added, the worse the model's performance.
+| Shift (tokens) | 0     | 4     | 8     | 16    | 24    | 32    | 40   |
+| -------------- | ----- | ----- | ----- | ----- | ----- | ----- | ---- |
+| Exact	         | 86.8% | 59.7% | 45.1% | 31.1% | 21.7% | 10.0% | 3.8% |
+This indicates that a single-word accuracy could likely be improved by adding random amounts of padding (within the limits of context length) to lexigraphs
+during training, so that the model has more exposure to tokens later in the sequence.
+As it stands, accuracy is highest on words with labels 1-4 characters long (about 90%), and as length increases, it begins dropping steadily to 79% at length 9.
+Past that, it drops more rapidly, with labels of length 13 having 30% accuracy, and 16 or more characters having 4%.

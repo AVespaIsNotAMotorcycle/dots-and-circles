@@ -1,0 +1,9 @@
+L1,L2,font,word,word_without_fvs,selector,letter,position
+visible_1_L1.png,visible_1_L2.png,XM_BiaoHei,ᡶ᠋ᠣᠯᡥᠣ,ᡶᠣᠯᡥᠣ,FVS1,FA,initial
+visible_2_L1.png,visible_2_L2.png,XM_ShuKai,ᡥᠣᡨ᠋ᠣᠨ,ᡥᠣᡨᠣᠨ,FVS1,TA,medial
+visible_3_L1.png,visible_3_L2.png,XM_WenQin,ᡧᠣᠩᡴ᠋ᠣᡵᠣ,ᡧᠣᠩᡴᠣᡵᠣ,FVS1,KA,medial
+visible_4_L1.png,visible_4_L2.png,XM_ZhengHei,ᠨᠣᠮᡠᠨ ᡥᠠᠨ᠌,ᠨᠣᠮᡠᠨ ᡥᠠᠨ,FVS2,NA,final
+visible_5_L1.png,visible_5_L2.png,XM_LiuYe,ᡨᡠ᠋ᠸᠠ,ᡨᡠᠸᠠ,FVS1,UE,medial
+invisible_1_L1.png,invisible_1_L2.png,XM_YaBai,ᠪᡝᡳ᠌ᠯᡝ,ᠪᡝᡳᠯᡝ,FVS2,I,medial
+invisible_2_L1.png,invisible_2_L2.png,XM_GuFeng,ᡨ᠋ᠣᠯᡤᡳᠨ,ᡨᠣᠯᡤᡳᠨ,FVS1,TA,initial
+invisible_3_L1.png,invisible_3_L2.png,XM_ZhengBai,ᠠᡩᡠ᠋ᠨ,ᠠᡩᡠᠨ,FVS1,UE,medial
