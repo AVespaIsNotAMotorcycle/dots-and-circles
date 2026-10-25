@@ -270,9 +270,9 @@ def new_run_directory():
     return run_directory
 
 def weights_path(run_directory, name):
-    # Model names can contain "/", e.g. "C-8/128"
-    return os.path.join(run_directory,
-                        f"weights_{name.replace('/', '-')}.npz")
+    # Run names can contain "/" and spaces, e.g. "C-8/128 Adam 1e-3"
+    file_name = name.replace("/", "-").replace(" ", "_")
+    return os.path.join(run_directory, f"weights_{file_name}.npz")
 
 def read_log(run_directory):
     '''
@@ -344,16 +344,16 @@ def get_learn_rate(batch_count, initial_rate):
     # return initial_rate / ((0.001 * batch_count) + 1)
     return initial_rate
 
-def train(epochs = 3, learn_rate = 0.001):
+def train(epochs = 3):
     run_directory = new_run_directory()
     print(f"Saving this run to {run_directory}")
-    run_models(run_directory, epochs, learn_rate)
+    run_models(run_directory, epochs)
     # run_models has returned, so its batches and models are unreachable;
     # collect them now, before graphing
     gc.collect()
     graph(run_directory)
 
-def run_models(run_directory, epochs, learn_rate):
+def run_models(run_directory, epochs):
     '''
     Trains the models, one thread each, logging every batch's results to
     log.csv as it goes and saving each model's weights at the end of every
@@ -367,53 +367,69 @@ def run_models(run_directory, epochs, learn_rate):
     train_set = generate_batches(train_set)
     test_set = generate_batches(test_set)
 
-    # The models train side by side, each on its own thread, on the same
-    # batches in the same order
+    # Every model below is trained with every optimizer below, each pairing
+    # as its own run, e.g. "D-8/64 Adam 1e-3". All runs train side by side,
+    # each on its own thread, on the same batches in the same order. Both
+    # dicts hold factories (lambdas), since each run needs its own fresh
+    # model and optimizer.
     models = {
-        # "A": ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "A": lambda: ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=4),
-        # "B": ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "B": lambda: ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=4,
         #             num_readouts=MAX_LABEL_LENGTH),
-        # "B-4": ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "B-4": lambda: ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=4,
         #             num_readouts=MAX_LABEL_LENGTH),
-        # "B-8": ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "B-8": lambda: ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=8,
         #             num_readouts=MAX_LABEL_LENGTH),
-        # "C": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "C": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=4, blank=END),
-        # "C-4": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "C-4": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=4, blank=END),
-        # "C-8": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "C-8": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=8, blank=END),
-        # "C-16": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "C-16": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=16, blank=END),
-        # "C-8/32": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "C-8/32": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=32),
-        # "C-16/32": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "C-16/32": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=16, blank=END, emb_dim=32),
-        "C-8/64": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        "C-8/64": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
                     num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64),
-        # "C-8/128": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        # "C-8/128": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=128),
-        "D-8/64": ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        "D-8/64": lambda: ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
                     num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64,
                     drop_rate=0.1),
     }
+    optimizers = {
+        "SGD 0.1": lambda: SGD(0.1, max_norm=5),
+        "Adam 3e-4": lambda: Adam(0.0003),
+        "Adam 1e-3": lambda: Adam(0.001),
+        "Adam 3e-3": lambda: Adam(0.003),
+    }
+
     runs = {}
-    for name, model in models.items():
-        if getattr(model, "uses_ctc", False):
-            loss_function = CTCLoss(model, blank=model.blank)
-        else:
-            loss_function = CrossEntropyLoss(model)
-        runs[name] = {
-            "model": model,
-            "loss_function": loss_function,
-            "optimizer": Adam(learn_rate),
-            # Set by the model's thread if it crashes
-            "failed": False,
-        }
+    for model_name, make_model in models.items():
+        for optimizer_name, make_optimizer in optimizers.items():
+            model = make_model()
+            optimizer = make_optimizer()
+            if getattr(model, "uses_ctc", False):
+                loss_function = CTCLoss(model, blank=model.blank)
+            else:
+                loss_function = CrossEntropyLoss(model)
+            runs[f"{model_name} {optimizer_name}"] = {
+                "model": model,
+                "loss_function": loss_function,
+                "optimizer": optimizer,
+                # get_learn_rate's schedule starts from each optimizer's
+                # own rate
+                "learn_rate": optimizer.learn_rate,
+                # Set by the run's thread if it crashes
+                "failed": False,
+            }
 
     # One log for every model. Threads write rows to it in whatever order
     # they finish batches, so the lock stops two rows being written at once.
@@ -431,7 +447,7 @@ def run_models(run_directory, epochs, learn_rate):
     for name, run in runs.items():
         thread = threading.Thread(
             target=train_model, daemon=True,
-            args=(name, run, train_set, test_set, epochs, learn_rate,
+            args=(name, run, train_set, test_set, epochs,
                   run_directory, log, log_file, log_lock))
         thread.start()
         threads.append(thread)
@@ -469,7 +485,7 @@ def epoch_schedule(train_set, test_set):
             train_index += 1
         yield batch_number, testing, batch
 
-def train_model(name, run, train_set, test_set, epochs, learn_rate,
+def train_model(name, run, train_set, test_set, epochs,
                 run_directory, log, log_file, log_lock):
     '''
     Runs on its own thread: trains one model for every epoch, logging each
@@ -485,7 +501,8 @@ def train_model(name, run, train_set, test_set, epochs, learn_rate,
                                                                test_set):
                 step = epoch * batch_count + batch_number
                 set_name = "test" if testing else "train"
-                run["optimizer"].set_rate(get_learn_rate(step, learn_rate))
+                run["optimizer"].set_rate(get_learn_rate(step,
+                                                         run["learn_rate"]))
                 accuracy, loss = train_on_batch(
                     run["model"], run["loss_function"], run["optimizer"],
                     batch, train=not testing)
@@ -509,4 +526,4 @@ def train_model(name, run, train_set, test_set, epochs, learn_rate,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=5, learn_rate=0.001)
+    train(epochs=3)

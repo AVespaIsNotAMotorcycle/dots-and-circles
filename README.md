@@ -122,3 +122,8 @@ Though results were promising, the lengthy training time was quite inconvenient.
 Models C and D again in a 5-epoch run. By the end of 5 epochs, test accuracy for both models was around 0.6, while in the previous (SGD) run,
 accuracy was about 0.4 for Model C and 0.3 for Model D at epoch 5.
 <img width="1280" height="960" alt="image" src="./ocr/run_graphs/run020.png" />
+
+Next was a comparison of the efficacy of various learning rates for Adam (and one for SGD as a reference), for both Model C and Model D.
+This was a 3-epoch run, and both models seemed about equivalent, which makes sense, since they didn't diverge until around epoch 10 in earlier runs.
+Adam with learning rates of 1e-3 and 3e-3 performed better than SGD and Adam with learning rate of 3e-4. 1e-3 and 3e-3 seemed about equivalent.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run021.png" />
