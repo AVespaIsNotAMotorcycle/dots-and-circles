@@ -39,7 +39,9 @@ directory = os.path.dirname(os.path.abspath(__file__))
 # Each run gets its own numbered folder here, holding its log, weights and
 # graph
 RUNS_DIRECTORY = os.path.join(directory, "runs")
-LOG_COLUMNS = ["model", "step", "set", "accuracy", "loss"]
+# epoch counts from 0 and includes progress through the current one, e.g.
+# 2.5 is halfway through the third epoch
+LOG_COLUMNS = ["model", "step", "epoch", "set", "accuracy", "loss"]
 with open(os.path.join(directory, "training_data", "alphabet.json"),
           "r", encoding="utf-8") as file:
     alphabet = json.load(file)
@@ -277,18 +279,23 @@ def weights_path(run_directory, name):
 def read_log(run_directory):
     '''
     Reads a run's log.csv into {model: {"train": rows, "test": rows}}, where
-    rows is an array of [step, accuracy, loss].
+    rows is an array of [epoch, accuracy, loss]. Logs from before the epoch
+    column was added give the step in its place, so the second return value
+    says which it is: "Epoch" or "Batch".
     '''
     histories = {}
     with open(os.path.join(run_directory, "log.csv"), newline="") as file:
-        for row in csv.DictReader(file):
+        reader = csv.DictReader(file)
+        x_column = "epoch" if "epoch" in reader.fieldnames else "step"
+        for row in reader:
             sets = histories.setdefault(row["model"],
                                         {"train": [], "test": []})
-            sets[row["set"]].append([int(row["step"]),
+            sets[row["set"]].append([float(row[x_column]),
                                      float(row["accuracy"]),
                                      float(row["loss"])])
-    return {name: {key: np.array(rows) for key, rows in sets.items()}
-            for name, sets in histories.items()}
+    histories = {name: {key: np.array(rows) for key, rows in sets.items()}
+                 for name, sets in histories.items()}
+    return histories, "Epoch" if x_column == "epoch" else "Batch"
 
 def graph(run_directory, window=5):
     '''
@@ -296,7 +303,7 @@ def graph(run_directory, window=5):
     Each model gets its own colour; train is solid and test is dashed.
     Works on any run folder, including one from a run that crashed.
     '''
-    histories = read_log(run_directory)
+    histories, x_label = read_log(run_directory)
     figure, (accuracy_axis, loss_axis) = plt.subplots(2, 1, sharex=True)
     for index, (name, sets) in enumerate(histories.items()):
         for label, style in (("train", "-"), ("test", "--")):
@@ -304,15 +311,15 @@ def graph(run_directory, window=5):
             if len(history) == 0:
                 continue
             # Each point averages a batch with the window - 1 batches before
-            steps = history[min(window, len(history)) - 1:, 0]
-            accuracy_axis.plot(steps, moving_average(history[:, 1], window),
+            xs = history[min(window, len(history)) - 1:, 0]
+            accuracy_axis.plot(xs, moving_average(history[:, 1], window),
                                style, color=f"C{index}",
                                label=f"{name} {label}")
-            loss_axis.plot(steps, moving_average(history[:, 2], window),
+            loss_axis.plot(xs, moving_average(history[:, 2], window),
                            style, color=f"C{index}", label=f"{name} {label}")
     accuracy_axis.set_ylabel("Accuracy")
     loss_axis.set_ylabel("Loss")
-    loss_axis.set_xlabel("Batch")
+    loss_axis.set_xlabel(x_label)
     accuracy_axis.legend()
     figure.savefig(os.path.join(run_directory, "graph.png"))
     plt.show()
@@ -508,7 +515,9 @@ def train_model(name, run, train_set, test_set, epochs,
                     batch, train=not testing)
 
                 with log_lock:
-                    log.writerow([name, step, set_name, accuracy, loss])
+                    log.writerow([name, step,
+                                  epoch + batch_number / batch_count,
+                                  set_name, accuracy, loss])
                     # Write each batch to disk now, so a crash can't lose it
                     log_file.flush()
 
