@@ -20,6 +20,7 @@ from PIL import Image
 from loss.CrossEntropyLoss import CrossEntropyLoss
 from loss.CTCLoss import CTCLoss
 from optim.SGD import SGD
+from optim.Adam import Adam
 from ocr.modelA import ModelA
 from ocr.modelB import ModelB
 from ocr.modelC import ModelC
@@ -409,7 +410,7 @@ def run_models(run_directory, epochs, learn_rate):
         runs[name] = {
             "model": model,
             "loss_function": loss_function,
-            "optimizer": SGD(learn_rate, max_norm=5),
+            "optimizer": Adam(learn_rate),
             # Set by the model's thread if it crashes
             "failed": False,
         }
@@ -508,4 +509,4 @@ def train_model(name, run, train_set, test_set, epochs, learn_rate,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=20, learn_rate=0.1)
+    train(epochs=5, learn_rate=0.001)
