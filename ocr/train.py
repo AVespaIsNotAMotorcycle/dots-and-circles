@@ -405,8 +405,8 @@ def run_models(run_directory, epochs):
                     drop_rate=0.1),
     }
     optimizers = {
-        "SGD 0.1": lambda: SGD(0.1, max_norm=5),
-        "Adam 3e-4": lambda: Adam(0.0003),
+        # "SGD 0.1": lambda: SGD(0.1, max_norm=5),
+        # "Adam 3e-4": lambda: Adam(0.0003),
         "Adam 1e-3": lambda: Adam(0.001),
         "Adam 3e-3": lambda: Adam(0.003),
     }
@@ -526,4 +526,4 @@ def train_model(name, run, train_set, test_set, epochs,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=3)
+    train(epochs=30)
