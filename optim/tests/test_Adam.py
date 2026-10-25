@@ -39,7 +39,7 @@ class TestAdam:
         emb_dim = 128
         context_length = 64
         np.random.seed(123)
-        learn_rate = 0.01
+        learn_rate = 0.001
 
         x = np.random.rand(batch_size, context_length, emb_dim)
         label = np.zeros((batch_size, 1, emb_dim))
@@ -59,7 +59,6 @@ class TestAdam:
             delta = adam(grads)
             layer.descend(delta)
 
-            if _ == 0:
-                first_loss = loss
+            if last_loss is not None:
+                assert loss < last_loss
             last_loss = loss
-        assert last_loss < first_loss
