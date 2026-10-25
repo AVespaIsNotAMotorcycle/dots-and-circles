@@ -147,13 +147,10 @@ Sometimes the presence of an FVS makes a meaningful difference to the appearance
 
 | Font     | FVS  | With FVS                                                               | Without                                                                |
 | -------- | ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| ShuKai   | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_2_L1" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_2_L2" /> |
-| -------- | ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| ZhengHei | FVS2 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_4_L1" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_4_L2" /> |
-| -------- | ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| GuFeng | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_2_L1" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_2_L2" /> |
-| -------- | ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| YaBai  | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_1_L1" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_1_L2" /> |
+| ShuKai   | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_2_L1.png" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_2_L2.png" /> |
+| ZhengHei | FVS2 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_4_L1.png" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_4_L2.png" /> |
+| GuFeng | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_2_L1.png" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_2_L2.png" /> |
+| YaBai  | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_1_L1.png" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_1_L2.png" /> |
 
 A bigger factor in accuracy is word length: the percentage of guesses which are completely correct drops as the number of characters in the label increases.
 Partially this inevitable, as the more characters there are in a label, the more chances there are to make an error, and even one error means that the whole
