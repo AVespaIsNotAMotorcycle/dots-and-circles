@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from nn.Dropout import Dropout
 from nn.Linear import Linear
 from nn.Sequential import Sequential
 from ocr.modelC import ModelC
@@ -64,3 +65,26 @@ class TestWeights:
                        num_classes=5, token_dim=4)
         with pytest.raises(AssertionError):
             wider.load_weights(path)
+
+
+class TestTraining:
+    def test_set_training_reaches_every_dropout(self):
+        # Transformer and MultiHeadAttention keep their Dropouts as plain
+        # attributes, not in params
+        model = ModelC(depth=2, emb_dim=8, context_length=6, num_heads=2,
+                       num_classes=5, token_dim=4)
+        dropouts = []
+        def find(module):
+            for value in list(module.params.values()) + \
+                    list(vars(module).values()):
+                if isinstance(value, Dropout):
+                    dropouts.append(value)
+                elif hasattr(value, "params"):
+                    find(value)
+        find(model)
+        assert len(dropouts) == 6  # 3 per Transformer
+
+        model.set_training(False)
+        assert all(not d.training for d in dropouts)
+        model.set_training(True)
+        assert all(d.training for d in dropouts)

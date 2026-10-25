@@ -8,6 +8,8 @@ class Module:
 
         self.params = {}
         self.grads = {}
+        # Training mode; modules like Dropout behave differently outside it
+        self.training = True
 
     def forward(self, x):
         shape = (1, self.size_out) if size_out is not None else np.shape(x)
@@ -89,6 +91,15 @@ class Module:
         for value in self.params.values():
             if isinstance(value, Module):
                 value.set_lengths(lengths)
+
+    def set_training(self, training):
+        # Switches this module and every submodule between training mode
+        # (True) and evaluation mode (False). Submodules can be in params or
+        # plain attributes (e.g. Transformer's Dropouts), so check both.
+        self.training = training
+        for value in list(self.params.values()) + list(vars(self).values()):
+            if isinstance(value, Module):
+                value.set_training(training)
 
     def descend(self, delta):
         for key in self.params.keys():

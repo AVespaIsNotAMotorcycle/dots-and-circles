@@ -23,6 +23,7 @@ from optim.SGD import SGD
 from ocr.modelA import ModelA
 from ocr.modelB import ModelB
 from ocr.modelC import ModelC
+from ocr.modelD import ModelD
 from ocr.training_data import WIDTH, fonts, generate, lexicon
 
 FONT_COUNT = len(fonts)
@@ -201,6 +202,9 @@ def predict(model, entries):
     return images, model(images)
 
 def train_on_batch(model, loss_function, optimizer, batch, train=False):
+    # Dropout (if the model has any) only runs on training batches
+    model.set_training(train)
+
     # Step 1: Forward Propogate
     images, y = predict(model, batch)
 
@@ -321,6 +325,7 @@ def show_predictions(models, batches, count=5):
                             count)
     guesses = {}
     for name, model in models.items():
+        model.set_training(False)
         _, predictions = predict(model, entries)
         guesses[name] = read_words(model, predictions, entries)
 
@@ -383,14 +388,17 @@ def run_models(run_directory, epochs, learn_rate):
         #             num_classes=NUM_CLASSES, depth=8, blank=END),
         # "C-16": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=16, blank=END),
-        "C-8/32": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-                    num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=32),
-        "C-16/32": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-                    num_classes=NUM_CLASSES, depth=16, blank=END, emb_dim=32),
+        # "C-8/32": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=32),
+        # "C-16/32": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        #             num_classes=NUM_CLASSES, depth=16, blank=END, emb_dim=32),
         "C-8/64": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
                     num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64),
-        "C-8/128": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-                    num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=128),
+        # "C-8/128": ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=128),
+        "D-8/64": ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64,
+                    drop_rate=0.1),
     }
     runs = {}
     for name, model in models.items():
@@ -500,4 +508,4 @@ def train_model(name, run, train_set, test_set, epochs, learn_rate,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=5, learn_rate=0.1)
+    train(epochs=10, learn_rate=0.1)

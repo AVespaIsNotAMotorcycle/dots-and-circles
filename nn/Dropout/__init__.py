@@ -15,57 +15,35 @@ class Dropout(Module):
             f"(drop_rate was {drop_rate})"
 
         self.drop_rate = drop_rate
-        self.eps = 1e-7
 
     def forward(self, x):
+        '''
+        Inverted dropout: zeroes exactly int(size * drop_rate) elements, and
+        scales the rest up so each element keeps its expected value. Only
+        active while training; in evaluation mode it passes x through.
+        '''
         shape = np.shape(x)
-        x = x.flatten()
-
         size = np.size(x)
         drop_count = int(size * self.drop_rate)
-        self.last_dropped = drop_count > 0
+        self.last_dropped = self.training and drop_count > 0
         if not self.last_dropped:
-            return x.reshape(shape)
+            return x
 
         mask = np.ones(size)
         mask[:drop_count] = 0
         np.random.shuffle(mask)
+        # Each element survives with probability (size - drop_count) / size,
+        # so dividing by that keeps E[y] = x. This is 1 / (1 - drop_rate),
+        # up to int() rounding the drop count.
+        mask = mask.reshape(shape) * (size / (size - drop_count))
 
-        y = np.multiply(x, mask)
-        x_mean = np.mean(x)
-        y_mean = np.mean(y)
-        scale = x_mean / (y_mean + self.eps)
-        y = y * scale
-
-        self.last_x = x
         self.last_mask = mask
-        self.last_scale = scale
-        self.last_x_mean = x_mean
-        self.last_y_mean = y_mean
-
-        y = y.reshape(shape)
-        return y
+        return x * mask
 
     def backward(self, dLdy):
         if not self.last_dropped:
             return dLdy
 
-        '''
-        m = mask
-        s = mean(x) / (mean(m * x) + eps)
-        y = s * m * x
-
-        s depends on every element of x, so each element's gradient also
-        gets a share of dL/ds.
-        '''
-        shape = np.shape(dLdy)
-        dLdy = np.reshape(dLdy, -1)
-        m = self.last_mask
-        size = np.size(m)
-        denominator = self.last_y_mean + self.eps
-
-        dLds = np.sum(dLdy * m * self.last_x)
-        dsdx = (1 / denominator
-                - self.last_x_mean * m / denominator**2) / size
-        dLdx = self.last_scale * m * dLdy + dLds * dsdx
-        return dLdx.reshape(shape)
+        # y = mask * x, where mask is fixed (0 or the scale), so
+        # dL/dx = mask * dL/dy
+        return dLdy * self.last_mask
