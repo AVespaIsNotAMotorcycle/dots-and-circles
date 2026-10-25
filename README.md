@@ -101,3 +101,24 @@ There's also a large gap between C-8 and C4.
 <img width="1280" height="960" alt="image" src="./ocr/run_graphs/run011.png" />
 For comparison, I ran a C-16 version as well:
 <img width="1280" height="960" alt="image" src="./ocr/run_graphs/run012.png" />
+
+Model C has a linear layer that compresses the 128 pixel tokens (4 rows of 32px each) down to the transformer's embedding dimension of 32.
+Rather than simply increase the number of transformers, I then did a comparison of variants with a larger embedding dimension.
+Four variants of Model C were trained for 5 epochs:
+- C-8/32: 8 transformers, embedding dimension 32
+- C-16/32: 16 transformers, embedding dimension 32
+- C-8/64: 8 transformers, embedding dimension 64
+- C-8/128: 8 transformers, embedding dimension 128
+Those with a larger embedding dimension clearly outperformed those with a smaller one, but the accuracy difference between 64 and 128 was negligable,
+and C-8/128 was by far the slowest to train.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run015.png" />
+
+The test accuracy seemed to be falling below the train accuracy for C-8/64 and C-8/128 in the previous test, so a fourth model, Model D, was added,
+which had dropout enabled. A 20-epoch run comparing Model C and Model D showed that Model D avoided overfitting, with test accuracy still rising
+at the end of the run. Model C's test accuracy stopped rising shortly after epoch 10.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run019.png" />
+
+Though results were promising, the lengthy training time was quite inconvenient. I implemented Adam (the previous runs had used SGD) and compared
+Models C and D again in a 5-epoch run. By the end of 5 epochs, test accuracy for both models was around 0.6, while in the previous (SGD) run,
+accuracy was about 0.4 for Model C and 0.3 for Model D at epoch 5.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run020.png" />
