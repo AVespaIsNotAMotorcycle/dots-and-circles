@@ -22,17 +22,6 @@ class SGD(Optimizer):
                 total += self.squared_norm(value)
         return total
 
-    def scale(self, grads, factor):
-        delta = {}
-
-        for key in grads.keys():
-            if isinstance(grads[key], np.ndarray):
-                delta[key] = grads[key] * factor
-            else:
-                delta[key] = self.scale(grads[key], factor)
-
-        return delta
-
     def delta(self, grads):
         factor = self.learn_rate
         if self.max_norm is not None:
