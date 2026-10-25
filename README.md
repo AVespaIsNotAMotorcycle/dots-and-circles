@@ -144,6 +144,7 @@ of which Manchu is a subset, there are four characters which are invisible, and 
 - U+180F MONGOLIAN FREE VARIATION SELECTOR FOUR (FSV4)
 The training data, assembled from the Kaikki dictionary, contains some words with FVS1 and FVS2.
 Sometimes the presence of an FVS makes a meaningful difference to the appearance of the word, but not always:
+| -------------- | ----- | ----- | ----- | ----- | ----- | ----- | ---- |
 | Font     | FVS  | With FVS                                                               | Without                                                                |
 | -------- | ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | ShuKai   | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_2_L1" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_2_L2" /> |
@@ -153,15 +154,18 @@ Sometimes the presence of an FVS makes a meaningful difference to the appearance
 | GuFeng | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_2_L1" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_2_L2" /> |
 | -------- | ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | YaBai  | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_1_L1" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_1_L2" /> |
+| -------------- | ----- | ----- | ----- | ----- | ----- | ----- | ---- |
 
 A bigger factor in accuracy is word length: the percentage of guesses which are completely correct drops as the number of characters in the label increases.
 Partially this inevitable, as the more characters there are in a label, the more chances there are to make an error, and even one error means that the whole
 word is marked as wrong. However, the model also consistently performs worse on characters which are lower in the image.
 For comparison, 2000 short words (<=24 tokens, i.e. <=96px tall) were tested with various degrees of padding at the top.
 The more padding was added, the worse the model's performance.
+| -------------- | ----- | ----- | ----- | ----- | ----- | ----- | ---- |
 | Shift (tokens) | 0     | 4     | 8     | 16    | 24    | 32    | 40   |
 | -------------- | ----- | ----- | ----- | ----- | ----- | ----- | ---- |
 | Exact	         | 86.8% | 59.7% | 45.1% | 31.1% | 21.7% | 10.0% | 3.8% |
+| -------------- | ----- | ----- | ----- | ----- | ----- | ----- | ---- |
 This indicates that a single-word accuracy could likely be improved by adding random amounts of padding (within the limits of context length) to lexigraphs
 during training, so that the model has more exposure to tokens later in the sequence.
 As it stands, accuracy is highest on words with labels 1-4 characters long (about 90%), and as length increases, it begins dropping steadily to 79% at length 9.
