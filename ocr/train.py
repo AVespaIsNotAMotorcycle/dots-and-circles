@@ -508,4 +508,4 @@ def train_model(name, run, train_set, test_set, epochs, learn_rate,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=10, learn_rate=0.1)
+    train(epochs=20, learn_rate=0.1)
