@@ -5,6 +5,9 @@ import random
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 WIDTH = 32
+# Tallest an image can be and still fit in a model's context. Padding never
+# takes an image past this.
+HEIGHT = 256
 # Words are rendered at this size, then scaled down to WIDTH.
 RENDER_SIZE = 256
 
@@ -46,4 +49,11 @@ def generate(seed):
     canvas = canvas.rotate(-90, expand=True)
 
     height = max(1, round(canvas.height * WIDTH / canvas.width))
-    return canvas.resize((WIDTH, height), Image.LANCZOS), word
+    image = canvas.resize((WIDTH, height), Image.LANCZOS)
+
+    # Add blank rows before the word, so it doesn't always start at the top.
+    # The amount comes from the seed, so a seed always gives the same image.
+    padding = random.Random(seed).randint(0, max(0, HEIGHT - height))
+    padded = Image.new("L", (WIDTH, height + padding), 255)
+    padded.paste(image, (0, padding))
+    return padded, word

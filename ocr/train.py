@@ -25,11 +25,11 @@ from ocr.modelA import ModelA
 from ocr.modelB import ModelB
 from ocr.modelC import ModelC
 from ocr.modelD import ModelD
-from ocr.training_data import WIDTH, fonts, generate, lexicon
+from ocr.training_data import HEIGHT, WIDTH, fonts, generate, lexicon
 
 FONT_COUNT = len(fonts)
 WORD_COUNT = len(lexicon)
-IMAGE_HEIGHT = 256
+IMAGE_HEIGHT = HEIGHT
 # Each token is a group of this many pixel rows, flattened
 ROWS_PER_TOKEN = 4
 TOKEN_DIM = ROWS_PER_TOKEN * WIDTH
