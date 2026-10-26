@@ -166,3 +166,8 @@ This indicates that a single-word accuracy could likely be improved by adding ra
 during training, so that the model has more exposure to tokens later in the sequence.
 As it stands, accuracy is highest on words with labels 1-4 characters long (about 90%), and as length increases, it begins dropping steadily to 79% at length 9.
 Past that, it drops more rapidly, with labels of length 13 having 30% accuracy, and 16 or more characters having 4%.
+
+To account for this, training data was modified by adding random amounts of padding to words where it would fit. This new run (labelled as Run 24) was compared
+to the one just described labelled as (Run 22). Like Run 22, Run 24 was 30 epochs long, but the comparison indicates that the model was still learning by the
+end of epoch 30, and overall had worse accuracy. Notably, it did significantly worse on lexigraphs with no padding.
+<img width="1280" height="960" alt="image" src="./ocr/runs/run024/comparison_run022_run024.png" />

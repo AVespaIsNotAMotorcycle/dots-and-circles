@@ -403,8 +403,8 @@ def run_models(run_directory, epochs):
         #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=32),
         # "C-16/32": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=16, blank=END, emb_dim=32),
-        "C-8/64": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-                    num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64),
+        # "C-8/64": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64),
         # "C-8/128": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=128),
         "D-8/64": lambda: ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
@@ -414,7 +414,7 @@ def run_models(run_directory, epochs):
     optimizers = {
         # "SGD 0.1": lambda: SGD(0.1, max_norm=5),
         # "Adam 3e-4": lambda: Adam(0.0003),
-        "Adam 1e-3": lambda: Adam(0.001),
+        # "Adam 1e-3": lambda: Adam(0.001),
         "Adam 3e-3": lambda: Adam(0.003),
     }
 
