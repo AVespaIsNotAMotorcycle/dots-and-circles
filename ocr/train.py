@@ -12,8 +12,9 @@ import json
 import multiprocessing
 import random
 import threading
+import time
 import traceback
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, wait
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -58,6 +59,9 @@ MAX_LABEL_LENGTH = max(len(word) for word in lexicon) + 1
 # Processes that make each epoch's augmented images while the models train.
 # Each uses about 100 MB.
 AUGMENT_WORKERS = 4
+# While training waits for an epoch's images, how often (in seconds) to print
+# how many are ready
+PROGRESS_EVERY = 30
 # A fixed set of photographed words, scored after every epoch to show how
 # well the models read real books. Only watched: nothing is tuned on them,
 # so they stay an honest test.
@@ -242,6 +246,9 @@ class EpochBatches:
         if augment:
             # Each epoch's futures, kept until every thread has moved on
             self.futures = {}
+            # Epochs whose progress is being printed, so that when several
+            # threads wait for the same epoch only one of them prints it
+            self.reported = set()
             self.lock = threading.Lock()
             # spawn rather than fork: forking a process that's running
             # threads can deadlock the children
@@ -272,13 +279,40 @@ class EpochBatches:
         with self.lock:
             self._start(epoch)
             self._start(epoch + 1)
-            # A thread a whole epoch behind would have them remade, which
+            # Only this epoch's and the next's are kept: each takes a few GB.
+            # A thread an epoch behind would have its epoch remade, which
             # gives the same images, just slowly
-            for old in [old for old in self.futures if old < epoch - 1]:
+            for old in [old for old in self.futures if old < epoch]:
                 del self.futures[old]
             futures = self.futures[epoch]
+            report = epoch not in self.reported
+            self.reported.add(epoch)
+        self._wait(epoch, futures["train"] + futures["test"], report)
         return ([future.result() for future in futures["train"]],
                 [future.result() for future in futures["test"]])
+
+    def _wait(self, epoch, futures, report):
+        '''
+        Waits for futures, an epoch's batches. If report is true, prints how
+        many are ready every PROGRESS_EVERY seconds, with an estimate of the
+        time left from how fast they've been coming in.
+        '''
+        start = time.time()
+        ready_at_start = sum(future.done() for future in futures)
+        while True:
+            ready = sum(future.done() for future in futures)
+            if ready == len(futures):
+                return
+            if report:
+                message = (f"Epoch {epoch + 1} images: {ready} of "
+                           f"{len(futures)} batches ready")
+                elapsed = time.time() - start
+                if ready > ready_at_start:
+                    left = ((len(futures) - ready) * elapsed
+                            / (ready - ready_at_start))
+                    message += f", about {left / 60:.0f} min left"
+                print(message + ".")
+            wait(futures, timeout=PROGRESS_EVERY)
 
     def close(self):
         if self.augment:
@@ -696,4 +730,4 @@ def train_model(name, run, batches, photo_set, epochs,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=90, augment=True)
+    train(epochs=5, augment=True)
