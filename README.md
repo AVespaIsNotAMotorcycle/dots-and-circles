@@ -38,6 +38,8 @@ A set of Manchu words was pulled from
 
 Tatu Ylonen: Wiktextract: Wiktionary as Machine-Readable Structured Data, Proceedings of the 13th Conference on Language Resources and Evaluation (LREC), pp. 1317-1325, Marseille, 20-25 June 2022.
 
+Another set was pulled from [a scan of Jerry Norman's Manchu dictionary](https://github.com/purobaburi/manchu-resources/tree/main?tab=readme-ov-file).
+
 ## Roadmap
 
 - [x] **Under the hood**:
