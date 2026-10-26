@@ -9,9 +9,11 @@ os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 import csv
 import gc
 import json
+import multiprocessing
 import random
 import threading
 import traceback
+from concurrent.futures import ProcessPoolExecutor
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,6 +23,7 @@ from loss.CrossEntropyLoss import CrossEntropyLoss
 from loss.CTCLoss import CTCLoss
 from optim.SGD import SGD
 from optim.Adam import Adam
+from ocr import photos
 from ocr.modelA import ModelA
 from ocr.modelB import ModelB
 from ocr.modelC import ModelC
@@ -52,6 +55,17 @@ END = len(alphabet)
 NUM_CLASSES = len(alphabet) + 1
 # Positions the longest label needs: its letters plus the end marker
 MAX_LABEL_LENGTH = max(len(word) for word in lexicon) + 1
+# Processes that make each epoch's augmented images while the models train.
+# Each uses about 100 MB.
+AUGMENT_WORKERS = 4
+# A fixed set of photographed words, scored after every epoch to show how
+# well the models read real books. Only watched: nothing is tuned on them,
+# so they stay an honest test.
+PHOTO_COUNT = 500
+PHOTO_SEED = 1
+# Photos per batch when scoring them. The models keep every layer's
+# activations, so smaller batches use less memory.
+PHOTO_BATCH_SIZE = 16
 
 def generate_seeds(validation_set = False):
     train_proportion = 0.7
@@ -190,13 +204,115 @@ def generate_batches(seeds, batch_size=64):
     batches = []
     for start in range(0, len(seeds), batch_size):
         print(f"Generating batch: seeds {start} to {start+batch_size}.")
-        batch = []
-        for seed in seeds[start:start + batch_size]:
-            image, word = generate(seed)
-            batch.append((image_to_array(image), word_to_array(word),
-                          token_count(image)))
-        batches.append(batch)
+        batches.append(make_batch(seeds[start:start + batch_size]))
     return batches
+
+def make_batch(seeds, epoch=None):
+    '''
+    One batch of entries (see generate_batches) for seeds. With an epoch
+    the images are augmented, differently for each epoch.
+    '''
+    batch = []
+    for seed in seeds:
+        image, word = generate(seed, epoch)
+        batch.append((image_to_array(image), word_to_array(word),
+                      token_count(image)))
+    return batch
+
+class EpochBatches:
+    '''
+    Hands out each epoch's (train batches, test batches), made from the same
+    seeds every epoch. With augment=False the images are clean, made once
+    and reused. With augment=True each epoch's are augmented afresh (see
+    training_data/augment.py), by AUGMENT_WORKERS processes that make the
+    next epoch's while the models train on the current one.
+    '''
+    def __init__(self, train_seeds, test_seeds, epochs, augment,
+                 batch_size=64):
+        self.seeds = {
+            "train": [train_seeds[start:start + batch_size]
+                      for start in range(0, len(train_seeds), batch_size)],
+            "test": [test_seeds[start:start + batch_size]
+                     for start in range(0, len(test_seeds), batch_size)],
+        }
+        self.epochs = epochs
+        self.augment = augment
+        if augment:
+            # Each epoch's futures, kept until every thread has moved on
+            self.futures = {}
+            self.lock = threading.Lock()
+            # spawn rather than fork: forking a process that's running
+            # threads can deadlock the children
+            self.pool = ProcessPoolExecutor(
+                AUGMENT_WORKERS,
+                mp_context=multiprocessing.get_context("spawn"))
+        else:
+            self.clean = {name: [make_batch(seeds) for seeds in batches]
+                          for name, batches in self.seeds.items()}
+
+    def batch_count(self):
+        return len(self.seeds["train"]) + len(self.seeds["test"])
+
+    def _start(self, epoch):
+        if epoch < self.epochs and epoch not in self.futures:
+            self.futures[epoch] = {
+                name: [self.pool.submit(make_batch, seeds, epoch)
+                       for seeds in batches]
+                for name, batches in self.seeds.items()}
+
+    def get(self, epoch):
+        '''
+        Returns (train batches, test batches) for epoch, waiting for them if
+        they aren't ready yet, and starts on the next epoch's.
+        '''
+        if not self.augment:
+            return self.clean["train"], self.clean["test"]
+        with self.lock:
+            self._start(epoch)
+            self._start(epoch + 1)
+            # A thread a whole epoch behind would have them remade, which
+            # gives the same images, just slowly
+            for old in [old for old in self.futures if old < epoch - 1]:
+                del self.futures[old]
+            futures = self.futures[epoch]
+        return ([future.result() for future in futures["train"]],
+                [future.result() for future in futures["test"]])
+
+    def close(self):
+        if self.augment:
+            self.pool.shutdown(cancel_futures=True)
+
+def load_photo_set():
+    '''
+    The fixed photo set as entries (image array, Abkai label, length), or
+    None if the photos aren't here.
+    '''
+    if not photos.available():
+        print(f"No photos in {photos.DATA_DIRECTORY}, so none will be scored.")
+        return None
+    photo_set = []
+    for path, label in photos.sample_images(PHOTO_COUNT, PHOTO_SEED):
+        image = photos.load_photo(path)
+        photo_set.append((image_to_array(image), label, token_count(image)))
+    return photo_set
+
+def score_photos(model, photo_set):
+    '''
+    Reads the photo set, returning (mean char accuracy, share of words read
+    exactly), both comparing the guess's Abkai with the label.
+    '''
+    model.set_training(False)
+    accuracies = []
+    exact = 0
+    for start in range(0, len(photo_set), PHOTO_BATCH_SIZE):
+        entries = photo_set[start:start + PHOTO_BATCH_SIZE]
+        _, y = predict(model, entries)
+        for guess, (_, label, _) in zip(read_words(model, y, entries),
+                                        entries):
+            abkai = photos.manchu_to_abkai(guess)
+            accuracies.append(character_accuracy(abkai, label))
+            exact += abkai == label
+    return np.mean(accuracies), exact / len(photo_set)
 
 def predict(model, entries):
     # Runs the model on entries, masking each one's padding tokens
@@ -278,10 +394,12 @@ def weights_path(run_directory, name):
 
 def read_log(run_directory):
     '''
-    Reads a run's log.csv into {model: {"train": rows, "test": rows}}, where
-    rows is an array of [epoch, accuracy, loss]. Logs from before the epoch
-    column was added give the step in its place, so the second return value
-    says which it is: "Epoch" or "Batch".
+    Reads a run's log.csv into {model: {set: rows}}, where rows is an array
+    of [epoch, accuracy, loss]. The sets are "train" and "test", plus
+    "photo" and "photo_exact" in runs that scored the photo set (their loss
+    is nan). Logs from before the epoch column was added give the step in
+    its place, so the second return value says which it is: "Epoch" or
+    "Batch".
     '''
     histories = {}
     with open(os.path.join(run_directory, "log.csv"), newline="") as file:
@@ -290,9 +408,9 @@ def read_log(run_directory):
         for row in reader:
             sets = histories.setdefault(row["model"],
                                         {"train": [], "test": []})
-            sets[row["set"]].append([float(row[x_column]),
-                                     float(row["accuracy"]),
-                                     float(row["loss"])])
+            sets.setdefault(row["set"], []).append([float(row[x_column]),
+                                                    float(row["accuracy"]),
+                                                    float(row["loss"])])
     histories = {name: {key: np.array(rows) for key, rows in sets.items()}
                  for name, sets in histories.items()}
     return histories, "Epoch" if x_column == "epoch" else "Batch"
@@ -300,8 +418,10 @@ def read_log(run_directory):
 def graph(run_directory, window=5):
     '''
     Graphs a run from its log.csv, and saves the graph to the run's folder.
-    Each model gets its own colour; train is solid and test is dashed.
-    Works on any run folder, including one from a run that crashed.
+    Each model gets its own colour; train is solid and test is dashed. Photo
+    scores, one per epoch, are dotted (char accuracy) and dash-dotted
+    (words read exactly), with markers. Works on any run folder, including
+    one from a run that crashed.
     '''
     histories, x_label = read_log(run_directory)
     figure, (accuracy_axis, loss_axis) = plt.subplots(2, 1, sharex=True)
@@ -317,6 +437,15 @@ def graph(run_directory, window=5):
                                label=f"{name} {label}")
             loss_axis.plot(xs, moving_average(history[:, 2], window),
                            style, color=f"C{index}", label=f"{name} {label}")
+        for label, style, marker in (("photo", ":", "o"),
+                                     ("photo_exact", "-.", "s")):
+            history = sets.get(label, [])
+            if len(history) == 0:
+                continue
+            accuracy_axis.plot(history[:, 0], history[:, 1], style,
+                               marker=marker, markersize=3,
+                               color=f"C{index}",
+                               label=f"{name} {label.replace('_', ' ')}")
     accuracy_axis.set_ylabel("Accuracy")
     loss_axis.set_ylabel("Loss")
     loss_axis.set_xlabel(x_label)
@@ -351,28 +480,33 @@ def get_learn_rate(batch_count, initial_rate):
     # return initial_rate / ((0.001 * batch_count) + 1)
     return initial_rate
 
-def train(epochs = 3):
+def train(epochs = 3, augment = True):
+    '''
+    Trains every model in run_models for epochs. With augment=True the
+    images are augmented to look like photographed prints, afresh each
+    epoch; with augment=False they're the clean renders.
+    '''
     run_directory = new_run_directory()
     print(f"Saving this run to {run_directory}")
-    run_models(run_directory, epochs)
+    run_models(run_directory, epochs, augment)
     # run_models has returned, so its batches and models are unreachable;
     # collect them now, before graphing
     gc.collect()
     graph(run_directory)
 
-def run_models(run_directory, epochs):
+def run_models(run_directory, epochs, augment):
     '''
     Trains the models, one thread each, logging every batch's results to
     log.csv as it goes and saving each model's weights at the end of every
     epoch, so a crash loses at most the current epoch's training and none
-    of the log. Everything it makes is local, so it's all freed when it
-    returns.
+    of the log. After each epoch the photo set is scored too. Everything it
+    makes is local, so it's all freed when it returns.
     '''
-    train_set, test_set = generate_seeds()
+    train_seeds, test_seeds = generate_seeds()
 
     print("Generating batches...")
-    train_set = generate_batches(train_set)
-    test_set = generate_batches(test_set)
+    batches = EpochBatches(train_seeds, test_seeds, epochs, augment)
+    photo_set = load_photo_set()
 
     # Every model below is trained with every optimizer below, each pairing
     # as its own run, e.g. "D-8/64 Adam 1e-3". All runs train side by side,
@@ -454,7 +588,7 @@ def run_models(run_directory, epochs):
     for name, run in runs.items():
         thread = threading.Thread(
             target=train_model, daemon=True,
-            args=(name, run, train_set, test_set, epochs,
+            args=(name, run, batches, photo_set, epochs,
                   run_directory, log, log_file, log_lock))
         thread.start()
         threads.append(thread)
@@ -470,7 +604,8 @@ def run_models(run_directory, epochs):
     finished = {name: run["model"] for name, run in runs.items()
                 if not run["failed"]}
     if finished:
-        show_predictions(finished, test_set)
+        show_predictions(finished, batches.get(epochs - 1)[1])
+    batches.close()
 
 def epoch_schedule(train_set, test_set):
     '''
@@ -492,18 +627,20 @@ def epoch_schedule(train_set, test_set):
             train_index += 1
         yield batch_number, testing, batch
 
-def train_model(name, run, train_set, test_set, epochs,
+def train_model(name, run, batches, photo_set, epochs,
                 run_directory, log, log_file, log_lock):
     '''
     Runs on its own thread: trains one model for every epoch, logging each
-    batch and saving the weights after each epoch. An error stops only this
-    model; it's printed, and the other models carry on.
+    batch, then saving the weights and scoring the photo set (if there is
+    one) after each epoch. An error stops only this model; it's printed,
+    and the other models carry on.
     '''
-    batch_count = len(train_set) + len(test_set)
+    batch_count = batches.batch_count()
     # The latest [accuracy, loss] from each set, for printing
     last = {"train": None, "test": None}
     try:
         for epoch in range(epochs):
+            train_set, test_set = batches.get(epoch)
             for batch_number, testing, batch in epoch_schedule(train_set,
                                                                test_set):
                 step = epoch * batch_count + batch_number
@@ -529,10 +666,22 @@ def train_model(name, run, train_set, test_set, epochs,
 
             # Overwrites the last epoch's weights
             run["model"].save_weights(weights_path(run_directory, name))
+
+            if photo_set:
+                accuracy, exact = score_photos(run["model"], photo_set)
+                with log_lock:
+                    # Photos have Abkai labels, so there's no CTC loss
+                    for set_name, value in (("photo", accuracy),
+                                            ("photo_exact", exact)):
+                        log.writerow([name, (epoch + 1) * batch_count,
+                                      epoch + 1, set_name, value, "nan"])
+                    log_file.flush()
+                print(f"Model {name}, epoch {epoch + 1} | photos: char "
+                      f"accuracy {accuracy:.3f}, {exact:.1%} words exact")
     except Exception:
         run["failed"] = True
         print(f"Model {name} crashed; the other models will carry on.\n"
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=45)
+    train(epochs=45, augment=True)

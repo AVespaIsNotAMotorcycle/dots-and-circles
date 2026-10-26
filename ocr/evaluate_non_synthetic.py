@@ -14,44 +14,16 @@ import time
 from multiprocessing import Pool
 
 import numpy as np
-from PIL import Image, ImageChops, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 from ocr.modelD import ModelD
-from ocr.train import (CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM, WIDTH,
+from ocr.photos import (DATA_DIRECTORY, load_photo, manchu_to_abkai,
+                        sample_images)
+from ocr.train import (CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM,
                        edit_distance, image_to_array, predict, read_words,
                        token_count)
-from ocr.training_data import RENDER_SIZE, fonts
+from ocr.training_data import fonts, render
 
-directory = os.path.dirname(os.path.abspath(__file__))
-# Photographed words from printed Manchu books, one folder per word. Each
-# folder is named after its word in Abkai transliteration; the file names
-# inside sometimes use another romanization, so the folder name is the label.
-# Source: https://www.scidb.cn/en/detail?dataSetId=b45491b63d694534a9323acf14846586
-DATA_DIRECTORY = os.path.join(directory, "non_synthetic_data")
-
-# Abkai for each character the models can output. Variation selectors and
-# the other invisible marks have no Abkai spelling, so they're dropped. The
-# Mongolian letters (ᠢ, ᠤ, ᠭ, ᠳ) take the spelling of their Manchu
-# counterparts. ᡰ is very rare, and r' is a best guess.
-MANCHU_TO_ABKAI = {
-    "ᠠ": "a", "ᡝ": "e", "ᡳ": "i", "ᠢ": "i", "ᠣ": "o", "ᡠ": "u", "ᠤ": "u",
-    "ᡡ": "v", "ᠨ": "n", "ᠩ": "ng", "ᠪ": "b", "ᡦ": "p", "ᡤ": "g", "ᠭ": "g",
-    "ᡥ": "h", "ᡴ": "k", "ᠺ": "k'", "ᡬ": "g'", "ᡭ": "h'", "ᠮ": "m", "ᠯ": "l",
-    "ᠰ": "s", "ᡧ": "x", "ᡨ": "t", "ᡩ": "d", "ᠳ": "d", "ᠴ": "c", "ᠵ": "j",
-    "ᠶ": "y", "ᠸ": "w", "ᡵ": "r", "ᡶ": "f", "ᡮ": "ts'", "ᡯ": "dz",
-    "ᡰ": "r'", "ᡱ": "c'", "ᡷ": "z", "ᡟ": "y", " ": " ",
-    "᠋": "", "᠌": "", "᠍": "", "᠏": "", "᠇": "",
-    "᠊": "",
-}
-
-# Pixels darker than this, after the contrast stretch, count as ink when
-# cropping
-INK_THRESHOLD = 128
-# When whitening, the darkest INK_PERCENTILE % of pixels become black and the
-# lightest (100 - PAPER_PERCENTILE) % white. Ink rarely covers more than a
-# third of a word's photo, so the PAPER_PERCENTILE pixel is paper.
-INK_PERCENTILE = 2
-PAPER_PERCENTILE = 70
 # Images per batch. The models keep every layer's activations from the
 # forward pass, so memory grows quickly with batch size; 16 images with 8
 # workers stays around 2 GB.
@@ -70,59 +42,6 @@ PASSES = {
     "whitened_cropped": (True, True),
 }
 
-def manchu_to_abkai(word):
-    '''
-    Transliterates a word in Manchu script to Abkai, e.g. ᠠᠪᡴᠠ -> abka.
-    '''
-    return "".join(MANCHU_TO_ABKAI[letter] for letter in word)
-
-def load_image(path, crop=False, whiten=False):
-    '''
-    Opens a photographed word as a greyscale image the models can read:
-    contrast stretched so its darkest pixel is black and its lightest is
-    white, then scaled to WIDTH pixels wide.
-
-    whiten=True stretches from percentiles instead: INK_PERCENTILE becomes
-    black and PAPER_PERCENTILE white, with everything beyond clipped, so
-    the paper turns white like the training images' background rather than
-    staying grey. crop=True crops the image to the ink, as the training
-    images are, before it's scaled.
-    '''
-    image = Image.open(path).convert("L")
-    pixels = np.asarray(image, dtype=np.float64)
-    if whiten:
-        darkest, lightest = np.percentile(pixels, [INK_PERCENTILE,
-                                                   PAPER_PERCENTILE])
-    else:
-        darkest, lightest = pixels.min(), pixels.max()
-    if lightest > darkest:
-        pixels = (pixels - darkest) / (lightest - darkest) * 255
-    pixels = np.clip(pixels, 0, 255)
-    image = Image.fromarray(np.round(pixels).astype(np.uint8))
-
-    if crop:
-        ink = np.asarray(image) < INK_THRESHOLD
-        rows = np.nonzero(ink.any(axis=1))[0]
-        columns = np.nonzero(ink.any(axis=0))[0]
-        if len(rows) and len(columns):
-            image = image.crop((columns[0], rows[0],
-                                columns[-1] + 1, rows[-1] + 1))
-
-    height = max(1, round(image.height * WIDTH / image.width))
-    return image.resize((WIDTH, height), Image.LANCZOS)
-
-def sample_images(count, seed=0):
-    '''
-    Picks count random (path, label) pairs from DATA_DIRECTORY, the same ones
-    for the same seed. The label is the Abkai folder name.
-    '''
-    images = []
-    for label in sorted(os.listdir(DATA_DIRECTORY)):
-        folder = os.path.join(DATA_DIRECTORY, label)
-        for name in sorted(os.listdir(folder)):
-            images.append((os.path.join(folder, name), label))
-    return random.Random(seed).sample(images, min(count, len(images)))
-
 # Each worker process loads the model once, in init_worker
 model = None
 
@@ -140,7 +59,7 @@ def read_batch(job):
     each image.
     '''
     batch, crop, whiten = job
-    images = [load_image(path, crop, whiten) for path, _ in batch]
+    images = [load_photo(path, crop, whiten) for path, _ in batch]
     entries = [(image_to_array(image), None, token_count(image))
                for image in images]
     _, y = predict(model, entries)
@@ -179,23 +98,10 @@ def summarize(name, rows):
           f"{char_accuracy:.1%}")
 
 def render_word(word):
-    '''
-    Renders any word the way training_data.generate renders the lexicon:
-    laid out horizontally, cropped to the ink, then rotated to read top to
-    bottom. Returns None for an empty word.
-    '''
+    # The guess as a lexigraph, or None for an empty guess
     if not word.strip():
         return None
-    font = ImageFont.truetype(EXAMPLE_FONT, RENDER_SIZE)
-    left, top, right, bottom = font.getbbox(word)
-    padding = RENDER_SIZE // 4
-    canvas = Image.new("L", (right - left + 2 * padding,
-                             bottom - top + 2 * padding), 255)
-    ImageDraw.Draw(canvas).text((padding - left, padding - top), word,
-                                font=font, fill=0)
-    background = Image.new("L", canvas.size, 255)
-    canvas = canvas.crop(ImageChops.difference(canvas, background).getbbox())
-    return canvas.rotate(-90, expand=True)
+    return render(word, EXAMPLE_FONT)
 
 def caption_font(size):
     try:
