@@ -34,7 +34,9 @@ transformers, using CTC for loss calculation.
 #### Training Data
 
 A set of Manchu words was pulled from
-[kaikki](https://kaikki.org/dictionary/Manchu/index.html).
+[kaikki](https://kaikki.org/dictionary/Manchu/index.html). See below:
+
+Tatu Ylonen: Wiktextract: Wiktionary as Machine-Readable Structured Data, Proceedings of the 13th Conference on Language Resources and Evaluation (LREC), pp. 1317-1325, Marseille, 20-25 June 2022.
 
 ## Roadmap
 
