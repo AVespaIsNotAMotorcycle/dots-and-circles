@@ -194,11 +194,11 @@ data all clean images of printed black text on a plain white background. Real-wo
 - Early Modern printing isn't perfect, even if it's better than handwriting
 - old texts may have become damaged over time
 For comparison, here are some real-world images (left) and the model's guess (right):
-<img alt="image" src="./ocr/runs/run0245/non_synthetic_example_1.png" />
-<img alt="image" src="./ocr/runs/run0245/non_synthetic_example_2.png" />
-<img alt="image" src="./ocr/runs/run0245/non_synthetic_example_3.png" />
-<img alt="image" src="./ocr/runs/run0245/non_synthetic_example_4.png" />
-<img alt="image" src="./ocr/runs/run0245/non_synthetic_example_5.png" />
+<img alt="image" src="./ocr/runs/run025/non_synthetic_example_1.png" />
+<img alt="image" src="./ocr/runs/run025/non_synthetic_example_2.png" />
+<img alt="image" src="./ocr/runs/run025/non_synthetic_example_3.png" />
+<img alt="image" src="./ocr/runs/run025/non_synthetic_example_4.png" />
+<img alt="image" src="./ocr/runs/run025/non_synthetic_example_5.png" />
 
 Next steps are to amend the synthetic data to more closely resemble the real-world data.
 - Add paper textures to the background
