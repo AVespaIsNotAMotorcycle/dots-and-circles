@@ -178,7 +178,7 @@ For the next run (Run 25), two changes were made. First: one third of training d
 This was to deal with the fact that Run 24 showed lower accuracy on words with no padding. Second: train for 45 epochs. This is because Run 24 showed that
 by the end of 30 epochs, the model was still learning. Run 25 showed overall performance similar to Run 24, but with improved performance on padded words
 and on words with labels 11 characters or longer. Accuracy was still rising when the run ended, so training for longer would likely yield better accuracy.
-<img width="1280" height="960" alt="image" src="./ocr/runs/run024/comparison_run022_run024_run025.png" />
+<img width="1280" height="960" alt="image" src="./ocr/runs/run025/comparison_run022_run024_run025.png" />
 
 Now that the models were getting fairly good results, I wanted to compare against real data. I used a
 [dataset published by Sun Haipeng, Tao Wenhao, and Bi Xiaojun](https://www.scidb.cn/en/detail?dataSetId=b45491b63d694534a9323acf14846586).
