@@ -139,10 +139,13 @@ evaluate on a sample that excludes the seed-1 set.
    to 27% exact.
 2. Keep whitening + cropping. It's still worth +20 points exact over plain.
 3. The rest of the gap is now mostly per-character slips that compound in
-   long words. Lexicon-constrained decoding (already on the ideas list) should
-   help a lot here, since many misses are one edit from a real word.
+   long words. 75% of the photographed words aren't in the training lexicon,
+   and run 26 gets 43.0% exact (84.2% char) on those vs 59.1% (87.0%) on
+   words it trained on. The model has to read unseen words (transliterations,
+   unknown words), so the gain should come from training it to read letter by
+   letter, for example on made-up words, not from constraining its output.
 4. Worth a look in the augmentation: why `o/u` got worse, and whether the
    noise causes the spurious `k`/`a` insertions.
 5. Photo accuracy has plateaued by about epoch 60–75, so the next gain is more
-   likely to come from changes to the data or decoding than from training
-   longer.
+   likely to come from changes to the training data or the model than from
+   training longer.
