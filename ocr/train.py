@@ -63,6 +63,8 @@ AUGMENT_WORKERS = 4
 # so they stay an honest test.
 PHOTO_COUNT = 500
 PHOTO_SEED = 1
+# Besides the latest weights, a copy is kept every this many epochs
+SNAPSHOT_EVERY = 5
 # Photos per batch when scoring them. The models keep every layer's
 # activations, so smaller batches use less memory.
 PHOTO_BATCH_SIZE = 16
@@ -387,9 +389,15 @@ def new_run_directory():
     os.makedirs(run_directory)
     return run_directory
 
-def weights_path(run_directory, name):
+def weights_path(run_directory, name, epoch=None):
+    '''
+    Where a run's weights are saved: the latest epoch's, or with an epoch,
+    that epoch's snapshot (epochs counting from 1).
+    '''
     # Run names can contain "/" and spaces, e.g. "C-8/128 Adam 1e-3"
     file_name = name.replace("/", "-").replace(" ", "_")
+    if epoch is not None:
+        file_name += f"_epoch{epoch:03}"
     return os.path.join(run_directory, f"weights_{file_name}.npz")
 
 def read_log(run_directory):
@@ -666,6 +674,10 @@ def train_model(name, run, batches, photo_set, epochs,
 
             # Overwrites the last epoch's weights
             run["model"].save_weights(weights_path(run_directory, name))
+            # and keeps some, so earlier epochs can be compared or evaluated
+            if (epoch + 1) % SNAPSHOT_EVERY == 0:
+                run["model"].save_weights(
+                    weights_path(run_directory, name, epoch + 1))
 
             if photo_set:
                 accuracy, exact = score_photos(run["model"], photo_set)
@@ -684,4 +696,4 @@ def train_model(name, run, batches, photo_set, epochs,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=45, augment=True)
+    train(epochs=90, augment=True)
