@@ -52,8 +52,13 @@ def generate(seed):
     image = canvas.resize((WIDTH, height), Image.LANCZOS)
 
     # Add blank rows before the word, so it doesn't always start at the top.
-    # The amount comes from the seed, so a seed always gives the same image.
-    padding = random.Random(seed).randint(0, max(0, HEIGHT - height))
+    # About a third of words get none, since real images will often be
+    # cropped right to the ink. The amount comes from the seed, so a seed
+    # always gives the same image.
+    rng = random.Random(seed)
+    padding = rng.randint(0, max(0, HEIGHT - height))
+    if rng.random() < 1 / 3:
+        padding = 0
     padded = Image.new("L", (WIDTH, height + padding), 255)
     padded.paste(image, (0, padding))
     return padded, word

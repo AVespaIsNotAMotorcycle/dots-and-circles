@@ -44,11 +44,11 @@ Tatu Ylonen: Wiktextract: Wiktionary as Machine-Readable Structured Data, Procee
   - [x] **nn module**: provides the basis for the implementation of ANNs
   - [x] **loss module**: calculates loss and gradients
   - [x] **optim module**: updates parameters based on gradients
-- [ ] **Basic OCR**:
+- [x] **Basic OCR**:
   - [x] **Simple synthetic training data generation**: black text on white background
-  - [ ] **Transformer OCR Model**: reads image line by line, outputs CTC string
-  - [ ] **CTC loss function**: generates loss values for TrOCR output
-  - [ ] **Simple training loop**: train TrOCR on synthetic data, graph results
+  - [x] **Transformer OCR Model**: reads image line by line, outputs CTC string
+  - [x] **CTC loss function**: generates loss values for TrOCR output
+  - [x] **Simple training loop**: train TrOCR on synthetic data, graph results
 
 
 # Progress
@@ -173,3 +173,9 @@ To account for this, training data was modified by adding random amounts of padd
 to the one just described labelled as (Run 22). Like Run 22, Run 24 was 30 epochs long, but the comparison indicates that the model was still learning by the
 end of epoch 30, and overall had worse accuracy. Notably, it did significantly worse on lexigraphs with no padding.
 <img width="1280" height="960" alt="image" src="./ocr/runs/run024/comparison_run022_run024.png" />
+
+For the next run (Run 25), two changes were made. First: one third of training data was guaranteed to have no padding (e.g. the lexigraphs were top-aligned).
+This was to deal with the fact that Run 24 showed lower accuracy on words with no padding. Second: train for 45 epochs. This is because Run 24 showed that
+by the end of 30 epochs, the model was still learning. Run 25 showed overall performance similar to Run 24, but with improved performance on padded words
+and on words with labels 11 characters or longer. Accuracy was still rising when the run ended, so training for longer would likely yield better accuracy.
+<img width="1280" height="960" alt="image" src="./ocr/runs/run024/comparison_run022_run024_run025.png" />
