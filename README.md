@@ -203,8 +203,44 @@ For comparison, here are some real-world images (left) and the model's guess (ri
 <img alt="image" src="./ocr/runs/run025/non_synthetic_example_5.png" />
 
 Next steps are to amend the synthetic data to more closely resemble the real-world data.
-- Add paper textures to the background
-- Add blur, noise, and other filters
-- Add varying levels of text opacity
-- Add varying text colors
-- Add varying stroke thickness
+- Varying stroke thickness
+- JPEG artifacts
+- Occasional specks
+- Fragments of other words caught in the image
+- Paper background
+- Varying contrast
+
+Using this augmented synthetic data, a 90-epoch training run yielded significant improvements over non-augmented data.
+
+**Run 26 (Augmented)**
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run026.png" />
+
+Accuracy on real-world photos stopped improving around epoch 60.
+
+**Run 26 vs. Run 25 (Non-augmented)**
+Plain: No image preprocessing.
+Cropped: Crop and rescale before evaluation.
+Whitened: Background made (closer) to a white canvas.
+Whitened + cropped: see above.
+
+| Pass | Exact, run 25 | Exact, run 26 | Char acc., run 25 | Char acc., run 26 | Mean edits, 25 → 26 |
+|---|---|---|---|---|---|
+| plain | 0.2% | **27.0%** | 11.6% | **72.4%** | 5.50 → 1.83 |
+| cropped | 0.9% | **35.5%** | 22.6% | **79.0%** | 4.86 → 1.36 |
+| whitened | 12.8% | **41.7%** | 60.4% | **82.0%** | 2.53 → 1.18 |
+| whitened + cropped | 16.4% | **47.0%** | 65.9% | **84.9%** | 2.17 → 0.96 |
+
+Run 26 outperforms Run 25 on every metric.
+Notably Run 26 showed an ability to handle images without preprocessing.
+However, character accuracy still isn't perfect, so the longer a word is,
+the more likely some error will occur and therefore the guess won't be exact.
+
+So far, the training set was pretty small, around 1900 words.
+In order to increase the variety of words the model was exposed to,
+and especially to increase exposure to rare characters such as those used
+to transliterate Chinese words, I incorporated the Jerry Norman dictionary.
+The reason I had started with the Kaikki dictionary is that it contains
+Manchu script, while the Norman dictionary is in Norman transliteration.
+In Norman transliteration, ᡴ᠊ and ᡴᡝ᠊are both written as "k." Usually it's
+clear which letter it should be from context, but when it's at the end of
+a syllable AND not the final letter in a word, it's ambiguous.
