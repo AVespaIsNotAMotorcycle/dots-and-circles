@@ -4,3 +4,4 @@ __pycache__/
 .env
 scidb
 ocr/runs/**/*.npz
+ocr/non_synthetic_data/

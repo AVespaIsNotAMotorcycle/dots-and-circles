@@ -179,3 +179,30 @@ This was to deal with the fact that Run 24 showed lower accuracy on words with n
 by the end of 30 epochs, the model was still learning. Run 25 showed overall performance similar to Run 24, but with improved performance on padded words
 and on words with labels 11 characters or longer. Accuracy was still rising when the run ended, so training for longer would likely yield better accuracy.
 <img width="1280" height="960" alt="image" src="./ocr/runs/run024/comparison_run022_run024_run025.png" />
+
+Now that the models were getting fairly good results, I wanted to compare against real data. I used a
+[dataset published by Sun Haipeng, Tao Wenhao, and Bi Xiaojun](https://www.scidb.cn/en/detail?dataSetId=b45491b63d694534a9323acf14846586).
+
+Citation:
+Haipeng SUN, Wenhao TAO, Xiaojun BI. A dataset of Manchu ancient book words for OCR[J]. China Scientific Data, 2026, 11(1): 1-11. DOI: 10.11922/11-6035.csd.2025.0069.zh. 
+
+Images were cropped so that the edges of the word touched the edge of the image, then scaled up (or down) to a width of 32px, and the background
+was whitened. Run 25's model had a character accuracy of 65.9%, with 16.4% whole-word accuracy. I wasn't expecting great performance, since the training
+data all clean images of printed black text on a plain white background. Real-word data has several issues:
+- paper (especially from the Early Modern period) isn't perfectly white and smooth
+- many Manchu texts are hand-written and non-uniform
+- Early Modern printing isn't perfect, even if it's better than handwriting
+- old texts may have become damaged over time
+For comparison, here are some real-world images (left) and the model's guess (right):
+<img alt="image" src="./ocr/runs/run0245/non_synthetic_example_1.png" />
+<img alt="image" src="./ocr/runs/run0245/non_synthetic_example_2.png" />
+<img alt="image" src="./ocr/runs/run0245/non_synthetic_example_3.png" />
+<img alt="image" src="./ocr/runs/run0245/non_synthetic_example_4.png" />
+<img alt="image" src="./ocr/runs/run0245/non_synthetic_example_5.png" />
+
+Next steps are to amend the synthetic data to more closely resemble the real-world data.
+- Add paper textures to the background
+- Add blur, noise, and other filters
+- Add varying levels of text opacity
+- Add varying text colors
+- Add varying stroke thickness
