@@ -7,7 +7,8 @@ reformat.py rewrites lexicon.json from scratch, which drops these words.
 Headwords are the runs of all-caps words in the text. The OCR is imperfect,
 so a run is only kept if every word in it converts to Manchu letters and
 looks like a Manchu word; "A/B" gives both A and B. A word already in the
-lexicon (compared in Abkai, so ignoring variation selectors) isn't added.
+lexicon (compared in Abkai, so ignoring variation selectors) isn't added,
+and neither is one too tall for a training image (see too_tall).
 '''
 
 import json
@@ -18,6 +19,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", ".."))
 from ocr.photos import manchu_to_abkai
+from ocr.training_data import HEIGHT, WIDTH, fonts, render
 
 VOWELS = {"a": "ᠠ", "e": "ᡝ", "i": "ᡳ", "o": "ᠣ", "u": "ᡠ", "ū": "ᡡ"}
 CONSONANTS = {
@@ -79,6 +81,19 @@ def looks_manchu(word):
     return (len(consonants[0]) <= 1 and len(ending) <= 1
             and all(len(run) <= 2 for run in consonants))
 
+def too_tall(word):
+    '''
+    Whether word, rendered and scaled to WIDTH, is taller than HEIGHT in
+    the median font. Training images that tall get squashed to fit, far
+    denser than any photographed word. Fonts run up to about 24 px a letter
+    at WIDTH, so shorter words can't be too tall and aren't rendered.
+    '''
+    if len(word) * 24 <= HEIGHT:
+        return False
+    images = [render(word, font) for font in fonts]
+    heights = sorted(image.height * WIDTH / image.width for image in images)
+    return heights[len(heights) // 2] > HEIGHT
+
 def headwords(text):
     '''
     Every headword in the dictionary's text, in lower-case Norman.
@@ -119,16 +134,21 @@ with open("lexicon.json", "r", encoding="utf-8") as file:
     lexicon = json.load(file)
 
 known = {manchu_to_abkai(word) for word in lexicon}
-added = 0
+added = tall = 0
 for phrase in norman:
     manchu = " ".join(to_manchu(word) for word in phrase.split())
     abkai = manchu_to_abkai(manchu)
-    if abkai not in known:
-        known.add(abkai)
-        lexicon.append(manchu)
-        added += 1
+    if abkai in known:
+        continue
+    if too_tall(manchu):
+        tall += 1
+        continue
+    known.add(abkai)
+    lexicon.append(manchu)
+    added += 1
 
-print(f"{len(norman)} headwords in the dictionary, {added} of them new.")
+print(f"{len(norman)} headwords in the dictionary, {added} of them new. "
+      f"{tall} more were left out as too tall.")
 print(f"{len(lexicon)} words in lexicon.")
 
 lexicon = sorted(lexicon)

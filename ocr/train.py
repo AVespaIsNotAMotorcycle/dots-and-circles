@@ -30,6 +30,7 @@ from ocr.modelB import ModelB
 from ocr.modelC import ModelC
 from ocr.modelD import ModelD
 from ocr.training_data import HEIGHT, WIDTH, fonts, generate, lexicon
+from ocr.training_data.augment import tokens_needed
 
 FONT_COUNT = len(fonts)
 WORD_COUNT = len(lexicon)
@@ -86,9 +87,19 @@ def generate_seeds(validation_set = False):
     valid_set = []
     test_set = []
 
+    # CTC can't spell a word that needs more tokens than the model reads,
+    # however its image is made, so those words are left out
+    too_long = {index for index, word in enumerate(lexicon)
+                if tokens_needed(word) > CONTEXT_LENGTH}
+    if too_long:
+        print(f"Leaving out {len(too_long)} words too long for "
+              f"{CONTEXT_LENGTH} tokens.")
+
     seed_count = FONT_COUNT * WORD_COUNT
     for i in range(seed_count):
         seed = i
+        if seed % WORD_COUNT in too_long:
+            continue
         lot = random.random()
         if lot < train_proportion:
             train_set.append(seed)
@@ -730,4 +741,4 @@ def train_model(name, run, batches, photo_set, epochs,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=5, augment=True)
+    train(epochs=3, augment=True)
