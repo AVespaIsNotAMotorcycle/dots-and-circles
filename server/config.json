@@ -1,0 +1,30 @@
+{
+  "allowed_origin": "*",
+  "photos": "photos",
+  "models": [
+    {
+      "name": "Run 26",
+      "model": "ModelD (8 transformers, 64-dim embeddings), Adam 3e-3, print augmentation, 1,989-word Wiktionary lexicon, 11 fonts, 90 epochs",
+      "class": "ModelD",
+      "weights": "weights/run026.npz",
+      "params": {"depth": 8, "emb_dim": 64},
+      "preprocess": {"crop": true, "whiten": true}
+    },
+    {
+      "name": "Run 27",
+      "model": "ModelD (8 transformers, 64-dim embeddings), Adam 3e-3, print augmentation, 21,532-entry Wiktionary + Norman lexicon, 11 fonts, 3 epochs",
+      "class": "ModelD",
+      "weights": "weights/run027.npz",
+      "params": {"depth": 8, "emb_dim": 64},
+      "preprocess": {"crop": true, "whiten": true}
+    },
+    {
+      "name": "Run 28",
+      "model": "ModelD (8 transformers, 64-dim embeddings), Adam 3e-3, print augmentation, 21,532-entry Wiktionary + Norman lexicon, 12 fonts, 10 epochs",
+      "class": "ModelD",
+      "weights": "weights/run028.npz",
+      "params": {"depth": 8, "emb_dim": 64},
+      "preprocess": {"crop": true, "whiten": true}
+    }
+  ]
+}

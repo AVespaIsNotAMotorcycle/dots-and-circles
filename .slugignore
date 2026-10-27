@@ -1,0 +1,5 @@
+# Not needed to serve, so kept out of the Heroku slug
+ocr/runs/
+ocr/run_graphs/
+ocr/training_data/kaikki.org-dictionary-Manchu.jsonl
+ocr/training_data/Jerry_Norman_Dict.txt

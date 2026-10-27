@@ -1,0 +1,1802 @@
+[
+ {
+  "label": "a",
+  "manchu": "ᠠ",
+  "path": "a.png",
+  "source": "a/0_133_7_2_a.png"
+ },
+ {
+  "label": "abalara",
+  "manchu": "ᠠᠪᠠᠯᠠᡵᠠ",
+  "path": "abalara.png",
+  "source": "abalara/0_034_6_1_abalara.png"
+ },
+ {
+  "label": "abka",
+  "manchu": "ᠠᠪᡴᠠ",
+  "path": "abka.png",
+  "source": "abka/0_342_3_7_abka.png"
+ },
+ {
+  "label": "acabuci",
+  "manchu": "ᠠᠴᠠᠪᡠᠴᡳ",
+  "path": "acabuci.png",
+  "source": "acabuci/0_123_1_4_acabuci.png"
+ },
+ {
+  "label": "acabuhangge",
+  "manchu": "ᠠᠴᠠᠪᡠᡥᠠᠩᡤᡝ",
+  "path": "acabuhangge.png",
+  "source": "acabuhangge/0_71_3_8_acabuhangge.png"
+ },
+ {
+  "label": "acanarakv",
+  "manchu": "ᠠᠴᠠᠨᠠᡵᠠᡴᡡ",
+  "path": "acanarakv.png",
+  "source": "acanarakv/0_146_6_4_acanarakv.png"
+ },
+ {
+  "label": "adali",
+  "manchu": "ᠠᡩᠠᠯᡳ",
+  "path": "adali.png",
+  "source": "adali/0_196l_1_4_adali.png"
+ },
+ {
+  "label": "aduri",
+  "manchu": "ᠠᡩᡠᡵᡳ",
+  "path": "aduri.png",
+  "source": "aduri/0_259_6_5_aduri.png"
+ },
+ {
+  "label": "afabumbi",
+  "manchu": "ᠠᡶᠠᠪᡠᠮᠪᡳ",
+  "path": "afabumbi.png",
+  "source": "afabumbi/0_36_5_5_afabumbi.png"
+ },
+ {
+  "label": "afabume",
+  "manchu": "ᠠᡶᠠᠪᡠᠮᡝ",
+  "path": "afabume.png",
+  "source": "afabume/0_181l_1_8_afabume.png"
+ },
+ {
+  "label": "afaci",
+  "manchu": "ᠠᡶᠠᠴᡳ",
+  "path": "afaci.png",
+  "source": "afaci/0_384_2_1_afaci.png"
+ },
+ {
+  "label": "aga",
+  "manchu": "ᠠᡤᠠ",
+  "path": "aga.png",
+  "source": "aga/0_177_4_2_aga.png"
+ },
+ {
+  "label": "ahvta",
+  "manchu": "ᠠᡥᡡᡨᠠ",
+  "path": "ahvta.png",
+  "source": "ahvta/0_169_6_1_ahvta.png"
+ },
+ {
+  "label": "ainambi",
+  "manchu": "ᠠᡳᠨᠠᠮᠪᡳ",
+  "path": "ainambi.png",
+  "source": "ainambi/0_46_4_5_ainambi.png"
+ },
+ {
+  "label": "ainame",
+  "manchu": "ᠠᡳᠨᠠᠮᡝ",
+  "path": "ainame.png",
+  "source": "ainame/0_385_4_9_ainame.png"
+ },
+ {
+  "label": "ainu",
+  "manchu": "ᠠᡳ᠌ᠨᡠ",
+  "path": "ainu.png",
+  "source": "ainu/0_445_1_8_ainu.png"
+ },
+ {
+  "label": "ajigen",
+  "manchu": "ᠠᠵᡳᡤᡝᠨ",
+  "path": "ajigen.png",
+  "source": "ajigen/0_316_3_4_ajigen.png"
+ },
+ {
+  "label": "alaci",
+  "manchu": "ᠠᠯᠠᠴᡳ",
+  "path": "alaci.png",
+  "source": "alaci/0_063_6_1_alaci.png"
+ },
+ {
+  "label": "alanaha",
+  "manchu": "ᠠᠯᠠᠨᠠᡥᠠ",
+  "path": "alanaha.png",
+  "source": "alanaha/0_108_4_7_alanaha.png"
+ },
+ {
+  "label": "alibufi",
+  "manchu": "ᠠᠯᡳᠪᡠᡶᡳ",
+  "path": "alibufi.png",
+  "source": "alibufi/0_371_3_3_alibufi.png"
+ },
+ {
+  "label": "alibume",
+  "manchu": "ᠠᠯᡳᠪᡠᠮᡝ",
+  "path": "alibume.png",
+  "source": "alibume/0_123_6_4_alibume.png"
+ },
+ {
+  "label": "alin",
+  "manchu": "ᠠᠯᡳᠨ",
+  "path": "alin.png",
+  "source": "alin/0_52r_6_1_alin.png"
+ },
+ {
+  "label": "alire",
+  "manchu": "ᠠᠯᡳᡵᡝ",
+  "path": "alire.png",
+  "source": "alire/0_362_6_4_alire.png"
+ },
+ {
+  "label": "aliyafi",
+  "manchu": "ᠠᠯᡳᠶᠠᡶᡳ",
+  "path": "aliyafi.png",
+  "source": "aliyafi/0_104_3_7_aliyafi.png"
+ },
+ {
+  "label": "aliyame",
+  "manchu": "ᠠᠯᡳᠶᠠᠮᡝ",
+  "path": "aliyame.png",
+  "source": "aliyame/0_204_7_6_aliyame.png"
+ },
+ {
+  "label": "aliyan",
+  "manchu": "ᠠᠯᡳᠶᠠᠨ",
+  "path": "aliyan.png",
+  "source": "aliyan/0_188_8_4_aliyan.png"
+ },
+ {
+  "label": "aliyarakv",
+  "manchu": "ᠠᠯᡳᠶᠠᡵᠠᡴᡡ",
+  "path": "aliyarakv.png",
+  "source": "aliyarakv/0_182_7_3_aliyarakv.png"
+ },
+ {
+  "label": "aljarakv",
+  "manchu": "ᠠᠯᠵᠠᡵᠠᡴᡡ",
+  "path": "aljarakv.png",
+  "source": "aljarakv/0_215l_6_7_aljarakv.png"
+ },
+ {
+  "label": "ama",
+  "manchu": "ᠠᠮᠠ",
+  "path": "ama.png",
+  "source": "ama/0_409_3_2_ama.png"
+ },
+ {
+  "label": "ambula",
+  "manchu": "ᠠᠮᠪᡠᠯᠠ",
+  "path": "ambula.png",
+  "source": "ambula/0_237_2_2_ambula.png"
+ },
+ {
+  "label": "amcame",
+  "manchu": "ᠠᠮᠴᠠᠮᡝ",
+  "path": "amcame.png",
+  "source": "amcame/0_125r_6_12_amcame.png"
+ },
+ {
+  "label": "amtangga",
+  "manchu": "ᠠᠮᡨᠠᠩᡤᠠ",
+  "path": "amtangga.png",
+  "source": "amtangga/0_151_7_2_amtangga.png"
+ },
+ {
+  "label": "aniyai",
+  "manchu": "ᠠᠨᡳᠶᠠᡳ",
+  "path": "aniyai.png",
+  "source": "aniyai/0_117_2_2_aniyai.png"
+ },
+ {
+  "label": "ayoo",
+  "manchu": "ᠠᠶᠣᠣ",
+  "path": "ayoo.png",
+  "source": "ayoo/0_173_5_2_ayoo.png"
+ },
+ {
+  "label": "bahakv",
+  "manchu": "ᠪᠠᡥᠠᡴᡡ",
+  "path": "bahakv.png",
+  "source": "bahakv/0_195_6_8_bahakv.png"
+ },
+ {
+  "label": "bahara",
+  "manchu": "ᠪᠠᡥᠠᡵᠠ",
+  "path": "bahara.png",
+  "source": "bahara/0_114_3_2_bahara.png"
+ },
+ {
+  "label": "baharakv",
+  "manchu": "ᠪᠠᡥᠠᡵᠠᡴᡡ",
+  "path": "baharakv.png",
+  "source": "baharakv/0_364_6_8_baharakv.png"
+ },
+ {
+  "label": "baibi",
+  "manchu": "ᠪᠠᡳᠪᡳ",
+  "path": "baibi.png",
+  "source": "baibi/0_056_3_2_baibi.png"
+ },
+ {
+  "label": "baifi",
+  "manchu": "ᠪᠠᡳᡶᡳ",
+  "path": "baifi.png",
+  "source": "baifi/0_173_3_4_baifi.png"
+ },
+ {
+  "label": "baitalarakv",
+  "manchu": "ᠪᠠᡳᡨᠠᠯᠠᡵᠠᡴᡡ",
+  "path": "baitalarakv.png",
+  "source": "baitalarakv/0_387_5_2_baitalarakv.png"
+ },
+ {
+  "label": "ban",
+  "manchu": "ᠪᠠᠨ",
+  "path": "ban.png",
+  "source": "ban/0_87_5_2_ban.png"
+ },
+ {
+  "label": "banjiha",
+  "manchu": "ᠪᠠᠨᠵᡳᡥᠠ",
+  "path": "banjiha.png",
+  "source": "banjiha/0_83_2_10_banjiha.png"
+ },
+ {
+  "label": "banjire",
+  "manchu": "ᠪᠠᠨᠵᡳᡵᡝ",
+  "path": "banjire.png",
+  "source": "banjire/0_222_4_7_banjire.png"
+ },
+ {
+  "label": "banjirengge",
+  "manchu": "ᠪᠠᠨᠵᡳᡵᡝᠩᡤᡝ",
+  "path": "banjirengge.png",
+  "source": "banjirengge/0_48_7_9_banjirengge.png"
+ },
+ {
+  "label": "bedereme",
+  "manchu": "ᠪᡝᡩᡝᡵᡝᠮᡝ",
+  "path": "bedereme.png",
+  "source": "bedereme/0_311_4_1_bedereme.png"
+ },
+ {
+  "label": "bele",
+  "manchu": "ᠪᡝᠯᡝ",
+  "path": "bele.png",
+  "source": "bele/0_33_6_4_bele.png"
+ },
+ {
+  "label": "belefi",
+  "manchu": "ᠪᡝᠯᡝᡶᡳ",
+  "path": "belefi.png",
+  "source": "belefi/0_319_5_12_belefi.png"
+ },
+ {
+  "label": "belehe",
+  "manchu": "ᠪᡝᠯᡝᡥᡝ",
+  "path": "belehe.png",
+  "source": "belehe/0_370_3_4_belehe.png"
+ },
+ {
+  "label": "belhefi",
+  "manchu": "ᠪᡝᠯᡥᡝᡶᡳ",
+  "path": "belhefi.png",
+  "source": "belhefi/0_147_2_1_belhefi.png"
+ },
+ {
+  "label": "benehe",
+  "manchu": "ᠪᡝᠨᡝᡥᡝ",
+  "path": "benehe.png",
+  "source": "benehe/0_193_4_5_benehe.png"
+ },
+ {
+  "label": "beri",
+  "manchu": "ᠪᡝᡵᡳ",
+  "path": "beri.png",
+  "source": "beri/0_317_3_5_beri.png"
+ },
+ {
+  "label": "bini",
+  "manchu": "ᠪᡳᠨᡳ",
+  "path": "bini.png",
+  "source": "bini/0_236_6_10_bini.png"
+ },
+ {
+  "label": "bisan",
+  "manchu": "ᠪᡳᠰᠠᠨ",
+  "path": "bisan.png",
+  "source": "bisan/0_56_3_3_bisan.png"
+ },
+ {
+  "label": "bisire",
+  "manchu": "ᠪᡳᠰᡳᡵᡝ",
+  "path": "bisire.png",
+  "source": "bisire/0_176r_4_8_bisire.png"
+ },
+ {
+  "label": "bisiren",
+  "manchu": "ᠪᡳᠰᡳᡵᡝᠨ",
+  "path": "bisiren.png",
+  "source": "bisiren/0_608_4_2_bisiren.png"
+ },
+ {
+  "label": "biyade",
+  "manchu": "ᠪᡳᠶᠠᡩᡝ",
+  "path": "biyade.png",
+  "source": "biyade/0_229_2_6_biyade.png"
+ },
+ {
+  "label": "biyai",
+  "manchu": "ᠪᡳᠶᠠᡳ",
+  "path": "biyai.png",
+  "source": "biyai/0_199_1_3_biyai.png"
+ },
+ {
+  "label": "bodoci",
+  "manchu": "ᠪᠣᡩᠣᠴᡳ",
+  "path": "bodoci.png",
+  "source": "bodoci/0_104_4_5_bodoci.png"
+ },
+ {
+  "label": "bolgomime",
+  "manchu": "ᠪᠣᠯᡤᠣᠮᡳᠮᡝ",
+  "path": "bolgomime.png",
+  "source": "bolgomime/0_236_3_4_bolgomime.png"
+ },
+ {
+  "label": "bolorikten",
+  "manchu": "ᠪᠣᠯᠣᡵᡳᡴᡨᡝᠨ",
+  "path": "bolorikten.png",
+  "source": "bolorikten/0_064_2_2_bolorikten.png"
+ },
+ {
+  "label": "booi",
+  "manchu": "ᠪᠣᠣᡳ",
+  "path": "booi.png",
+  "source": "booi/0_401_2_2_booi.png"
+ },
+ {
+  "label": "bosoi",
+  "manchu": "ᠪᠣᠰᠣᡳ",
+  "path": "bosoi.png",
+  "source": "bosoi/0_330_3_7_bosoi.png"
+ },
+ {
+  "label": "boxofi",
+  "manchu": "ᠪᠣᡧᠣᡶᡳ",
+  "path": "boxofi.png",
+  "source": "boxofi/0_114_1_6_boxofi.png"
+ },
+ {
+  "label": "bu",
+  "manchu": "ᠪᡠ",
+  "path": "bu.png",
+  "source": "bu/0_183_7_3_bu.png"
+ },
+ {
+  "label": "buyecuke",
+  "manchu": "ᠪᡠᠶᡝᠴᡠᡴᡝ",
+  "path": "buyecuke.png",
+  "source": "buyecuke/0_184_6_2_buyecuke.png"
+ },
+ {
+  "label": "cibsonggo",
+  "manchu": "ᠴᡳᠪᠰᠣᠩᡤᠣ",
+  "path": "cibsonggo.png",
+  "source": "cibsonggo/0_263_4_4_cibsonggo.png"
+ },
+ {
+  "label": "cihai",
+  "manchu": "ᠴᡳᡥᠠᡳ",
+  "path": "cihai.png",
+  "source": "cihai/0_242_4_8_cihai.png"
+ },
+ {
+  "label": "cihakv",
+  "manchu": "ᠴᡳᡥᠠᡴᡡ",
+  "path": "cihakv.png",
+  "source": "cihakv/0_266_5_1_cihakv.png"
+ },
+ {
+  "label": "ciktan",
+  "manchu": "ᠴᡳᡴᡨᠠᠨ",
+  "path": "ciktan.png",
+  "source": "ciktan/0_0030r_2_3_ciktan.png"
+ },
+ {
+  "label": "cikten",
+  "manchu": "ᠴᡳᡴᡨᡝᠨ",
+  "path": "cikten.png",
+  "source": "cikten/0_347_5_3_cikten.png"
+ },
+ {
+  "label": "cio",
+  "manchu": "ᠴᡳᠣ",
+  "path": "cio.png",
+  "source": "cio/0_94_1_1_cio.png"
+ },
+ {
+  "label": "ciowan",
+  "manchu": "ᠴᡳᠣᠸᠠᠨ",
+  "path": "ciowan.png",
+  "source": "ciowan/0_210_1_1_ciowan.png"
+ },
+ {
+  "label": "cohotoi",
+  "manchu": "ᠴᠣᡥᠣᡨᠣᡳ",
+  "path": "cohotoi.png",
+  "source": "cohotoi/0_296_4_4_cohotoi.png"
+ },
+ {
+  "label": "colgoroko",
+  "manchu": "ᠴᠣᠯᡤᠣᡵᠣᡴᠣ",
+  "path": "colgoroko.png",
+  "source": "colgoroko/0_324_2_1_colgoroko.png"
+ },
+ {
+  "label": "dabanaha",
+  "manchu": "ᡩᠠᠪᠠᠨᠠᡥᠠ",
+  "path": "dabanaha.png",
+  "source": "dabanaha/0_475_2_9_dabanaha.png"
+ },
+ {
+  "label": "dabarakv",
+  "manchu": "ᡩᠠᠪᠠᡵᠠᡴᡡ",
+  "path": "dabarakv.png",
+  "source": "dabarakv/0_271_7_1_dabarakū.png"
+ },
+ {
+  "label": "dabtame",
+  "manchu": "ᡩᠠᠪᡨᠠᠮᡝ",
+  "path": "dabtame.png",
+  "source": "dabtame/0_413_7_3_dabtame.png"
+ },
+ {
+  "label": "dahalambi",
+  "manchu": "ᡩᠠᡥᠠᠯᠠᠮᠪᡳ",
+  "path": "dahalambi.png",
+  "source": "dahalambi/0_5_5_6_dahalambi.png"
+ },
+ {
+  "label": "dahalan",
+  "manchu": "ᡩᠠᡥᠠᠯᠠᠨ",
+  "path": "dahalan.png",
+  "source": "dahalan/0_252_3_1_dahalan.png"
+ },
+ {
+  "label": "dahalara",
+  "manchu": "ᡩᠠᡥᠠᠯᠠᡵᠠ",
+  "path": "dahalara.png",
+  "source": "dahalara/0_128_1_1_dahalara.png"
+ },
+ {
+  "label": "dahasun",
+  "manchu": "ᡩᠠᡥᠠᠰᡠᠨ",
+  "path": "dahasun.png",
+  "source": "dahasun/0_62_5_1_dahasun.png"
+ },
+ {
+  "label": "dahvme",
+  "manchu": "ᡩᠠᡥᡡᠮᡝ",
+  "path": "dahvme.png",
+  "source": "dahvme/0_342_7_3_dahvme.png"
+ },
+ {
+  "label": "dailaci",
+  "manchu": "ᡩᠠᡳᠯᠠᠴᡳ",
+  "path": "dailaci.png",
+  "source": "dailaci/0_200_3_3_dailaci.png"
+ },
+ {
+  "label": "daldahangge",
+  "manchu": "ᡩᠠᠯᡩᠠᡥᠠᠩᡤᡝ",
+  "path": "daldahangge.png",
+  "source": "daldahangge/0_94_5_4_daldahangge.png"
+ },
+ {
+  "label": "dalibumbi",
+  "manchu": "ᡩᠠᠯᡳᠪᡠᠮᠪᡳ",
+  "path": "dalibumbi.png",
+  "source": "dalibumbi/0_276_2_1_dalibumbi.png"
+ },
+ {
+  "label": "dalin",
+  "manchu": "ᡩᠠᠯᡳᠨ",
+  "path": "dalin.png",
+  "source": "dalin/0_393_7_2_dalin.png"
+ },
+ {
+  "label": "darabure",
+  "manchu": "ᡩᠠᡵᠠᠪᡠᡵᡝ",
+  "path": "darabure.png",
+  "source": "darabure/0_71_7_1_5_darabure.png"
+ },
+ {
+  "label": "data",
+  "manchu": "ᡩᠠᡨᠠ",
+  "path": "data.png",
+  "source": "data/0_315_2_10_data.png"
+ },
+ {
+  "label": "deberen",
+  "manchu": "ᡩᡝᠪᡝᡵᡝᠨ",
+  "path": "deberen.png",
+  "source": "deberen/0_424_3_1_deberen.png"
+ },
+ {
+  "label": "deng",
+  "manchu": "ᡩᡝᠩ",
+  "path": "deng.png",
+  "source": "deng/0_66_1_7_deng.png"
+ },
+ {
+  "label": "dergide",
+  "manchu": "ᡩᡝᡵᡤᡳᡩᡝ",
+  "path": "dergide.png",
+  "source": "dergide/0_414_6_9_dergide.png"
+ },
+ {
+  "label": "deribume",
+  "manchu": "ᡩᡝᡵᡳᠪᡠᠮᡝ",
+  "path": "deribume.png",
+  "source": "deribume/0_12_1_2_deribume.png"
+ },
+ {
+  "label": "deriburengge",
+  "manchu": "ᡩᡝᡵᡳᠪᡠᡵᡝᠩᡤᡝ",
+  "path": "deriburengge.png",
+  "source": "deriburengge/0_73_3_4_deriburengge.png"
+ },
+ {
+  "label": "dokoloho",
+  "manchu": "ᡩᠣᡴᠣᠯᠣᡥᠣ",
+  "path": "dokoloho.png",
+  "source": "dokoloho/0_63_6_5_dokoloho.png"
+ },
+ {
+  "label": "dolori",
+  "manchu": "ᡩᠣᠯᠣᡵᡳ",
+  "path": "dolori.png",
+  "source": "dolori/0_279_1_2_dolori.png"
+ },
+ {
+  "label": "donjire",
+  "manchu": "ᡩᠣᠨᠵᡳᡵᡝ",
+  "path": "donjire.png",
+  "source": "donjire/0_055_1_3_donjire.png"
+ },
+ {
+  "label": "dorgingge",
+  "manchu": "ᡩᠣᡵᡤᡳᠩᡤᡝ",
+  "path": "dorgingge.png",
+  "source": "dorgingge/0_20_5_7_dorgingge.png"
+ },
+ {
+  "label": "doroloro",
+  "manchu": "ᡩᠣᡵᠣᠯᠣᡵᠣ",
+  "path": "doroloro.png",
+  "source": "doroloro/0_290_1_3_doroloro.png"
+ },
+ {
+  "label": "dosika",
+  "manchu": "ᡩᠣᠰᡳᡴᠠ",
+  "path": "dosika.png",
+  "source": "dosika/0_289_6_2_dosika.png"
+ },
+ {
+  "label": "dubei",
+  "manchu": "ᡩᡠᠪᡝᡳ",
+  "path": "dubei.png",
+  "source": "dubei/0_122_3_10_dubei.png"
+ },
+ {
+  "label": "duibuleci",
+  "manchu": "ᡩᡠᡳᠪᡠᠯᡝᠴᡳ",
+  "path": "duibuleci.png",
+  "source": "duibuleci/0_78_6_3_duibuleci.png"
+ },
+ {
+  "label": "dursuki",
+  "manchu": "ᡩᡠᡵᠰᡠᡴᡳ",
+  "path": "dursuki.png",
+  "source": "dursuki/0_174_10_11_dursuki.png"
+ },
+ {
+  "label": "dzo",
+  "manchu": "ᡯᠣ",
+  "path": "dzo.png",
+  "source": "dzo/0_323_7_3_zo.png"
+ },
+ {
+  "label": "ede",
+  "manchu": "ᡝᡩᡝ",
+  "path": "ede.png",
+  "source": "ede/0_50_7_2_ede.png"
+ },
+ {
+  "label": "efulere",
+  "manchu": "ᡝᡶᡠᠯᡝᡵᡝ",
+  "path": "efulere.png",
+  "source": "efulere/0_153_1_3_efulere.png"
+ },
+ {
+  "label": "eihun",
+  "manchu": "ᡝᡳᡥᡠᠨ",
+  "path": "eihun.png",
+  "source": "eihun/0_187_5_3_eihun.png"
+ },
+ {
+  "label": "ejehebi",
+  "manchu": "ᡝᠵᡝᡥᡝᠪᡳ",
+  "path": "ejehebi.png",
+  "source": "ejehebi/0_96_6_5_ejehebi.png"
+ },
+ {
+  "label": "eldehen",
+  "manchu": "ᡝᠯᡩᡝᡥᡝᠨ",
+  "path": "eldehen.png",
+  "source": "eldehen/0_363_1_1_eldehen.png"
+ },
+ {
+  "label": "elemangga",
+  "manchu": "ᡝᠯᡝᠮᠠᠩᡤᠠ",
+  "path": "elemangga.png",
+  "source": "elemangga/0_472_4_6_elemangga.png"
+ },
+ {
+  "label": "elhe",
+  "manchu": "ᡝᠯᡥᡝ",
+  "path": "elhe.png",
+  "source": "elhe/0_136_2_1_elhe.png"
+ },
+ {
+  "label": "emdubei",
+  "manchu": "ᡝᠮᡩᡠᠪᡝᡳ",
+  "path": "emdubei.png",
+  "source": "emdubei/0_111_3_2_emdubei.png"
+ },
+ {
+  "label": "ememungge",
+  "manchu": "ᡝᠮᡝᠮᡠᠩᡤᡝ",
+  "path": "ememungge.png",
+  "source": "ememungge/0_71_6_2_ememungge.png"
+ },
+ {
+  "label": "emgeri",
+  "manchu": "ᡝᠮᡤᡝᡵᡳ",
+  "path": "emgeri.png",
+  "source": "emgeri/0_049_7_10_emgeri.png"
+ },
+ {
+  "label": "emhun",
+  "manchu": "ᡝᠮᡥᡠᠨ",
+  "path": "emhun.png",
+  "source": "emhun/0_127_4_3_emhun.png"
+ },
+ {
+  "label": "emu",
+  "manchu": "ᡝᠮᡠ",
+  "path": "emu.png",
+  "source": "emu/0_308_4_4_emu.png"
+ },
+ {
+  "label": "entehen",
+  "manchu": "ᡝᠨᡨᡝᡥᡝᠨ",
+  "path": "entehen.png",
+  "source": "entehen/0_312_6_2_entehen.png"
+ },
+ {
+  "label": "erileme",
+  "manchu": "ᡝᡵᡳᠯᡝᠮᡝ",
+  "path": "erileme.png",
+  "source": "erileme/0_145_6_1_erileme.png"
+ },
+ {
+  "label": "ertufi",
+  "manchu": "ᡝᡵᡨᡠᡶᡳ",
+  "path": "ertufi.png",
+  "source": "ertufi/0_240l_4_10_ertufi.png"
+ },
+ {
+  "label": "etufi",
+  "manchu": "ᡝᡨᡠᡶᡳ",
+  "path": "etufi.png",
+  "source": "etufi/0_127_3_4_etufi.png"
+ },
+ {
+  "label": "etuhe",
+  "manchu": "ᡝᡨᡠᡥᡝ",
+  "path": "etuhe.png",
+  "source": "etuhe/0_335_3_9_etuhe.png"
+ },
+ {
+  "label": "etumbi",
+  "manchu": "ᡝᡨᡠᠮᠪᡳ",
+  "path": "etumbi.png",
+  "source": "etumbi/0_354_2_8_etumbi.png"
+ },
+ {
+  "label": "eyen",
+  "manchu": "ᡝᠶᡝᠨ",
+  "path": "eyen.png",
+  "source": "eyen/0_262_7_5_eyen.png"
+ },
+ {
+  "label": "faidame",
+  "manchu": "ᡶᠠᡳᡩᠠᠮᡝ",
+  "path": "faidame.png",
+  "source": "faidame/0_228_1_5_faidame.png"
+ },
+ {
+  "label": "fan",
+  "manchu": "ᡶᠠᠨ",
+  "path": "fan.png",
+  "source": "fan/0_440_5_7_fan.png"
+ },
+ {
+  "label": "fejergi",
+  "manchu": "ᡶᡝᠵᡝᡵᡤᡳ",
+  "path": "fejergi.png",
+  "source": "fejergi/0_220_4_4_fejergi.png"
+ },
+ {
+  "label": "fengxen",
+  "manchu": "ᡶᡝᠩᡧᡝᠨ",
+  "path": "fengxen.png",
+  "source": "fengxen/0_340_1_2_fengxen.png"
+ },
+ {
+  "label": "fiyan",
+  "manchu": "ᡶᡳᠶᠠᠨ",
+  "path": "fiyan.png",
+  "source": "fiyan/0_43l_3_2_fiyan.png"
+ },
+ {
+  "label": "fiyelen",
+  "manchu": "ᡶᡳᠶᡝᠯᡝᠨ",
+  "path": "fiyelen.png",
+  "source": "fiyelen/0_450_7_12_fiyelen.png"
+ },
+ {
+  "label": "fonjiha",
+  "manchu": "ᡶᠣᠨᠵᡳᡥᠠ",
+  "path": "fonjiha.png",
+  "source": "fonjiha/0_85_4_1_fonjiha.png"
+ },
+ {
+  "label": "fonjiki",
+  "manchu": "ᡶᠣᠨᠵᡳᡴᡳ",
+  "path": "fonjiki.png",
+  "source": "fonjiki/0_124_5_6_fonjiki.png"
+ },
+ {
+  "label": "forgoxome",
+  "manchu": "ᡶᠣᡵᡤᠣᡧᠣᠮᡝ",
+  "path": "forgoxome.png",
+  "source": "forgoxome/0_70_3_1_forgoxome.png"
+ },
+ {
+  "label": "foyodoro",
+  "manchu": "ᡶᠣᠶᠣᡩᠣᡵᠣ",
+  "path": "foyodoro.png",
+  "source": "foyodoro/0_213_6_7_foyodoro.png"
+ },
+ {
+  "label": "gaitai",
+  "manchu": "ᡤᠠᡳᡨᠠᡳ",
+  "path": "gaitai.png",
+  "source": "gaitai/0_69_5_5_gaitai.png"
+ },
+ {
+  "label": "gasacun",
+  "manchu": "ᡤᠠᠰᠠᠴᡠᠨ",
+  "path": "gasacun.png",
+  "source": "gasacun/0_440_3_5_gasacun.png"
+ },
+ {
+  "label": "gasarakv",
+  "manchu": "ᡤᠠᠰᠠᡵᠠᡴᡡ",
+  "path": "gasarakv.png",
+  "source": "gasarakv/0_171r_7_3_gasarakv.png"
+ },
+ {
+  "label": "gashvfi",
+  "manchu": "ᡤᠠᠰᡥᡡᡶᡳ",
+  "path": "gashvfi.png",
+  "source": "gashvfi/0_216r_4_4_gashvfi.png"
+ },
+ {
+  "label": "gebu",
+  "manchu": "ᡤᡝᠪᡠ",
+  "path": "gebu.png",
+  "source": "gebu/0_248_1_3_gebu.png"
+ },
+ {
+  "label": "gege",
+  "manchu": "ᡤᡝᡤᡝ",
+  "path": "gege.png",
+  "source": "gege/0_131_6_2_gege.png"
+ },
+ {
+  "label": "geleme",
+  "manchu": "ᡤᡝᠯᡝᠮᡝ",
+  "path": "geleme.png",
+  "source": "geleme/0_390_1_3_geleme.png"
+ },
+ {
+  "label": "gi",
+  "manchu": "ᡤᡳ",
+  "path": "gi.png",
+  "source": "gi/0_63_4_3_gi.png"
+ },
+ {
+  "label": "gicuke",
+  "manchu": "ᡤᡳᠴᡠᡴᡝ",
+  "path": "gicuke.png",
+  "source": "gicuke/0_229_1_3_gicuke.png"
+ },
+ {
+  "label": "gisurehe",
+  "manchu": "ᡤᡳᠰᡠᡵᡝᡥᡝ",
+  "path": "gisurehe.png",
+  "source": "gisurehe/0_72_1_4_gisurehe.png"
+ },
+ {
+  "label": "giyai",
+  "manchu": "ᡤᡳᠶᠠᡳ",
+  "path": "giyai.png",
+  "source": "giyai/0_367_3_7_giyai.png"
+ },
+ {
+  "label": "giyan",
+  "manchu": "ᡤᡳᠶᠠᠨ",
+  "path": "giyan.png",
+  "source": "giyan/0_58_3_4_giyan.png"
+ },
+ {
+  "label": "giyao",
+  "manchu": "ᡤᡳᠶᠠᠣ",
+  "path": "giyao.png",
+  "source": "giyao/0_46_3_4_giyao.png"
+ },
+ {
+  "label": "giyarime",
+  "manchu": "ᡤᡳᠶᠠᡵᡳᠮᡝ",
+  "path": "giyarime.png",
+  "source": "giyarime/0_211_2_5_giyarime.png"
+ },
+ {
+  "label": "giyei",
+  "manchu": "ᡤᡳᠶᡝᡳ",
+  "path": "giyei.png",
+  "source": "giyei/0_171_7_3_giyei.png"
+ },
+ {
+  "label": "giyvn",
+  "manchu": "ᡤᡳᠶᡡᠨ",
+  "path": "giyvn.png",
+  "source": "giyvn/0_100_3_9_giyūn.png"
+ },
+ {
+  "label": "gurun",
+  "manchu": "ᡤᡠᡵᡠᠨ",
+  "path": "gurun.png",
+  "source": "gurun/0_13_4_3_gurun.png"
+ },
+ {
+  "label": "guweburakv",
+  "manchu": "ᡤᡠᠸᡝᠪᡠᡵᠠᡴᡡ",
+  "path": "guweburakv.png",
+  "source": "guweburakv/0_256_5_6_guweburakv.png"
+ },
+ {
+  "label": "gvlmahvn",
+  "manchu": "ᡤᡡᠯᠮᠠᡥᡡᠨ",
+  "path": "gvlmahvn.png",
+  "source": "gvlmahvn/0_80_1_3_gvlmahvn.png"
+ },
+ {
+  "label": "hacin",
+  "manchu": "ᡥᠠᠴᡳᠨ",
+  "path": "hacin.png",
+  "source": "hacin/0_98l_2_3_hacin.png"
+ },
+ {
+  "label": "hafasa",
+  "manchu": "ᡥᠠᡶᠠᠰᠠ",
+  "path": "hafasa.png",
+  "source": "hafasa/0_194_4_4_hafasa.png"
+ },
+ {
+  "label": "hafasi",
+  "manchu": "ᡥᠠᡶᠠᠰᡳ",
+  "path": "hafasi.png",
+  "source": "hafasi/0_174r_4_6_hafasi.png"
+ },
+ {
+  "label": "halaci",
+  "manchu": "ᡥᠠᠯᠠᠴᡳ",
+  "path": "halaci.png",
+  "source": "halaci/0_115_5_3_halaci.png"
+ },
+ {
+  "label": "halarakv",
+  "manchu": "ᡥᠠᠯᠠᡵᠠᡴᡡ",
+  "path": "halarakv.png",
+  "source": "halarakv/0_379_3_9_halarakv.png"
+ },
+ {
+  "label": "han",
+  "manchu": "ᡥᠠᠨ",
+  "path": "han.png",
+  "source": "han/0_285_6_8_han.png"
+ },
+ {
+  "label": "haran",
+  "manchu": "ᡥᠠᡵᠠᠨ",
+  "path": "haran.png",
+  "source": "haran/0_170_2_1_haran.png"
+ },
+ {
+  "label": "hexen",
+  "manchu": "ᡥᡝᡧᡝᠨ",
+  "path": "hexen.png",
+  "source": "hexen/0_323_1_5_hexen.png"
+ },
+ {
+  "label": "hi",
+  "manchu": "ᡥᡳ",
+  "path": "hi.png",
+  "source": "hi/0_275_2_5_hi.png"
+ },
+ {
+  "label": "hiyooxun",
+  "manchu": "ᡥᡳᠶᠣᠣᡧᡠᠨ",
+  "path": "hiyooxun.png",
+  "source": "hiyooxun/0_474_3_11_hiyooxun.png"
+ },
+ {
+  "label": "hoborho",
+  "manchu": "ᡥᠣᠪᠣᡵᡥᠣ",
+  "path": "hoborho.png",
+  "source": "hoborho/0_18_6_2_hoborho.png"
+ },
+ {
+  "label": "hon",
+  "manchu": "ᡥᠣᠨ",
+  "path": "hon.png",
+  "source": "hon/0_106_2_7_hon.png"
+ },
+ {
+  "label": "hoxonggo",
+  "manchu": "ᡥᠣᡧᠣᠩᡤᠣ",
+  "path": "hoxonggo.png",
+  "source": "hoxonggo/0_171_6_1_hoxonggo.png"
+ },
+ {
+  "label": "ici",
+  "manchu": "ᡳᠴᡳ",
+  "path": "ici.png",
+  "source": "ici/0_310_5_1_ici.png"
+ },
+ {
+  "label": "icihiyame",
+  "manchu": "ᡳᠴᡳᡥᡳᠶᠠᠮᡝ",
+  "path": "icihiyame.png",
+  "source": "icihiyame/0_232_6_4_icihiyame.png"
+ },
+ {
+  "label": "ikengge",
+  "manchu": "ᡳᡴᡝᠩᡤᡝ",
+  "path": "ikengge.png",
+  "source": "ikengge/0_224_6_8_ikengge.png"
+ },
+ {
+  "label": "ildun",
+  "manchu": "ᡳᠯᡩᡠᠨ",
+  "path": "ildun.png",
+  "source": "ildun/0_013_10_6_ildun.png"
+ },
+ {
+  "label": "ing",
+  "manchu": "ᡳᠩ",
+  "path": "ing.png",
+  "source": "ing/0_097_5_5_ing.png"
+ },
+ {
+  "label": "ira",
+  "manchu": "ᡳᡵᠠ",
+  "path": "ira.png",
+  "source": "ira/0_378_4_1_ira.png"
+ },
+ {
+  "label": "isabufi",
+  "manchu": "ᡳᠰᠠᠪᡠᡶᡳ",
+  "path": "isabufi.png",
+  "source": "isabufi/0_33_5_8_isabufi.png"
+ },
+ {
+  "label": "isiburengge",
+  "manchu": "ᡳᠰᡳᠪᡠᡵᡝᠩᡤᡝ",
+  "path": "isiburengge.png",
+  "source": "isiburengge/0_212_2_7_isiburengge.png"
+ },
+ {
+  "label": "isinambi",
+  "manchu": "ᡳᠰᡳᠨᠠᠮᠪᡳ",
+  "path": "isinambi.png",
+  "source": "isinambi/0_407_2_1_isinambi.png"
+ },
+ {
+  "label": "isinjici",
+  "manchu": "ᡳᠰᡳᠨᠵᡳᠴᡳ",
+  "path": "isinjici.png",
+  "source": "isinjici/0_87_5_10_isinjici.png"
+ },
+ {
+  "label": "jabume",
+  "manchu": "ᠵᠠᠪᡠᠮᡝ",
+  "path": "jabume.png",
+  "source": "jabume/0_096_2_7_jabume.png"
+ },
+ {
+  "label": "jakvci",
+  "manchu": "ᠵᠠᡴᡡᠴᡳ",
+  "path": "jakvci.png",
+  "source": "jakvci/0_212_5_3_jakūci.png"
+ },
+ {
+  "label": "jalgan",
+  "manchu": "ᠵᠠᠯᡤᠠᠨ",
+  "path": "jalgan.png",
+  "source": "jalgan/0_15_1_8_jalgan.png"
+ },
+ {
+  "label": "jan",
+  "manchu": "ᠵᠠᠨ",
+  "path": "jan.jpg",
+  "source": "jan/0_254_3_3_jan.jpg"
+ },
+ {
+  "label": "jergingge",
+  "manchu": "ᠵᡝᡵᡤᡳᠩᡤᡝ",
+  "path": "jergingge.png",
+  "source": "jergingge/0_138_4_3_jergingge.png"
+ },
+ {
+  "label": "jiduji",
+  "manchu": "ᠵᡳᡩᡠᠵᡳ",
+  "path": "jiduji.png",
+  "source": "jiduji/0_36_3_2_jiduji.png"
+ },
+ {
+  "label": "jiha",
+  "manchu": "ᠵᡳᡥᠠ",
+  "path": "jiha.png",
+  "source": "jiha/0_252_2_3_jiha.png"
+ },
+ {
+  "label": "jihe",
+  "manchu": "ᠵᡳᡥᡝ",
+  "path": "jihe.png",
+  "source": "jihe/0_419_3_9_jihe.png"
+ },
+ {
+  "label": "jijungge",
+  "manchu": "ᠵᡳᠵᡠᠩᡤᡝ",
+  "path": "jijungge.png",
+  "source": "jijungge/0_587_4_2_jijungge.png"
+ },
+ {
+  "label": "jimbi",
+  "manchu": "ᠵᡳᠮᠪᡳ",
+  "path": "jimbi.png",
+  "source": "jimbi/0_178_5_3_jimbi.png"
+ },
+ {
+  "label": "jing",
+  "manchu": "ᠵᡳᠩ",
+  "path": "jing.png",
+  "source": "jing/0_150l_2_1_jing.png"
+ },
+ {
+  "label": "jobocun",
+  "manchu": "ᠵᠣᠪᠣᠴᡠᠨ",
+  "path": "jobocun.png",
+  "source": "jobocun/0_365_5_1_jobocun.png"
+ },
+ {
+  "label": "jobombi",
+  "manchu": "ᠵᠣᠪᠣᠮᠪᡳ",
+  "path": "jobombi.png",
+  "source": "jobombi/0_148_4_3_jobombi.png"
+ },
+ {
+  "label": "juktehen",
+  "manchu": "ᠵᡠᡴᡨᡝᡥᡝᠨ",
+  "path": "juktehen.png",
+  "source": "juktehen/0_134_5_8_juktehen.png"
+ },
+ {
+  "label": "jursu",
+  "manchu": "ᠵᡠᡵᠰᡠ",
+  "path": "jursu.png",
+  "source": "jursu/0_127_5_2_jursu.png"
+ },
+ {
+  "label": "kadalara",
+  "manchu": "ᡴᠠᡩᠠᠯᠠᡵᠠ",
+  "path": "kadalara.png",
+  "source": "kadalara/0_308_4_2_kadalara.png"
+ },
+ {
+  "label": "karu",
+  "manchu": "ᡴᠠᡵᡠ",
+  "path": "karu.png",
+  "source": "karu/0_55_5_5_karu.png"
+ },
+ {
+  "label": "kenehunjere",
+  "manchu": "ᡴᡝᠨᡝᡥᡠᠨᠵᡝᡵᡝ",
+  "path": "kenehunjere.png",
+  "source": "kenehunjere/0_19r_5_9_kenehunjere.png"
+ },
+ {
+  "label": "kimcifi",
+  "manchu": "ᡴᡳᠮᠴᡳᡶᡳ",
+  "path": "kimcifi.png",
+  "source": "kimcifi/0_368_6_6_kimcifi.png"
+ },
+ {
+  "label": "kimcimbi",
+  "manchu": "ᡴᡳᠮᠴᡳᠮᠪᡳ",
+  "path": "kimcimbi.png",
+  "source": "kimcimbi/0_117_7_7_kimcimbi.png"
+ },
+ {
+  "label": "kin",
+  "manchu": "ᡴᡳᠨ",
+  "path": "kin.png",
+  "source": "kin/0_77_5_3_kin.png"
+ },
+ {
+  "label": "kio",
+  "manchu": "ᡴᡳᠣ",
+  "path": "kio.png",
+  "source": "kio/0_360_7_7_kio.png"
+ },
+ {
+  "label": "kituhan",
+  "manchu": "ᡴᡳᡨᡠᡥᠠᠨ",
+  "path": "kituhan.png",
+  "source": "kituhan/0_201_6_3_kituhan.png"
+ },
+ {
+  "label": "koolingga",
+  "manchu": "ᡴᠣᠣᠯᡳᠩᡤᠠ",
+  "path": "koolingga.png",
+  "source": "koolingga/0_305_2_3_koolingga.png"
+ },
+ {
+  "label": "leo",
+  "manchu": "ᠯᡝᠣ",
+  "path": "leo.png",
+  "source": "leo/0_416_6_9_leo.png"
+ },
+ {
+  "label": "ler",
+  "manchu": "ᠯᡝᡵ",
+  "path": "ler.png",
+  "source": "ler/0_152_7_3_ler.png"
+ },
+ {
+  "label": "lung",
+  "manchu": "ᠯᡠᠩ",
+  "path": "lung.png",
+  "source": "lung/0_216_2_4_lung.png"
+ },
+ {
+  "label": "maise",
+  "manchu": "ᠮᠠᡳᠰᡝ",
+  "path": "maise.png",
+  "source": "maise/0_451_6_4_maise.png"
+ },
+ {
+  "label": "maka",
+  "manchu": "ᠮᠠᡴᠠ",
+  "path": "maka.png",
+  "source": "maka/0_362_5_9_maka.png"
+ },
+ {
+  "label": "marame",
+  "manchu": "ᠮᠠᡵᠠᠮᡝ",
+  "path": "marame.png",
+  "source": "marame/0_61_1_5_marame.png"
+ },
+ {
+  "label": "membe",
+  "manchu": "ᠮᡝᠮᠪᡝ",
+  "path": "membe.png",
+  "source": "membe/0_269_1_5_membe.png"
+ },
+ {
+  "label": "mohoho",
+  "manchu": "ᠮᠣᡥᠣᡥᠣ",
+  "path": "mohoho.png",
+  "source": "mohoho/0_170_7_4_mohoho.png"
+ },
+ {
+  "label": "mohombi",
+  "manchu": "ᠮᠣᡥᠣᠮᠪᡳ",
+  "path": "mohombi.png",
+  "source": "mohombi/0_564_3_7_mohombi.png"
+ },
+ {
+  "label": "muhu",
+  "manchu": "ᠮᡠᡥᡠ",
+  "path": "muhu.png",
+  "source": "muhu/0_338_2_9_muhu.png"
+ },
+ {
+  "label": "mujangga",
+  "manchu": "ᠮᡠᠵᠠᠩᡤᠠ",
+  "path": "mujangga.png",
+  "source": "mujangga/0_183_7_6_mujangga.png"
+ },
+ {
+  "label": "multulefi",
+  "manchu": "ᠮᡠᠯᡨᡠᠯᡝᡶᡳ",
+  "path": "multulefi.png",
+  "source": "multulefi/0_261_1_5_multulefi.png"
+ },
+ {
+  "label": "mutembio",
+  "manchu": "ᠮᡠᡨᡝᠮᠪᡳᠣ",
+  "path": "mutembio.png",
+  "source": "mutembio/0_221_2_2_mutembio.png"
+ },
+ {
+  "label": "na",
+  "manchu": "ᠨᠠ",
+  "path": "na.png",
+  "source": "na/0_085_3_2_na.png"
+ },
+ {
+  "label": "nakambi",
+  "manchu": "ᠨᠠᡴᠠᠮᠪᡳ",
+  "path": "nakambi.png",
+  "source": "nakambi/0_5_1_7_nakambi.png"
+ },
+ {
+  "label": "necici",
+  "manchu": "ᠨᡝᠴᡳᠴᡳ",
+  "path": "necici.png",
+  "source": "necici/0_143_5_6_necici.png"
+ },
+ {
+  "label": "necinefi",
+  "manchu": "ᠨᡝᠴᡳᠨᡝᡶᡳ",
+  "path": "necinefi.png",
+  "source": "necinefi/0_161_6_1_necinefi.png"
+ },
+ {
+  "label": "ni",
+  "manchu": "ᠨᡳ",
+  "path": "ni.png",
+  "source": "ni/0_299_3_5_ni.png"
+ },
+ {
+  "label": "niohon",
+  "manchu": "ᠨᡳᠣᡥᠣᠨ",
+  "path": "niohon.png",
+  "source": "niohon/0_311_6_4_niohon.png"
+ },
+ {
+  "label": "nure",
+  "manchu": "ᠨᡠᡵᡝ",
+  "path": "nure.png",
+  "source": "nure/0_274_5_4_nure.png"
+ },
+ {
+  "label": "obokv",
+  "manchu": "ᠣᠪᠣᡴᡡ",
+  "path": "obokv.png",
+  "source": "obokv/0_252_4_8_obokū.png"
+ },
+ {
+  "label": "obume",
+  "manchu": "ᠣᠪᡠᠮᡝ",
+  "path": "obume.png",
+  "source": "obume/0_48_7_6_obume.png"
+ },
+ {
+  "label": "oburengge",
+  "manchu": "ᠣᠪᡠᡵᡝᠩᡤᡝ",
+  "path": "oburengge.png",
+  "source": "oburengge/0_213l_6_4_oburengge.png"
+ },
+ {
+  "label": "ohakv",
+  "manchu": "ᠣᡥᠠᡴᡡ",
+  "path": "ohakv.png",
+  "source": "ohakv/0_162_5_6_ohakv.png"
+ },
+ {
+  "label": "ohoni",
+  "manchu": "ᠣᡥᠣᠨᡳ",
+  "path": "ohoni.png",
+  "source": "ohoni/0_045_6_1_ohoni.png"
+ },
+ {
+  "label": "olhoxoro",
+  "manchu": "ᠣᠯᡥᠣᡧᠣᡵᠣ",
+  "path": "olhoxoro.png",
+  "source": "olhoxoro/0_174_2_1_olhoxoro.png"
+ },
+ {
+  "label": "ombi",
+  "manchu": "ᠣᠮᠪᡳ",
+  "path": "ombi.png",
+  "source": "ombi/0_385_6_2_ombi.png"
+ },
+ {
+  "label": "sabintu",
+  "manchu": "ᠰᠠᠪᡳᠨᡨᡠ",
+  "path": "sabintu.png",
+  "source": "sabintu/0_181_5_6_sabintu.png"
+ },
+ {
+  "label": "sabuhakv",
+  "manchu": "ᠰᠠᠪᡠᡥᠠᡴᡡ",
+  "path": "sabuhakv.png",
+  "source": "sabuhakv/0_191_2_8_sabuhakv.png"
+ },
+ {
+  "label": "saburakv",
+  "manchu": "ᠰᠠᠪᡠᡵᠠᡴᡡ",
+  "path": "saburakv.png",
+  "source": "saburakv/0_462_1_3_saburakū.png"
+ },
+ {
+  "label": "sang",
+  "manchu": "ᠰᠠᠩ",
+  "path": "sang.png",
+  "source": "sang/0_75_1_2_sang.png"
+ },
+ {
+  "label": "sarangge",
+  "manchu": "ᠰᠠᡵᠠᠩᡤᡝ",
+  "path": "sarangge.jpg",
+  "source": "sarangge/0_580_5_5_sarangge.jpg"
+ },
+ {
+  "label": "sasa",
+  "manchu": "ᠰᠠᠰᠠ",
+  "path": "sasa.png",
+  "source": "sasa/0_15_2_6_sasa.png"
+ },
+ {
+  "label": "sebjelere",
+  "manchu": "ᠰᡝᠪᠵᡝᠯᡝᡵᡝ",
+  "path": "sebjelere.jpg",
+  "source": "sebjelere/0_151_7_6_sebjelere.jpg"
+ },
+ {
+  "label": "secibe",
+  "manchu": "ᠰᡝᠴᡳᠪᡝ",
+  "path": "secibe.png",
+  "source": "secibe/0_10_6_3_secibe.png"
+ },
+ {
+  "label": "sehede",
+  "manchu": "ᠰᡝᡥᡝᡩᡝ",
+  "path": "sehede.png",
+  "source": "sehede/0_71_3_3_sehede.png"
+ },
+ {
+  "label": "sehekv",
+  "manchu": "ᠰᡝᡥᡝᡴᡡ",
+  "path": "sehekv.png",
+  "source": "sehekv/0_69_7_8_sehekū.png"
+ },
+ {
+  "label": "selgiyefi",
+  "manchu": "ᠰᡝᠯᡤᡳᠶᡝᡶᡳ",
+  "path": "selgiyefi.png",
+  "source": "selgiyefi/0_458_3_3_selgiyefi.png"
+ },
+ {
+  "label": "ser",
+  "manchu": "ᠰᡝᡵ",
+  "path": "ser.png",
+  "source": "ser/0_90_6_5_ser.png"
+ },
+ {
+  "label": "sinahi",
+  "manchu": "ᠰᡳᠨᠠᡥᡳ",
+  "path": "sinahi.png",
+  "source": "sinahi/0_203_6_10_sinahi.png"
+ },
+ {
+  "label": "sindaha",
+  "manchu": "ᠰᡳᠨᡩᠠᡥᠠ",
+  "path": "sindaha.png",
+  "source": "sindaha/0_107_6_7_sindaha.png"
+ },
+ {
+  "label": "songgorongge",
+  "manchu": "ᠰᠣᠩᡤᠣᡵᠣᠩᡤᡝ",
+  "path": "songgorongge.png",
+  "source": "songgorongge/0_221_6_1_songgorongge.png"
+ },
+ {
+  "label": "songko",
+  "manchu": "ᠰᠣᠩᡴᠣ",
+  "path": "songko.png",
+  "source": "songko/0_286_1_6_songko.png"
+ },
+ {
+  "label": "suhe",
+  "manchu": "ᠰᡠᡥᡝ",
+  "path": "suhe.png",
+  "source": "suhe/0_8l_1_3_suhe.png"
+ },
+ {
+  "label": "sukdun",
+  "manchu": "ᠰᡠᡴᡩᡠᠨ",
+  "path": "sukdun.png",
+  "source": "sukdun/0_251_7_10_sukdun.png"
+ },
+ {
+  "label": "sula",
+  "manchu": "ᠰᡠᠯᠠ",
+  "path": "sula.png",
+  "source": "sula/0_234_4_7_sula.png"
+ },
+ {
+  "label": "tacibuha",
+  "manchu": "ᡨᠠᠴᡳᠪᡠᡥᠠ",
+  "path": "tacibuha.png",
+  "source": "tacibuha/0_235_6_1_tacibuha.png"
+ },
+ {
+  "label": "tacibure",
+  "manchu": "ᡨᠠᠴᡳᠪᡠᡵᡝ",
+  "path": "tacibure.png",
+  "source": "tacibure/0_263_7_3_tacibure.png"
+ },
+ {
+  "label": "taciburengge",
+  "manchu": "ᡨᠠᠴᡳᠪᡠᡵᡝᠩᡤᡝ",
+  "path": "taciburengge.png",
+  "source": "taciburengge/0_224l_6_3_taciburengge.png"
+ },
+ {
+  "label": "tacifi",
+  "manchu": "ᡨᠠᠴᡳᡶᡳ",
+  "path": "tacifi.png",
+  "source": "tacifi/0_418_3_7_tacifi.png"
+ },
+ {
+  "label": "tacin",
+  "manchu": "ᡨᠠᠴᡳᠨ",
+  "path": "tacin.png",
+  "source": "tacin/0_201r_7_2_tacin.png"
+ },
+ {
+  "label": "tafulame",
+  "manchu": "ᡨᠠᡶᡠᠯᠠᠮᡝ",
+  "path": "tafulame.png",
+  "source": "tafulame/0_186_3_7_tafulame.png"
+ },
+ {
+  "label": "tan",
+  "manchu": "ᡨᠠᠨ",
+  "path": "tan.png",
+  "source": "tan/0_153_5_2_tan.png"
+ },
+ {
+  "label": "tebumbi",
+  "manchu": "ᡨᡝᠪᡠᠮᠪᡳ",
+  "path": "tebumbi.png",
+  "source": "tebumbi/0_302_3_7_tebumbi.png"
+ },
+ {
+  "label": "teci",
+  "manchu": "ᡨᡝᠴᡳ",
+  "path": "teci.png",
+  "source": "teci/0_379_1_2_teci.png"
+ },
+ {
+  "label": "tefi",
+  "manchu": "ᡨᡝᡶᡳ",
+  "path": "tefi.png",
+  "source": "tefi/0_256_7_3_tefi.png"
+ },
+ {
+  "label": "teku",
+  "manchu": "ᡨᡝᡴᡠ",
+  "path": "teku.png",
+  "source": "teku/0_0156l_6_9_teku.png"
+ },
+ {
+  "label": "terengge",
+  "manchu": "ᡨᡝᡵᡝᠩᡤᡝ",
+  "path": "terengge.png",
+  "source": "terengge/0_464_5_3_terengge.png"
+ },
+ {
+  "label": "tetele",
+  "manchu": "ᡨᡝᡨᡝᠯᡝ",
+  "path": "tetele.png",
+  "source": "tetele/0_322_3_6_tetele.png"
+ },
+ {
+  "label": "tob",
+  "manchu": "ᡨᠣᠪ",
+  "path": "tob.png",
+  "source": "tob/0_330_3_2_tob.png"
+ },
+ {
+  "label": "tucike",
+  "manchu": "ᡨᡠᠴᡳᡴᡝ",
+  "path": "tucike.png",
+  "source": "tucike/0_038_4_10_tucike.png"
+ },
+ {
+  "label": "tucire",
+  "manchu": "ᡨᡠᠴᡳᡵᡝ",
+  "path": "tucire.png",
+  "source": "tucire/0_239_7_3_tucire.png"
+ },
+ {
+  "label": "tuktan",
+  "manchu": "ᡨᡠᡴᡨᠠᠨ",
+  "path": "tuktan.png",
+  "source": "tuktan/0_125_2_9_tuktan.png"
+ },
+ {
+  "label": "tulergingge",
+  "manchu": "ᡨᡠᠯᡝᡵᡤᡳᠩᡤᡝ",
+  "path": "tulergingge.png",
+  "source": "tulergingge/0_187_1_3_tulergingge.png"
+ },
+ {
+  "label": "tusa",
+  "manchu": "ᡨᡠᠰᠠ",
+  "path": "tusa.png",
+  "source": "tusa/0_398_6_3_tusa.png"
+ },
+ {
+  "label": "uculere",
+  "manchu": "ᡠᠴᡠᠯᡝᡵᡝ",
+  "path": "uculere.png",
+  "source": "uculere/0_157_4_7_uculere.png"
+ },
+ {
+  "label": "ucuri",
+  "manchu": "ᡠᠴᡠᡵᡳ",
+  "path": "ucuri.png",
+  "source": "ucuri/0_306_4_2_ucuri.png"
+ },
+ {
+  "label": "ududu",
+  "manchu": "ᡠᡩᡠᡩᡠ",
+  "path": "ududu.png",
+  "source": "ududu/0_357_6_5_ududu.png"
+ },
+ {
+  "label": "uhe",
+  "manchu": "ᡠᡥᡝ",
+  "path": "uhe.png",
+  "source": "uhe/0_135_3_8_uhe.png"
+ },
+ {
+  "label": "ujan",
+  "manchu": "ᡠᠵᠠᠨ",
+  "path": "ujan.png",
+  "source": "ujan/0_103_1_6_ujan.png"
+ },
+ {
+  "label": "ujimbi",
+  "manchu": "ᡠᠵᡳᠮᠪᡳ",
+  "path": "ujimbi.png",
+  "source": "ujimbi/0_200_3_10_ujimbi.png"
+ },
+ {
+  "label": "uju",
+  "manchu": "ᡠᠵᡠ",
+  "path": "uju.png",
+  "source": "uju/0_345_6_5_uju.png"
+ },
+ {
+  "label": "ulebure",
+  "manchu": "ᡠᠯᡝᠪᡠᡵᡝ",
+  "path": "ulebure.png",
+  "source": "ulebure/0_275_4_6_ulebure.png"
+ },
+ {
+  "label": "ulhibun",
+  "manchu": "ᡠᠯᡥᡳᠪᡠᠨ",
+  "path": "ulhibun.png",
+  "source": "ulhibun/0_58_6_9_ulhibun.png"
+ },
+ {
+  "label": "unde",
+  "manchu": "ᡠᠨᡩᡝ",
+  "path": "unde.png",
+  "source": "unde/0_109_7_7_unde.png"
+ },
+ {
+  "label": "urgun",
+  "manchu": "ᡠᡵᡤᡠᠨ",
+  "path": "urgun.png",
+  "source": "urgun/0_230_7_1_urgun.png"
+ },
+ {
+  "label": "urgunjehe",
+  "manchu": "ᡠᡵᡤᡠᠨᠵᡝᡥᡝ",
+  "path": "urgunjehe.png",
+  "source": "urgunjehe/0_113_7_3_urgunjehe.png"
+ },
+ {
+  "label": "urui",
+  "manchu": "ᡠᡵᡠᡳ",
+  "path": "urui.png",
+  "source": "urui/0_236_7_2_urui.png"
+ },
+ {
+  "label": "usin",
+  "manchu": "ᡠᠰᡳᠨ",
+  "path": "usin.png",
+  "source": "usin/0_175r_5_9_usin.png"
+ },
+ {
+  "label": "wailan",
+  "manchu": "ᠸᠠᡳᠯᠠᠨ",
+  "path": "wailan.png",
+  "source": "wailan/0_100_1_7_wailan.png"
+ },
+ {
+  "label": "wajifi",
+  "manchu": "ᠸᠠᠵᡳᡶᡳ",
+  "path": "wajifi.png",
+  "source": "wajifi/0_173_5_6_wajifi.png"
+ },
+ {
+  "label": "wajire",
+  "manchu": "ᠸᠠᠵᡳᡵᡝ",
+  "path": "wajire.png",
+  "source": "wajire/0_238_5_3_wajire.png"
+ },
+ {
+  "label": "waka",
+  "manchu": "ᠸᠠᡴᠠ",
+  "path": "waka.png",
+  "source": "waka/0_024_7_2_waka.png"
+ },
+ {
+  "label": "waliyarakv",
+  "manchu": "ᠸᠠᠯᡳᠶᠠᡵᠠᡴᡡ",
+  "path": "waliyarakv.png",
+  "source": "waliyarakv/0_63_6_1_waliyarakv.png"
+ },
+ {
+  "label": "wangga",
+  "manchu": "ᠸᠠᠩᡤᠠ",
+  "path": "wangga.png",
+  "source": "wangga/0_220_6_7_wangga.png"
+ },
+ {
+  "label": "wei",
+  "manchu": "ᠸᡝᡳ",
+  "path": "wei.png",
+  "source": "wei/0_183l_4_7_wei.png"
+ },
+ {
+  "label": "weilehe",
+  "manchu": "ᠸᡝᡳᠯᡝᡥᡝ",
+  "path": "weilehe.png",
+  "source": "weilehe/0_168_3_9_weilehe.png"
+ },
+ {
+  "label": "weilengge",
+  "manchu": "ᠸᡝᡳᠯᡝᠩᡤᡝ",
+  "path": "weilengge.png",
+  "source": "weilengge/0_317_6_2_weilengge.png"
+ },
+ {
+  "label": "wen",
+  "manchu": "ᠸᡝᠨ",
+  "path": "wen.png",
+  "source": "wen/0_025_3_5_wen.png"
+ },
+ {
+  "label": "xangnara",
+  "manchu": "ᡧᠠᠩᠨᠠᡵᠠ",
+  "path": "xangnara.png",
+  "source": "xangnara/0_35_6_7_šangnara.png"
+ },
+ {
+  "label": "xasihan",
+  "manchu": "ᡧᠠᠰᡳᡥᠠᠨ",
+  "path": "xasihan.png",
+  "source": "xasihan/0_296_6_8_xasihan.png"
+ },
+ {
+  "label": "xeng",
+  "manchu": "ᡧᡝᠩ",
+  "path": "xeng.png",
+  "source": "xeng/0_227_5_2_xeng.png"
+ },
+ {
+  "label": "xengkiri",
+  "manchu": "ᡧᡝᠩᡴᡳᡵᡳ",
+  "path": "xengkiri.png",
+  "source": "xengkiri/0_114_6_4_šengkiri.png"
+ },
+ {
+  "label": "xunggiya",
+  "manchu": "ᡧᡠᠩᡤᡳᠶᠠ",
+  "path": "xunggiya.png",
+  "source": "xunggiya/0_104_5_8_xunggiya.png"
+ },
+ {
+  "label": "ya",
+  "manchu": "ᠶᠠ",
+  "path": "ya.png",
+  "source": "ya/0_256_6_3_ya.png"
+ },
+ {
+  "label": "yabubuci",
+  "manchu": "ᠶᠠᠪᡠᠪᡠᠴᡳ",
+  "path": "yabubuci.png",
+  "source": "yabubuci/0_468_5_9_yabubuci.png"
+ },
+ {
+  "label": "yaburakv",
+  "manchu": "ᠶᠠᠪᡠᡵᠠᡴᡡ",
+  "path": "yaburakv.png",
+  "source": "yaburakv/0_350_7_3_yaburakū.png"
+ },
+ {
+  "label": "yamulara",
+  "manchu": "ᠶᠠᠮᡠᠯᠠᡵᠠ",
+  "path": "yamulara.png",
+  "source": "yamulara/0_350_2_7_yamulara.png"
+ },
+ {
+  "label": "yebken",
+  "manchu": "ᠶᡝᠪᡴᡝᠨ",
+  "path": "yebken.png",
+  "source": "yebken/0_327_2_6_yebken.png"
+ },
+ {
+  "label": "yen",
+  "manchu": "ᠶᡝᠨ",
+  "path": "yen.png",
+  "source": "yen/0_130l_3_11_yen.png"
+ },
+ {
+  "label": "yongkiyame",
+  "manchu": "ᠶᠣᠩᡴᡳᠶᠠᠮᡝ",
+  "path": "yongkiyame.png",
+  "source": "yongkiyame/0_83_5_7_yongkiyame.png"
+ },
+ {
+  "label": "yongsu",
+  "manchu": "ᠶᠣᠩᠰᡠ",
+  "path": "yongsu.png",
+  "source": "yongsu/0_148_3_2_yongsu.png"
+ }
+]

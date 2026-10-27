@@ -1,33 +1,268 @@
-# About
+# Dots and Circles
 
-Dots and Circles is my first non-tutorial machine learning project. It is an app for optical character recognition of Manchu-language text. Since the aim was to further my understanding of neural networks, I opted not to use a framework like PyTorch, and instead implemented the neural networks using numpy matrices.
+## Architecture
 
-# The Problem
+### Server
 
-The Manchu script is written top-to-bottom, left-to-right. All letters within a word are connected to each other, and the shape of a letter changes based on its position within a word. This makes it quite difficult to break a word down into individual letters. In order to circumvent this, I decided to procede using a basic form of connectionist temporal classification (CTC).
+A flask server with at least one endpoint:
+GET /ocr
+Requires:
+- an attached image
+Returns:
+- an array of bounding boxes
+- the text that was found
 
-# The Approach
+### Bounding Box Generator
 
-### Training Data
+Draws bounding boxes around all words on a page (but *not* around anything
+else) and labels the boxes with the script the word is written in.
 
-Training data was generated synthetically using the [manchu-cake](https://github.com/OverflowCat/manchu-cake) dictionary. Each unique manchu word in the dictionary was stored in a SQLite database, and random words were pulled from the database and rendered in a random font. Each image of a word in a particular font (called a **lexigraph** from here on) had letter boundaries manually labelled. Each lexigraph is 50 pixels wide, and there are 10 pixels of whitespace on each side.
+Requirements:
+- Draws boxes around each word
+- Does not draw boxes around non-word elements
+- Does not overlap bounding boxes
+- Labels word script correctly
 
-Lexigraph backgrounds:
-https://pixelbuddha.net/textures/1139-5-seamless-paper-textures
-https://raduluchian.com/resources/crumpled-paper/
+Manchu-script words are passed on the the Lexigraph OCR.
 
-As there are various styles of written Manchu, a lexigraph is first sorted into one of four **classes**. I defined the classes by comparing three features in various Manchu fonts: line weight, whether the letters romanized as "m" and "l" are connected to or disconnected from the center line, and whether the letters romanized as "a" and "e" are pointy or rounded. The actual classification is performed by an RNN, which I call the **Classifier**, which reads the image line by line.
+### Lexigraph OCR
 
-OCR is performed by two neural networks, each with four instances, one for each lexigraph class. For example, a lexigraph of class A is analyzed by a neural network trained only on class A lexigraphs, likewise for classes B, C, and D. The first networks, henceforth called the **Primary OCR**, takes as input 21 sequential rows of pixels in a lexigraph and outputs a single character. This character is what the Primary OCR thinks the middle row of pixels corresponds to. The Primary OCR has two hidden layers.
+Given a lexigraph (an image of a word, i.e. the contents of a bounding box)
+returns the Unicode characters representing the word. Composed of one or more
+transformers, using CTC for loss calculation.
 
-Unfortunately, the Primary OCR had difficulty differentiating certain letters. However, it tended to produce errors in patterns. In order to counteract this, I added a second network, called the **Secondary OCR**, which took as input 21 outputs from the Primary OCR and output the character it predicted the middle to actually correspond to. This had the effect of reducing noise in output and marginally improving accuracy.
+#### Training Data
 
-Finally, the output of the Secondary OCR is parsed and rendered as Unicode text. This is done on the [frontend](https://github.com/AVespaIsNotAMotorcycle/dots-and-circles-frontend). The server sends the frontend the Secondary OCR's output as an array of characters, which may be any character in the Manchu Unicode block (a subset of the Mongolian block), a " " character, or a "\*". A " " represents a pixel thought to be whitespace, and a "\*" represents a break between two characters. To minimize the effect of noisy data, any characters which have no identical neighbors are deleted. For example, in the array ['a', 'a', 'b', 'a'], 'b' would be deleted because neither of its neighbors match it. Once this is done, all identical neighboring characters are collapsed into one. For example, ['a', 'a', 'b', 'b', 'b', 'c'] becomes ['a', 'b', 'c']. At this point, any "\*" characters are removed. Their removal after the collapsing of neighboring characters allows the program to account for two letters in sequence. For example, ['a', 'a', "\*", 'a'] becomes ['a', 'a']. At this point the array is joined to create a string as the final output.
+A set of Manchu words was pulled from
+[kaikki](https://kaikki.org/dictionary/Manchu/index.html). See below:
 
-# Lessons Learned
+Tatu Ylonen: Wiktextract: Wiktionary as Machine-Readable Structured Data, Proceedings of the 13th Conference on Language Resources and Evaluation (LREC), pp. 1317-1325, Marseille, 20-25 June 2022.
 
-At some point in the future I aim to redo this project because, let's be real, it's quite inaccurate. When I do, I will likely use an encoder/decoder model, with an RNN (the encoder) first reading the lexigraph line by line and producing some representation of the word, and a second RNN (the decoder) using that representation to spell out the word character by character.
+Another set was pulled from [a scan of Jerry Norman's Manchu dictionary](https://github.com/purobaburi/manchu-resources/tree/main?tab=readme-ov-file).
 
-Additionally, I abandon the marking of character boundaries in favor of giving the machine whole lexigraphs and allowing it to learn the boundaries on its own. This would make it easier to generate training data, and make it easier to incorporate real-world data. There is, for example, a publically available [dataset](https://www.scidb.cn/en/detail?dataSetId=b45491b63d694534a9323acf14846586) of words scanned from Manchu books published by Sun Haipeng, Tao Wenhao, and Bi Xiaojun. In this future version, I will use a test set composed entirely of real-world data, while the training set would be a mix of synthetic and real-world lexigraphs. Using whole words rather than manually labelled characters would make it much easier to assemble a large body of training data. As of the time of writing, there are 166 lexigraphs in the training data, which is quite a small training set.
+Words are rendered in Manchu fonts, which aren't included in this repository
+because of their licences: put `.ttf` files in `ocr/training_data/fonts/`
+before training. The fonts used so far are the XM fonts by SoBetter Software
+Studio and Abkai Xanyan from [abkai.net](https://abkai.net/zh/manchu/manchu-fonts/)
+(free for personal, non-commercial use).
 
-Another change I would like to make in a future version is to add positional encoding. Right now, the Primary OCR's only hint to what part of the word it's looking at is the slice of the image it's given. It may be helpful to have another input which tells it whether that slice is at the beginning, end, or middle of a word.
+## Roadmap
+
+- [x] **Under the hood**:
+  - [x] **nn module**: provides the basis for the implementation of ANNs
+  - [x] **loss module**: calculates loss and gradients
+  - [x] **optim module**: updates parameters based on gradients
+- [x] **Basic OCR**:
+  - [x] **Simple synthetic training data generation**: black text on white background
+  - [x] **Transformer OCR Model**: reads image line by line, outputs CTC string
+  - [x] **CTC loss function**: generates loss values for TrOCR output
+  - [x] **Simple training loop**: train TrOCR on synthetic data, graph results
+
+
+# Progress
+
+I didn't start using Claude code until after the `nn` module was fully implemented, since I wanted to work through it myself.
+
+There's no automatic differentiation. This means that backpropogation must be manually implemented for each Module, and has resulted in some errors. For example, I forgot to account for shortcut layers around the attention and MLP blocks of the Transformer, so the gradients were off. Claude caught that in a later pass.
+
+Another problem downstream of this is that, to make things marginally easier, I averaged out loss and gradients when doing backprop.
+Tests still showed decreasing loss, so I figured it was fine.
+However, when trying to train the actual OCR model, accuracy stalled out quickly, so I had to undo it.
+Accuracy here is measured as the percentage of the first n output characters which are correct, where n is the length of the actual word.
+Compare before and after this change:
+
+| Before                                                              | After                                                               |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| <img width="640" height="480" alt="image" src="./ocr/run_graphs/run001.png" /> | <img width="640" height="480" alt="image" src="./ocr/run_graphs/run002.png" /> |
+
+Since I hadn't yet implemented CTC loss calculation and was just using Cross-Entropy Loss, the misalignment between input tokens (rows of pixels) and output (characters) was causing issues. Because there was a causal attention mask in the multi-head attention module, the OCR model was attempting to output characters corresponding to parts of the image it hadn't yet seen. Postponing the inevitable CTC implementation, I added an option to disable the mask, which marginally improved accuracy.
+
+| Before                                                              | After                                                               |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| <img width="640" height="480" alt="image" src="./ocr/run_graphs/run002.png" /> | <img width="640" height="480" alt="image" src="./ocr/run_graphs/run003.png" /> |
+
+I then tried updating the learn rate throughout training, starting with a high value, 0.1, which drops over time so that it's about 0.0027 by the end of the first epoch.
+
+| Before                                                              | After                                                               |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| <img width="640" height="480" alt="image" src="./ocr/run_graphs/run003.png" /> | <img width="640" height="480" alt="image" src="./ocr/run_graphs/run004.png" /> |
+
+Next, tokens were changed from being one row of pixels to four, which are then compressed by a factor of four by being run through a linear layer.
+
+| Before                                                              | After                                                               |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| <img width="640" height="480" alt="image" src="./ocr/run_graphs/run004.png" /> | <img width="640" height="480" alt="image" src="./ocr/run_graphs/run005.png" /> |
+
+Positional encoding (non-learned, sinosoidal) was added.
+The model was then split into an A and B variant: A stayed the same, and B got readout tokens.
+Model B initially learned faster, but plateaued with an accuracy around .2, and Model A quickly caught up and plateaued at the same point.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run007.png" />
+
+CTC loss was implemented, and a CTC model (Model C) was compared against Model B (readout tokens).
+Accuracy here is measured as `1 - edit_distance(guess, word) / len(word)`.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run009.png" />
+
+Accuracy seemed to be increasing slightly at the end of the 2-epoch run comparing B and C, so I trained a 4-transformer and 8-transformer variant of C for 5 epochs.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run010.png" />
+
+Then followed with a 10-epoch run with 4- and 8-transformer variants of Models B and C.
+Model C clearly has better accuracy, with the 4-transformer Model C beating the 8-transformer Model B.
+There's also a large gap between C-8 and C4.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run011.png" />
+For comparison, I ran a C-16 version as well:
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run012.png" />
+
+Model C has a linear layer that compresses the 128 pixel tokens (4 rows of 32px each) down to the transformer's embedding dimension of 32.
+Rather than simply increase the number of transformers, I then did a comparison of variants with a larger embedding dimension.
+Four variants of Model C were trained for 5 epochs:
+- C-8/32: 8 transformers, embedding dimension 32
+- C-16/32: 16 transformers, embedding dimension 32
+- C-8/64: 8 transformers, embedding dimension 64
+- C-8/128: 8 transformers, embedding dimension 128
+Those with a larger embedding dimension clearly outperformed those with a smaller one, but the accuracy difference between 64 and 128 was negligable,
+and C-8/128 was by far the slowest to train.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run015.png" />
+
+The test accuracy seemed to be falling below the train accuracy for C-8/64 and C-8/128 in the previous test, so a fourth model, Model D, was added,
+which had dropout enabled. A 20-epoch run comparing Model C and Model D showed that Model D avoided overfitting, with test accuracy still rising
+at the end of the run. Model C's test accuracy stopped rising shortly after epoch 10.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run019.png" />
+
+Though results were promising, the lengthy training time was quite inconvenient. I implemented Adam (the previous runs had used SGD) and compared
+Models C and D again in a 5-epoch run. By the end of 5 epochs, test accuracy for both models was around 0.6, while in the previous (SGD) run,
+accuracy was about 0.4 for Model C and 0.3 for Model D at epoch 5.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run020.png" />
+
+Next was a comparison of the efficacy of various learning rates for Adam (and one for SGD as a reference), for both Model C and Model D.
+This was a 3-epoch run, and both models seemed about equivalent, which makes sense, since they didn't diverge until around epoch 10 in earlier runs.
+Adam with learning rates of 1e-3 and 3e-3 performed better than SGD and Adam with learning rate of 3e-4. 1e-3 and 3e-3 seemed about equivalent.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run021.png" />
+
+Learning rates of 1e-3 and 3e-3 were chosen for a 30-epoch run. Models trained with 3e-3 had better accuracy than 1e-3 at the end of the run,
+and Model D slightly outperformed Model C with a learning rate of 3e-3. Model D massively outperformed Model C with a rate of 1e-3.
+The difference between Model D and C appears to be overfitting: both variants of Model C had lower accuracy on test data than training data,
+though in the 3e-3 variant the difference was small.
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run022.png" />
+
+A look into the word-level accuracy (that is, what percentage of words were guessed entirely correctly) for D-8/64(lr=3e-3) showed that
+the model predicted 78.9% of words correctly. Of the misses, 16% are off only by free variation selectors (FVS). In the Mongolian Unicode block,
+of which Manchu is a subset, there are four characters which are invisible, and serve only to modify the preceding character.
+- U+180B MONGOLIAN FREE VARIATION SELECTOR ONE (FSV1)
+- U+180C MONGOLIAN FREE VARIATION SELECTOR TWO (FSV2)
+- U+180D MONGOLIAN FREE VARIATION SELECTOR THREE (FSV3)
+- U+180E MONGOLIAN VOWEL SEPARATOR (MVS)
+- U+180F MONGOLIAN FREE VARIATION SELECTOR FOUR (FSV4)
+The training data, assembled from the Kaikki dictionary, contains some words with FVS1 and FVS2.
+Sometimes the presence of an FVS makes a meaningful difference to the appearance of the word, but not always:
+
+| Font     | FVS  | With FVS                                                               | Without                                                                |
+| -------- | ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| ShuKai   | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_2_L1.png" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_2_L2.png" /> |
+| ZhengHei | FVS2 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_4_L1.png" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/visible_4_L2.png" /> |
+| GuFeng | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_2_L1.png" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_2_L2.png" /> |
+| YaBai  | FVS1 | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_1_L1.png" /> | <img width="64" src="./ocr/runs/run022/fvs-comparanda/invisible_1_L2.png" /> |
+
+A bigger factor in accuracy is word length: the percentage of guesses which are completely correct drops as the number of characters in the label increases.
+Partially this inevitable, as the more characters there are in a label, the more chances there are to make an error, and even one error means that the whole
+word is marked as wrong. However, the model also consistently performs worse on characters which are lower in the image.
+For comparison, 2000 short words (<=24 tokens, i.e. <=96px tall) were tested with various degrees of padding at the top.
+The more padding was added, the worse the model's performance.
+
+| Shift (tokens) | 0     | 4     | 8     | 16    | 24    | 32    | 40   |
+| -------------- | ----- | ----- | ----- | ----- | ----- | ----- | ---- |
+| Exact	         | 86.8% | 59.7% | 45.1% | 31.1% | 21.7% | 10.0% | 3.8% |
+
+This indicates that a single-word accuracy could likely be improved by adding random amounts of padding (within the limits of context length) to lexigraphs
+during training, so that the model has more exposure to tokens later in the sequence.
+As it stands, accuracy is highest on words with labels 1-4 characters long (about 90%), and as length increases, it begins dropping steadily to 79% at length 9.
+Past that, it drops more rapidly, with labels of length 13 having 30% accuracy, and 16 or more characters having 4%.
+
+To account for this, training data was modified by adding random amounts of padding to words where it would fit. This new run (labelled as Run 24) was compared
+to the one just described labelled as (Run 22). Like Run 22, Run 24 was 30 epochs long, but the comparison indicates that the model was still learning by the
+end of epoch 30, and overall had worse accuracy. Notably, it did significantly worse on lexigraphs with no padding.
+<img width="1280" height="960" alt="image" src="./ocr/runs/run024/comparison_run022_run024.png" />
+
+For the next run (Run 25), two changes were made. First: one third of training data was guaranteed to have no padding (e.g. the lexigraphs were top-aligned).
+This was to deal with the fact that Run 24 showed lower accuracy on words with no padding. Second: train for 45 epochs. This is because Run 24 showed that
+by the end of 30 epochs, the model was still learning. Run 25 showed overall performance similar to Run 24, but with improved performance on padded words
+and on words with labels 11 characters or longer. Accuracy was still rising when the run ended, so training for longer would likely yield better accuracy.
+<img width="1280" height="960" alt="image" src="./ocr/runs/run025/comparison_run022_run024_run025.png" />
+
+Now that the models were getting fairly good results, I wanted to compare against real data. I used a
+[dataset published by Sun Haipeng, Tao Wenhao, and Bi Xiaojun](https://www.scidb.cn/en/detail?dataSetId=b45491b63d694534a9323acf14846586).
+
+Citation:
+Haipeng SUN, Wenhao TAO, Xiaojun BI. A dataset of Manchu ancient book words for OCR[J]. China Scientific Data, 2026, 11(1): 1-11. DOI: 10.11922/11-6035.csd.2025.0069.zh. 
+
+Images were cropped so that the edges of the word touched the edge of the image, then scaled up (or down) to a width of 32px, and the background
+was whitened. Run 25's model had a character accuracy of 65.9%, with 16.4% whole-word accuracy. I wasn't expecting great performance, since the training
+data all clean images of printed black text on a plain white background. Real-word data has several issues:
+- paper (especially from the Early Modern period) isn't perfectly white and smooth
+- many Manchu texts are hand-written and non-uniform
+- Early Modern printing isn't perfect, even if it's better than handwriting
+- old texts may have become damaged over time
+For comparison, here are some real-world images (left) and the model's guess (right):
+<img alt="image" src="./ocr/runs/run025/non_synthetic_example_1.png" />
+<img alt="image" src="./ocr/runs/run025/non_synthetic_example_2.png" />
+<img alt="image" src="./ocr/runs/run025/non_synthetic_example_3.png" />
+<img alt="image" src="./ocr/runs/run025/non_synthetic_example_4.png" />
+<img alt="image" src="./ocr/runs/run025/non_synthetic_example_5.png" />
+
+Next steps are to amend the synthetic data to more closely resemble the real-world data.
+- Varying stroke thickness
+- JPEG artifacts
+- Occasional specks
+- Fragments of other words caught in the image
+- Paper background
+- Varying contrast
+
+Using this augmented synthetic data, a 90-epoch training run yielded significant improvements over non-augmented data.
+
+**Run 26 (Augmented)**
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run026.png" />
+
+Accuracy on real-world photos stopped improving around epoch 60.
+
+**Run 26 vs. Run 25 (Non-augmented)**
+Plain: No image preprocessing.
+Cropped: Crop and rescale before evaluation.
+Whitened: Background made (closer) to a white canvas.
+Whitened + cropped: see above.
+
+| Pass | Exact, run 25 | Exact, run 26 | Char acc., run 25 | Char acc., run 26 | Mean edits, 25 → 26 |
+|---|---|---|---|---|---|
+| plain | 0.2% | **27.0%** | 11.6% | **72.4%** | 5.50 → 1.83 |
+| cropped | 0.9% | **35.5%** | 22.6% | **79.0%** | 4.86 → 1.36 |
+| whitened | 12.8% | **41.7%** | 60.4% | **82.0%** | 2.53 → 1.18 |
+| whitened + cropped | 16.4% | **47.0%** | 65.9% | **84.9%** | 2.17 → 0.96 |
+
+Run 26 outperforms Run 25 on every metric.
+Notably Run 26 showed an ability to handle images without preprocessing.
+However, character accuracy still isn't perfect, so the longer a word is,
+the more likely some error will occur and therefore the guess won't be exact.
+
+For comparison of a more practical nature, a paragraph was fed in to Run 26's model.
+If I had a real image of a word, that was fed in (50 images).
+If not, a lexigraph was generated for it (19 images).
+For words which appeared multiple times, a different image was used each time.
+
+| In | Out |
+| -- | --- |
+| sonjofi ubaliyambuha liyoo jai jy i bithe. hoton i enduri simnerengge. mini efu i mafa, sung gung, gebu doo, hiyan i qaliyangga xusai inu emu inenggi nimeme dedufi tuwaqi, emu wailan bithe jafafi tosi morin be elgeme jifi hendume, simneme genere be solinjiha, sung gung taqikvi baita be kadalara hafan enggelenjere unde, adarame bahafi simnembi seqi, wailan umaiserakv, damu haqihiyame jurambure jakade, sung gung nimeku katunjaha morin yalufi dahame | sonjofi ubaliyambuha liyoo jai zi **j bicahe hton j anturi silmneeengge minci** efu **j mefa** sung gung gebu doo hiyan **j** caliyangga xusai **imo** emu **ihnggi nimme** dedufi **tuwnci** emu wailan bithe **javafi** tosi **uknin** be **eelgeme** jifi hendume **simnme herere** be solinjiha sung gung tacikvi baita be kadalara hafan **anggelenjere** unde **adarme** bahafi simnembi **deci** wailan **umiserkv** damu **cihiyme jurambur** jakade sung gung **nileku** katunjaha morin yalufi **dahme** |
+| | Incorrect words in bold. |
+
+42 / 69 words (60.9%) were guessed correctly.
+
+- It did better on synthetic lexigraphs (68% vs 58% correct).
+- It did better on this than across all photos, because many shorter words appear more often in real text.
+- Standalone i (a pronoun) was read as j. Since it's the third-person singular pronoun, it will likely appear often in real text. Getting it right is important.
+
+So far, the training set was pretty small, around 1900 words.
+In order to increase the variety of words the model was exposed to,
+and especially to increase exposure to rare characters such as those used
+to transliterate Chinese words, I incorporated the Jerry Norman dictionary.
+The reason I had started with the Kaikki dictionary is that it contains
+Manchu script, while the Norman dictionary is in Norman transliteration.
+In Norman transliteration, ᡴ᠊ and ᡴᡝ᠊are both written as "k." Usually it's
+clear which letter it should be from context, but when it's at the end of
+a syllable AND not the final letter in a word, it's ambiguous.

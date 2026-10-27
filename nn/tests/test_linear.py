@@ -1,0 +1,109 @@
+import numpy as np
+
+from nn.Linear import Linear
+
+
+class TestLinear:
+    sizes = [(5, 9),
+             (1, 1),
+             (1, 5),
+             (5, 1),
+             (2, 2),
+             (2, 3),
+             (3, 2),
+             (1500, 87),
+             (3200, 3200)]
+
+    def test_sizes(self):
+        for size_in, size_out in self.sizes:
+            layer = Linear(size_in, size_out)
+            x = np.zeros((1, size_in))
+            y = layer(x)
+            expected = np.zeros((1, size_out))
+            assert np.shape(y) == np.shape(expected)
+            assert np.array_equal(y, expected)
+
+            weights = np.ones((size_in, size_out)) * 2
+            layer = Linear(size_in, size_out, weights=weights)
+            x = np.ones((1, size_in))
+            y = layer(x)
+            expected = np.ones((1, size_out)) * 2 * size_in
+            assert np.shape(y) == np.shape(expected)
+            assert np.array_equal(y, expected)
+
+    def test_bias(self):
+        for size_in, size_out in self.sizes:
+            weights = np.zeros((size_in, size_out))
+            bias = np.ones((1, size_out))
+
+            layer = Linear(size_in, size_out, weights=weights, bias=bias)
+            x = np.ones((1, size_in))
+            y = layer(x)
+            expected = np.ones((1, size_out))
+            assert np.array_equal(y, expected)
+
+            layer = Linear(size_in, size_out, weights=weights, use_bias=False)
+            x = np.ones((1, size_in))
+            y = layer(x)
+            expected = np.zeros((1, size_out))
+            assert np.array_equal(y, expected)
+
+    def test_multiple_tokens(self):
+        size_in, size_out = 50, 10
+        np.random.seed(123)
+
+        layer = Linear(size_in, size_out)
+        for token_count in [1, 5, 20]:
+            x = np.random.rand(token_count, size_in)
+            y = layer(x)
+            assert np.shape(y) == (token_count, size_out)
+
+    def test_multiple_batches(self):
+        size_in, size_out, token_count = 50, 10, 20
+        np.random.seed(123)
+
+        layer = Linear(size_in, size_out)
+        for batch_size in [1, 5, 20]:
+            x = np.random.rand(batch_size, token_count, size_in)
+            y = layer(x)
+            assert np.shape(y) == (batch_size, token_count, size_out)
+
+    def test_parameters(self):
+        for size_in, size_out in self.sizes:
+            layer = Linear(size_in, size_out)
+            params = layer.parameters()
+
+            assert len(params) == 2
+            assert np.shape(params['weights']) == (size_in, size_out)
+            assert np.shape(params['bias']) == (1, size_out)
+
+    def test_backprop(self):
+        size_in = 5
+        size_out = 3
+        np.random.seed(123)
+
+        x = np.random.rand(1, size_in)
+        y = np.zeros((1, size_out))
+        y[0][0] = 1.
+
+        layer = Linear(size_in, size_out)
+
+        last_mse_loss = None
+        for _ in range(5):
+            out = layer(x)
+
+            mse_loss = np.sum((y - out)**2, keepdims=True) / len(out)
+            dLdout = -2 * (1 - out)
+
+            layer.backward(dLdout)
+            grads = layer.gradients()
+
+            learn_rate = 0.01
+            delta = {}
+            for key in grads.keys():
+                delta[key] = grads[key] * learn_rate
+            layer.descend(delta)
+
+            if last_mse_loss is not None:
+                assert mse_loss < last_mse_loss
+            last_mse_loss = mse_loss
