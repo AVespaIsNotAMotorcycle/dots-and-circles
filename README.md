@@ -235,6 +235,21 @@ Notably Run 26 showed an ability to handle images without preprocessing.
 However, character accuracy still isn't perfect, so the longer a word is,
 the more likely some error will occur and therefore the guess won't be exact.
 
+For comparison of a more practical nature, a paragraph was fed in to Run 26's model.
+If I had a real image of a word, that was fed in (50 images).
+If not, a lexigraph was generated for it (19 images).
+For words which appeared multiple times, a different image was used each time.
+
+| In | Out |
+| -- | --- |
+| sonjofi ubaliyambuha liyoo jai jy i bithe. hoton i enduri simnerengge. mini efu i mafa, sung gung, gebu doo, hiyan i qaliyangga xusai inu emu inenggi nimeme dedufi tuwaqi, emu wailan bithe jafafi tosi morin be elgeme jifi hendume, simneme genere be solinjiha, sung gung taqikvi baita be kadalara hafan enggelenjere unde, adarame bahafi simnembi seqi, wailan umaiserakv, damu haqihiyame jurambure jakade, sung gung nimeku katunjaha morin yalufi dahame | sonjofi ubaliyambuha liyoo jai zi j bicahe hton j anturi silmneeengge minci efu j mefa sung gung gebu doo hiyan j caliyangga xusai imo emu ihnggi nimme dedufi tuwnci emu wailan bithe javafi tosi uknin be eelgeme jifi hendume simnme herere be solinjiha sung gung tacikvi baita be kadalara hafan anggelenjere unde adarme bahafi simnembi deci wailan umiserkv damu cihiyme jurambur jakade sung gung nileku katunjaha morin yalufi dahme |
+
+42 / 69 words (60.9%) were guessed correctly.
+
+- It did better on synthetic lexigraphs (68% vs 58% correct).
+- It did better on this than across all photos, because many shorter words appear more often in real text.
+- Standalone i (a pronoun) was read as j. Since it's the third-person singular pronoun, it will likely appear often in real text. Getting it right is important.
+
 So far, the training set was pretty small, around 1900 words.
 In order to increase the variety of words the model was exposed to,
 and especially to increase exposure to rare characters such as those used
