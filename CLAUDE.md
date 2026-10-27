@@ -9,8 +9,9 @@ README.md for the architecture.
   Adam/SGD, softmax), each with its own `tests/`.
 - `ocr/`: models (`modelA`–`modelD`), `train.py`, `evaluate_non_synthetic.py`,
   `photos.py`, `preprocess.py`.
-- `ocr/training_data/`: lexicon, fonts, word rendering (`__init__.py`) and
-  print augmentation (`augment.py`).
+- `ocr/training_data/`: lexicon, word rendering (`__init__.py`) and print
+  augmentation (`augment.py`). `fonts/` is gitignored for licensing reasons:
+  never commit font files, and check it holds `.ttf` files before training.
 - `ocr/runs/runNNN/`: one folder per training run (log, graphs, reports).
   Weights (`*.npz`) are gitignored.
 

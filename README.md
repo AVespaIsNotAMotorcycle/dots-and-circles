@@ -40,6 +40,12 @@ Tatu Ylonen: Wiktextract: Wiktionary as Machine-Readable Structured Data, Procee
 
 Another set was pulled from [a scan of Jerry Norman's Manchu dictionary](https://github.com/purobaburi/manchu-resources/tree/main?tab=readme-ov-file).
 
+Words are rendered in Manchu fonts, which aren't included in this repository
+because of their licences: put `.ttf` files in `ocr/training_data/fonts/`
+before training. The fonts used so far are the XM fonts by SoBetter Software
+Studio and Abkai Xanyan from [abkai.net](https://abkai.net/zh/manchu/manchu-fonts/)
+(free for personal, non-commercial use).
+
 ## Roadmap
 
 - [x] **Under the hood**:
