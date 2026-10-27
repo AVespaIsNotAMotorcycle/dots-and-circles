@@ -1,0 +1,22 @@
+{
+  "allowed_origin": "*",
+  "photos": "photos",
+  "models": [
+    {
+      "name": "Run 26",
+      "model": "ModelD (8 transformers, 64-dim embeddings), Adam 3e-3, print augmentation, 1,989-word Wiktionary lexicon, 90 epochs",
+      "class": "ModelD",
+      "weights": "weights/run026.npz",
+      "params": {"depth": 8, "emb_dim": 64},
+      "preprocess": {"crop": true, "whiten": true}
+    },
+    {
+      "name": "Run 27",
+      "model": "ModelD (8 transformers, 64-dim embeddings), Adam 3e-3, print augmentation, 21,532-entry Wiktionary + Norman lexicon, 3 epochs",
+      "class": "ModelD",
+      "weights": "weights/run027.npz",
+      "params": {"depth": 8, "emb_dim": 64},
+      "preprocess": {"crop": true, "whiten": true}
+    }
+  ]
+}

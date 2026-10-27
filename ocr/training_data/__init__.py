@@ -17,11 +17,13 @@ with open(os.path.join(directory, "lexicon.json"), "r", encoding="utf-8") as fil
     lexicon = json.load(file)
 
 fonts_directory = os.path.join(directory, "fonts")
+# The fonts aren't in the repository, so they may not be here: the server
+# only reads words, so it runs without them
 fonts = sorted(
     os.path.join(fonts_directory, name)
     for name in os.listdir(fonts_directory)
     if name.lower().endswith((".ttf", ".otf"))
-)
+) if os.path.isdir(fonts_directory) else []
 
 
 def render(word, font_path):

@@ -14,6 +14,9 @@ README.md for the architecture.
   never commit font files, and check it holds `.ttf` files before training.
 - `ocr/runs/runNNN/`: one folder per training run (log, graphs, reports).
   Weights (`*.npz`) are gitignored.
+- `server/`: the Flask server Heroku runs (`Procfile`, `requirements.txt`
+  at the root). Its models, weights and photos are listed in
+  `server/config.json`; see `server/README.md`.
 
 ## Commands
 
@@ -22,7 +25,9 @@ Run from the repo root:
 - Train: `python -m ocr.train`
 - Evaluate on photographed words:
   `python -m ocr.evaluate_non_synthetic ocr/runs/runNNN/<weights>.npz`
-- Test: `python -m pytest -q nn loss optim utils ocr/tests`
+- Test: `python -m pytest -q nn loss optim utils ocr/tests server/tests`
+  (the server tests skip without Flask)
+- Serve locally: `python -m flask --app server.app run`
 
 ## Lexicon
 
