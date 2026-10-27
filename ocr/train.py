@@ -75,11 +75,12 @@ SNAPSHOT_EVERY = 5
 PHOTO_BATCH_SIZE = 16
 
 def generate_seeds(validation_set = False):
-    train_proportion = 0.7
+    train_proportion = 0.85
     valid_proportion = 0
-    test_proportion = 0.3
+    test_proportion = 0.15
 
     if validation_set:
+        train_proportion = 0.7
         valid_proportion = 0.15
         test_proportion = 0.15
 
@@ -662,16 +663,17 @@ def run_models(run_directory, epochs, augment):
 
 def epoch_schedule(train_set, test_set):
     '''
-    Yields (batch_number, testing, batch) for one epoch. Batches from each
-    set are spaced across the whole epoch, so whichever set runs out first
-    leaves the rest to the other. Every model's thread gets the same order.
+    Yields (batch_number, testing, batch) for one epoch. Test batches are
+    spaced evenly across the whole epoch, in proportion to the two sets'
+    sizes, so both sets run out together. Every model's thread gets the same
+    order.
     '''
     train_index = 0
     test_index = 0
-    for batch_number in range(len(train_set) + len(test_set)):
-        train_left = train_index < len(train_set)
-        test_left = test_index < len(test_set)
-        testing = test_left and (batch_number % 10 > 7 or not train_left)
+    total = len(train_set) + len(test_set)
+    for batch_number in range(total):
+        # By the end of this batch, this many test batches should be done
+        testing = test_index < (batch_number + 1) * len(test_set) // total
         if testing:
             batch = test_set[test_index]
             test_index += 1
