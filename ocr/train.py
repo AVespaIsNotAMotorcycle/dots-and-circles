@@ -743,4 +743,4 @@ def train_model(name, run, batches, photo_set, epochs,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=3, augment=True)
+    train(epochs=10, augment=True)
