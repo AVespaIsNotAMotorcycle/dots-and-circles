@@ -1,3 +1,5 @@
+import base64
+import io
 import json
 
 import numpy as np
@@ -7,6 +9,7 @@ from PIL import Image
 flask = pytest.importorskip("flask")
 
 from ocr.modelD import ModelD
+from ocr.training_data import WIDTH
 from ocr.train import CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM, alphabet
 from server.app import create_app
 
@@ -47,6 +50,12 @@ def test_random(client):
     assert body["label"] == "abka"
     assert body["manchu"] == "ᠠᠪᡴᠠ"
     assert body["image"].startswith("data:image/png;base64,")
+    # The preprocessed photo is greyscale and WIDTH pixels wide
+    header, encoded = body["preprocessed-image"].split(",")
+    assert header == "data:image/png;base64"
+    preprocessed = Image.open(io.BytesIO(base64.b64decode(encoded)))
+    assert preprocessed.mode == "L"
+    assert preprocessed.width == WIDTH
     [result] = body["results"]
     assert result["name"] == "Test"
     assert result["model"] == "Untrained ModelD"

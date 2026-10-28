@@ -18,6 +18,7 @@ repository root. Locally, from the repository root:
     "label": "abka",
     "manchu": "ᠠᠪᡴᠠ",
     "image": "data:image/png;base64,...",
+    "preprocessed-image": "data:image/png;base64,...",
     "results": [{
       "name": "Run 26",
       "model": "ModelD (8 transformers, ...)",
@@ -31,7 +32,9 @@ repository root. Locally, from the repository root:
   ```
 
   `label` is the word in Abkai, `manchu` the same in Manchu script, and
-  `image` the photo before preprocessing. `ctc` has the most likely class at
+  `image` the photo before preprocessing. `preprocessed-image` is the photo
+  as a model with the default preprocessing reads it: a greyscale PNG,
+  whitened, cropped to the ink and scaled to the models' input width. `ctc` has the most likely class at
   each of the photo's tokens (`null` for the blank), and `probs` that class's
   probability. `score` is the character accuracy of `prediction-abkai`
   against `label`: `max(0, 1 - edit distance / len(label))`, as in the run

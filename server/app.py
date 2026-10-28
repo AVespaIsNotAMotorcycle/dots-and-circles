@@ -12,6 +12,7 @@ os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 import base64
 import importlib
+import io
 import json
 import mimetypes
 import random
@@ -78,6 +79,13 @@ def data_url(path):
         encoded = base64.b64encode(file.read()).decode("ascii")
     return f"data:{mime};base64,{encoded}"
 
+def image_data_url(image):
+    # A PIL image as a PNG data: URL
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return f"data:image/png;base64,{encoded}"
+
 def create_app(config_path=CONFIG_PATH):
     with open(config_path, "r", encoding="utf-8") as file:
         config = json.load(file)
@@ -113,7 +121,11 @@ def create_app(config_path=CONFIG_PATH):
             image = load_photo(path, preprocess.get("crop", True),
                                preprocess.get("whiten", True))
             results.append(read_word(entry, model, image, photo["label"]))
+        # The photo as models with the default preprocessing see it
+        preprocessed = load_photo(path)
         return jsonify({"label": photo["label"], "manchu": photo["manchu"],
-                        "image": data_url(path), "results": results})
+                        "image": data_url(path),
+                        "preprocessed-image": image_data_url(preprocessed),
+                        "results": results})
 
     return app
