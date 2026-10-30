@@ -98,6 +98,79 @@ Run 28's cropped pass gives the same result. Plain and whitened give 40.8%.
 | Right only in theirs | 155 | 246 |
 | McNemar z | +1.73 (p ≈ 0.08) | −11.4 |
 
+## What `mic7ch/manchu` contains
+
+The 753-word test set is the `test` split of `mic7ch/manchu`. Profiling all
+three splits (labels mapped to Abkai, images hashed) shows the dataset joins
+two others:
+
+| Part | Rows | Source |
+|---|---|---|
+| Synthetic train / validation (rows 0–59,999 / 0–14,999) | 60,000 / 15,000 | `mic7ch/manchu-2025-0033` train / validation |
+| Real train / validation (the rest) | 20,306 / 3,359 | `HenryKingCN/scidb_manchu_v2` (`v3` has the same counts) |
+| Test | 753 | `mic7ch/manchu-2025-0033` test ("real data", source not stated) |
+
+All images are 480 × 64 RGB PNGs.
+
+### Its real part is our photo set
+
+`ocr/non_synthetic_data/` holds 24,280 photos of 2,428 words from the same
+scidb.cn dataset. The real part of `mic7ch/manchu` has 23,665 images of 2,417
+words:
+
+- **Labels:** 2,210 labels are identical to our folder names.
+- **Counts per word:** for 1,823 of our 2,428 words the image counts match
+  exactly. Almost all of the rest have one image fewer (e.g. 10 against 9).
+- **Spelling:** the 207 labels that aren't among our folder names (2,026
+  rows) are spelling variants. The Manchu labels write ᠸ (w) for f before
+  i/u, so `gajifi` appears as `gajiwi`. The two letters look the same in
+  that position, and the CRNN v3 protocol normalizes w → f for this reason.
+
+So any model trained on this real part has trained on almost all of our
+photos.
+
+### Which models trained on it
+
+No model card names `mic7ch/manchu` itself. The cards name its parts:
+
+| Models | Training data | Seen our photos? |
+|---|---|---|
+| Paper models: `manchu-ocr-{qwen-25-3b, qwen-25-7b, llama-32-11b}`, CRNN-3M | `mic7ch/manchu-2025-0033` (`configs/base.yaml`), 60k synthetic | no |
+| `manchu-ocr-*-step1-syn*` | synthetic only | no |
+| `manchu-ocr-crnn-{step1-real, mix, final}` | `manchu-2025-0033` + `scidb_manchu_v2` ("60k synthetic, then 20k real") | yes |
+| `manchu-ocr-{llama, qwen, pixtral}-{step1-real, mix, final}*` | cards list only 0033, but are named and selected on `real_val` | almost certainly |
+| `crnn-manchu-ngsyd` | real handwriting + `scidb_manchu_v3` | yes |
+
+Our photos therefore can't serve as a held-out comparison with any of the
+2026 models. The 753-word test set has no byte-identical images in train or
+validation, and run 28 has seen none of it. That makes it the cleanest
+shared benchmark.
+
+### Compared with our data
+
+| | Their synthetic | Their real (our photos) | Their test | Our lexicon |
+|---|---|---|---|---|
+| Images | 75,000, one fixed render each | 23,665 photos | 753 | 21,532 words × 12 fonts, re-augmented each epoch |
+| Distinct words | 57,179 | 2,417 | 569 | 21,532 |
+| Mean length (Abkai letters) | 10.2 | 6.1 | 5.5 | — |
+| 1–3 letter words | 0.5% | 9.0% | 12.6% | 1.6% |
+| In our lexicon | 9.3% | 51.6% | 57.4% | 100% |
+
+- **Their synthetic words are long and rare.** They're sampled from Zhang
+  Zhuohui's 130,917-word dictionary, so they share our lexicon's skew
+  toward long, rare words, only more strongly. Short words are 0.5% of their
+  synthetic data, against 9–13% of real text. This may explain much of the
+  drop that CRNN-3M shows on real data (99.8% → 72.5%), alongside the visual
+  difference between renders and handwriting.
+- **The vocabularies barely overlap.** Only 9% of their synthetic words are
+  in our lexicon, and only 25% of our lexicon is in their synthetic data.
+- **Their real data is split by image, not by word.** Every word in the real
+  validation split also appears in the real training split, and 83% of
+  test rows are words seen in training. The 96–99% `real_val` and test
+  scores in the 2026 model cards therefore mostly measure new images of
+  known words. Run 28's photo result on words in no lexicon (58.4% exact)
+  measures something harder.
+
 ## Conclusions
 
 1. On handwriting it has never seen, run 28 sits between the paper's
@@ -109,9 +182,11 @@ Run 28's cropped pass gives the same result. Plain and whitened give 40.8%.
 3. CRNN v3, trained on ~96k real images, beats every other model here, so
    the paper's two models no longer bracket the state of the art. Run 28's
    case rests on needing no real labeled data and no GPU.
-4. CRNN v3's training data includes `HenryKingCN/scidb_manchu_v3` (23,665
-   images), which is almost certainly the scidb source of
-   `ocr/non_synthetic_data/` (24,280 photos). Its accuracy on those photos
-   wouldn't be a held-out result.
+4. The real part of `mic7ch/manchu` is our photo set (see above). CRNN v3
+   and every 2026 `step1-real`, `mix` and `final` model trained on it, so
+   none of them can be compared with run 28 on our photos. The 753-word
+   test set is the fair shared benchmark.
 5. Cropping matters on padded inputs. Without it run 28 loses about 20
    points.
+6. When comparing against their labels, normalize w → f before i/u.
+   Otherwise about 9% of their real rows look wrong when they aren't.
