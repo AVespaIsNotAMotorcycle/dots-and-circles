@@ -31,12 +31,11 @@ The training loop and training data generation was almost entirely Claude, since
 ## Resources Used
 
 Training data:
-[Tatu Ylonen: Wiktextract: Wiktionary as Machine-Readable Structured Data, Proceedings of the 13th Conference on Language Resources and Evaluation (LREC), pp. 1317-1325, Marseille, 20-25 June 2022.](https://kaikki.org/dictionary/Manchu/index.html)
-
+- [Tatu Ylonen: Wiktextract: Wiktionary as Machine-Readable Structured Data, Proceedings of the 13th Conference on Language Resources and Evaluation (LREC), pp. 1317-1325, Marseille, 20-25 June 2022.](https://kaikki.org/dictionary/Manchu/index.html)
 - [The Jerry Norman dictionary](https://github.com/purobaburi/manchu-resources/blob/main/Dictionaries/Jerry_Norman_Dict.txt)
 
 Test data:
-[Haipeng SUN, Wenhao TAO, Xiaojun BI. A dataset of Manchu ancient book words for OCR[J]. China Scientific Data, 2026, 11(1): 1-11. DOI: 10.11922/11-6035.csd.2025.0069.zh.](https://www.scidb.cn/en/detail?dataSetId=b45491b63d694534a9323acf14846586)
+- [Haipeng SUN, Wenhao TAO, Xiaojun BI. A dataset of Manchu ancient book words for OCR[J]. China Scientific Data, 2026, 11(1): 1-11. DOI: 10.11922/11-6035.csd.2025.0069.zh.](https://www.scidb.cn/en/detail?dataSetId=b45491b63d694534a9323acf14846586)
 
 Fonts:
 - [A set of 11 from Manchu Studies Group](https://www.manchustudiesgroup.org/typing-manchu/)
