@@ -21,19 +21,6 @@ before training. The fonts used so far are the XM fonts by SoBetter Software
 Studio and Abkai Xanyan from [abkai.net](https://abkai.net/zh/manchu/manchu-fonts/)
 (free for personal, non-commercial use).
 
-## Roadmap
-
-- [x] **Under the hood**:
-  - [x] **nn module**: provides the basis for the implementation of ANNs
-  - [x] **loss module**: calculates loss and gradients
-  - [x] **optim module**: updates parameters based on gradients
-- [x] **Basic OCR**:
-  - [x] **Simple synthetic training data generation**: black text on white background
-  - [x] **Transformer OCR Model**: reads image line by line, outputs CTC string
-  - [x] **CTC loss function**: generates loss values for TrOCR output
-  - [x] **Simple training loop**: train TrOCR on synthetic data, graph results
-
-
 # Progress
 
 I didn't start using Claude code until after the `nn` module was fully implemented, since I wanted to work through it myself.
