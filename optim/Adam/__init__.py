@@ -5,11 +5,6 @@ from optim.Optimizer import Optimizer
 
 class Adam(Optimizer):
     def __init__(self, learn_rate, beta_one=0.9, beta_two=0.999, keep_history=False):
-        '''
-        max_norm: if set, gradients are scaled down together whenever their
-        combined norm (over every parameter) is larger than this, so one bad
-        batch can't take an oversized step.
-        '''
         super().__init__(learn_rate, keep_history)
         self.beta_one = beta_one
         self.beta_two = beta_two
