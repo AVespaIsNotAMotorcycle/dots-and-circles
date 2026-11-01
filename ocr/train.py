@@ -453,6 +453,85 @@ def save_weights(model, path):
     model.save_weights(temporary)
     os.replace(temporary, path)
 
+def optimizer_path(run_directory, name):
+    # Next to the run's latest weights, e.g. optimizer_D-8-64_Adam_3e-3.npz
+    weights = weights_path(run_directory, name)
+    return os.path.join(os.path.dirname(weights),
+                        "optimizer_" + os.path.basename(weights)[len("weights_"):])
+
+def flatten(tree, prefix=""):
+    # {"layers": {"0_Linear": {"bias": a}}} -> {"layers.0_Linear.bias": a},
+    # the same keys as Module.flat_parameters
+    out = {}
+    for key, value in tree.items():
+        if isinstance(value, np.ndarray):
+            out[prefix + key] = value
+        else:
+            out.update(flatten(value, prefix + key + "."))
+    return out
+
+def unflatten_like(template, flat, prefix=""):
+    '''
+    Rebuilds flatten's output in template's nesting (a model's
+    parameters()). It's built from the template rather than the keys, since
+    modules without params (GELU, PositionalEmbedding) are empty dicts,
+    which flattening leaves no trace of but the optimizer still needs.
+    '''
+    out = {}
+    for key, value in template.items():
+        if isinstance(value, np.ndarray):
+            out[key] = flat[prefix + key]
+        else:
+            out[key] = unflatten_like(value, flat, prefix + key + ".")
+    return out
+
+def save_optimizer(optimizer, path):
+    '''
+    Saves an optimizer's state (Adam's m, v and t) by way of a temporary
+    file, like save_weights. Optimizers without extract (SGD), or that
+    haven't taken a step yet, save nothing.
+    '''
+    if not hasattr(optimizer, "extract"):
+        return
+    state = optimizer.extract()
+    if state["m"] is None:
+        return
+    arrays = {"t": np.array(state["t"])}
+    for part in ("m", "v"):
+        for key, value in flatten(state[part]).items():
+            arrays[f"{part}.{key}"] = value
+    temporary = path[:-len(".npz")] + ".partial.npz"
+    np.savez(temporary, **arrays)
+    os.replace(temporary, path)
+
+def load_optimizer(optimizer, model, path):
+    '''
+    Gives optimizer the state saved at path, for model. Returns whether it
+    did: if there's no saved state (e.g. a run from before it was saved) or
+    it doesn't fit the model, the optimizer is left to start fresh.
+    '''
+    if not hasattr(optimizer, "inject") or not os.path.exists(path):
+        return False
+    keys = set(model.flat_parameters())
+    with np.load(path) as saved:
+        flat = {part: {key[len(part) + 1:]: saved[key] for key in saved.files
+                       if key.startswith(part + ".")}
+                for part in ("m", "v")}
+        t = int(saved["t"])
+    for part in ("m", "v"):
+        params = model.flat_parameters()
+        if (set(flat[part]) != keys
+                or any(np.shape(flat[part][key]) != np.shape(params[key])
+                       for key in keys)):
+            print(f"The optimizer state at {path} doesn't fit the model, so "
+                  f"the optimizer starts fresh.")
+            return False
+    template = model.parameters()
+    optimizer.inject({"m": unflatten_like(template, flat["m"]),
+                      "v": unflatten_like(template, flat["v"]),
+                      "t": t})
+    return True
+
 def progress_path(run_directory):
     return os.path.join(run_directory, "progress.json")
 
@@ -600,8 +679,9 @@ def train(epochs = 3, augment = True, resume = None):
     model loads its latest weights and trains epochs more, counting on from
     its last finished epoch (so augmentation, steps and snapshots carry on
     too), and the log is added to. A model the run doesn't have yet starts
-    fresh. Optimizer state isn't saved, so Adam starts over, which shows as
-    a short loss spike.
+    fresh. Adam's state is saved after each epoch and loaded too; a run
+    with weights but no saved state (from before it was saved) resumes with
+    a fresh Adam, which shows as a short loss spike.
     '''
     if resume:
         run_directory = os.path.join(RUNS_DIRECTORY, resume)
@@ -687,7 +767,13 @@ def run_models(run_directory, epochs, augment):
             start = progress.get(name, 0)
             if start:
                 model.load_weights(weights_path(run_directory, name))
-                print(f"Model {name}: resuming after epoch {start}.")
+                if load_optimizer(optimizer, model,
+                                  optimizer_path(run_directory, name)):
+                    restored = "with its optimizer state"
+                else:
+                    restored = "with a fresh optimizer (no saved state)"
+                print(f"Model {name}: resuming after epoch {start}, "
+                      f"{restored}.")
             if getattr(model, "uses_ctc", False):
                 loss_function = CTCLoss(model, blank=model.blank)
             else:
@@ -818,6 +904,9 @@ def train_model(name, run, batches, photo_set, epochs,
             if (epoch + 1) % SNAPSHOT_EVERY == 0:
                 save_weights(run["model"],
                              weights_path(run_directory, name, epoch + 1))
+            # The optimizer's state too, so a resumed run carries on smoothly
+            save_optimizer(run["optimizer"],
+                           optimizer_path(run_directory, name))
             # Only now that the weights are saved does the epoch count as
             # finished, for resuming
             with log_lock:
