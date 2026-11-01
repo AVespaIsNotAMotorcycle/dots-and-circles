@@ -29,6 +29,7 @@ from ocr.modelA import ModelA
 from ocr.modelB import ModelB
 from ocr.modelC import ModelC
 from ocr.modelD import ModelD
+from ocr.split import split_words
 from ocr.training_data import HEIGHT, WIDTH, fonts, generate, lexicon
 from ocr.training_data.augment import tokens_needed
 
@@ -75,39 +76,33 @@ SNAPSHOT_EVERY = 5
 PHOTO_BATCH_SIZE = 16
 
 def generate_seeds(validation_set = False):
-    train_proportion = 0.85
-    valid_proportion = 0
+    '''
+    Returns (train seeds, test seeds), or (train, validation, test) with
+    validation_set. The lexicon is split by word (see ocr/split.py), and
+    each set gets every font of its words, so no word is in two sets. Test
+    is the same either way, and the same every run.
+    '''
     test_proportion = 0.15
-
-    if validation_set:
-        train_proportion = 0.7
-        valid_proportion = 0.15
-        test_proportion = 0.15
-
-    train_set = []
-    valid_set = []
-    test_set = []
+    valid_proportion = 0.15 if validation_set else 0
 
     # CTC can't spell a word that needs more tokens than the model reads,
     # however its image is made, so those words are left out
-    too_long = {index for index, word in enumerate(lexicon)
-                if tokens_needed(word) > CONTEXT_LENGTH}
-    if too_long:
-        print(f"Leaving out {len(too_long)} words too long for "
+    kept = [index for index, word in enumerate(lexicon)
+            if tokens_needed(word) <= CONTEXT_LENGTH]
+    if len(kept) < WORD_COUNT:
+        print(f"Leaving out {WORD_COUNT - len(kept)} words too long for "
               f"{CONTEXT_LENGTH} tokens.")
 
-    seed_count = FONT_COUNT * WORD_COUNT
-    for i in range(seed_count):
-        seed = i
-        if seed % WORD_COUNT in too_long:
-            continue
-        lot = random.random()
-        if lot < train_proportion:
-            train_set.append(seed)
-        elif lot < train_proportion + valid_proportion:
-            valid_set.append(seed)
-        else:
-            test_set.append(seed)
+    word_sets = split_words([lexicon[index] for index in kept],
+                            test_proportion, valid_proportion)
+    # A word's seeds are its index plus a multiple of WORD_COUNT, one per font
+    # (see training_data.generate)
+    train_set, valid_set, test_set = (
+        [kept[position] + font * WORD_COUNT
+         for position in positions for font in range(FONT_COUNT)]
+        for positions in word_sets)
+    print(f"Words: {len(word_sets[0])} train, {len(word_sets[1])} "
+          f"validation, {len(word_sets[2])} test.")
 
     random.shuffle(train_set)
     random.shuffle(valid_set)

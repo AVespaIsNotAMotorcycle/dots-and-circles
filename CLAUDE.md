@@ -45,7 +45,13 @@ before and after a lexicon change aren't directly comparable.
 
 `ocr/non_synthetic_data/` holds photographed print words, one folder per
 word, named in Abkai. It's gitignored, so check it's there before relying on
-it. `train.py` scores a fixed 500-photo set (seed 1) after each epoch. If a
+it. `train.py` scores a fixed 500-photo set (seed 1) after each epoch.
+
+Train and test are split by word (`ocr/split.py`): a word is in one set in
+every font. All photo words go to test, using the committed list
+`ocr/training_data/photo_words.json` (CC BY 4.0). Rebuild it with
+`python -m ocr.training_data.list_photo_words` when the photos change. Runs
+before this split aren't comparable with runs after it. If a
 checkpoint is ever chosen by that score, evaluate on photos outside that set.
 
 ## Memory use
