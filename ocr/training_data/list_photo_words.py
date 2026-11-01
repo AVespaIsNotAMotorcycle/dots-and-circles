@@ -23,8 +23,10 @@ def main():
     words = sorted(name for name in os.listdir(DATA_DIRECTORY)
                    if os.path.isdir(os.path.join(DATA_DIRECTORY, name)))
     data = {
-        "description": "The words (folder names, in Abkai) of the "
-                       "photographed print words in ocr/non_synthetic_data/",
+        "description": "The words (folder names) of the photographed "
+                       "print words in ocr/non_synthetic_data/, in the "
+                       "dataset's romanization (see "
+                       "ocr.photos.MANCHU_TO_ROMAN)",
         "source": "https://www.scidb.cn/en/detail?dataSetId="
                   "b45491b63d694534a9323acf14846586",
         "license": "CC BY 4.0",

@@ -11,6 +11,8 @@ flask = pytest.importorskip("flask")
 from ocr.modelD import ModelD
 from ocr.training_data import WIDTH
 from ocr.train import CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM, alphabet
+from ocr.photos import manchu_to_abkai, manchu_to_roman
+from ocr.train import character_accuracy
 from server.app import create_app
 
 
@@ -34,7 +36,8 @@ def client(tmp_path):
     image.paste(60, (24, 10, 40, 190))
     image.save(tmp_path / "synthetic" / "000.png")
     (tmp_path / "synthetic" / "manifest.json").write_text(json.dumps(
-        [{"label": "bira", "manchu": "ᠪᡳᡵᠠ", "font": "SomeFont", "seed": 7,
+        # Labelled in the dataset's romanization, which spells ᠴ c, not q
+        [{"label": "acambi", "manchu": "ᠠᠴᠠᠮᠪᡳ", "font": "SomeFont", "seed": 7,
           "path": "000.png"}]))
     (tmp_path / "config.json").write_text(json.dumps({
         "allowed_origin": "*",
@@ -226,8 +229,9 @@ def test_random_synthetic(client):
     body = response.get_json()
     assert body["source"] == "synthetic"
     assert body["font"] == "SomeFont"
-    assert body["label"] == "bira"
-    assert body["manchu"] == "ᠪᡳᡵᠠ"
+    # Shown in Abkai, but scored against the manifest's romanization
+    assert body["label"] == "aqambi"
+    assert body["manchu"] == "ᠠᠴᠠᠮᠪᡳ"
     assert body["image"].startswith("data:image/png;base64,")
     [result] = body["results"]
     assert 0 <= result["score"] <= 1
@@ -237,3 +241,26 @@ def test_random_unknown_source(client):
     response = client.get("/random?source=drawing")
     assert response.status_code == 400
     assert response.get_json()["error"]
+
+
+def test_upload_label_in_abkai(client):
+    response = client.post("/upload/single", data={
+        "image": (io.BytesIO(bar_image()), "word.png"), "label": "aqambi"})
+    assert response.status_code == 200
+    body = response.get_json()
+    check_upload_body(body, "aqambi", "ᠠᠴᠠᠮᠪᡳ")
+    # Scored in the dataset's romanization, as in the run reports
+    [result] = body["results"]
+    guess = manchu_to_roman(result["prediction-manchu"])
+    assert result["score"] == pytest.approx(
+        character_accuracy(guess, "acambi"))
+    assert result["prediction-abkai"] == manchu_to_abkai(
+        result["prediction-manchu"])
+
+
+def test_upload_label_marks_are_normalized(client):
+    body = client.post("/upload/single", data={
+        "image": (io.BytesIO(bar_image()), "word.png"),
+        "label": "k'amduri"}).get_json()
+    assert body["label"] == "k\u2018amduri"
+    assert body["manchu"] == "ᠺᠠᠮᡩᡠᡵᡳ"

@@ -7,7 +7,7 @@ reformat.py rewrites lexicon.json from scratch, which drops these words.
 Headwords are the runs of all-caps words in the text. The OCR is imperfect,
 so a run is only kept if every word in it converts to Manchu letters and
 looks like a Manchu word; "A/B" gives both A and B. A word already in the
-lexicon (compared in Abkai, so ignoring variation selectors) isn't added,
+lexicon (compared romanized, so ignoring variation selectors) isn't added,
 and neither is one too tall for a training image (see too_tall).
 '''
 
@@ -18,7 +18,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", ".."))
-from ocr.photos import manchu_to_abkai
+from ocr.photos import manchu_to_roman
 from ocr.training_data import HEIGHT, WIDTH, fonts, render
 
 VOWELS = {"a": "ᠠ", "e": "ᡝ", "i": "ᡳ", "o": "ᠣ", "u": "ᡠ", "ū": "ᡡ"}
@@ -133,17 +133,17 @@ with open("Jerry_Norman_Dict.txt", "r", encoding="utf-8") as file:
 with open("lexicon.json", "r", encoding="utf-8") as file:
     lexicon = json.load(file)
 
-known = {manchu_to_abkai(word) for word in lexicon}
+known = {manchu_to_roman(word) for word in lexicon}
 added = tall = 0
 for phrase in norman:
     manchu = " ".join(to_manchu(word) for word in phrase.split())
-    abkai = manchu_to_abkai(manchu)
-    if abkai in known:
+    roman = manchu_to_roman(manchu)
+    if roman in known:
         continue
     if too_tall(manchu):
         tall += 1
         continue
-    known.add(abkai)
+    known.add(roman)
     lexicon.append(manchu)
     added += 1
 

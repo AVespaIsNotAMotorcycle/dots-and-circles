@@ -22,7 +22,8 @@ import numpy as np
 from flask import Flask, jsonify, request
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from ocr.photos import load_photo, manchu_to_abkai, spell_in_manchu
+from ocr.photos import (abkai_to_manchu, load_photo, manchu_to_abkai,
+                        manchu_to_roman, spell_in_manchu)
 from ocr.preprocess import prepare
 from ocr.train import (CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM, alphabet,
                        character_accuracy, ctc_decode, image_to_array,
@@ -72,7 +73,9 @@ def read_word(entry, model, image, label):
     '''
     Runs model on a prepared photo, returning the response's object for it.
     ctc and probs have one element per real token: the most likely class
-    (None for the blank) and its probability. With no label, score is None.
+    (None for the blank) and its probability. label is in the photo
+    dataset's romanization (see ocr.photos.MANCHU_TO_ROMAN), so score is
+    computed as in the run reports; with no label, score is None.
     '''
     entries = [(image_to_array(image), None, token_count(image))]
     _, y = predict(model, entries)
@@ -80,18 +83,18 @@ def read_word(entry, model, image, label):
     probabilities = softmax(y[0][:length])
     indices = np.argmax(probabilities, axis=-1)
     guess = ctc_decode(y[0], length, model.blank)
-    abkai = manchu_to_abkai(guess)
     return {
         "name": entry["name"],
         "model": entry["model"],
         "prediction-manchu": guess,
-        "prediction-abkai": abkai,
+        "prediction-abkai": manchu_to_abkai(guess),
         "ctc": [None if index == model.blank else alphabet[index]
                 for index in indices],
         "probs": [float(probabilities[token, index])
                   for token, index in enumerate(indices)],
         "score": (None if label is None
-                  else float(character_accuracy(abkai, label))),
+                  else float(character_accuracy(manchu_to_roman(guess),
+                                                label))),
     }
 
 def data_url(path):
@@ -113,7 +116,8 @@ def read_upload():
     Returns (image bytes, label) from a POST /upload/single request: either
     multipart/form-data with the file in an "image" field, or a JSON body
     {"image": a base64 data: URL or bare base64}. Either may also have a
-    "label", the word in Abkai. label is None if it's left out or blank.
+    "label", the word in Abkai (any of ' ’ ‘ ʻ for its marks). label is
+    None if it's left out or blank.
     '''
     if "image" in request.files:
         data = request.files["image"].read()
@@ -233,12 +237,15 @@ def create_app(config_path=CONFIG_PATH):
         folder, entries = sources[source]
         photo = random.choice(entries)
         path = os.path.join(folder, photo["path"])
+        # The manifest's label is in the dataset's romanization, for scoring;
+        # people are shown Abkai
         with Image.open(path) as original:
             results = read_all(original, photo["label"])
         # The photo as models with the default preprocessing see it
         preprocessed = load_photo(path)
         return jsonify({"source": source, "font": photo.get("font"),
-                        "label": photo["label"], "manchu": photo["manchu"],
+                        "label": manchu_to_abkai(photo["manchu"]),
+                        "manchu": photo["manchu"],
                         "image": data_url(path),
                         "preprocessed-image": image_data_url(preprocessed),
                         "results": results})
@@ -247,19 +254,22 @@ def create_app(config_path=CONFIG_PATH):
     def upload_single():
         # Like /random, but for an uploaded image (see read_upload)
         data, label = read_upload()
+        roman = manchu = None
         if label is not None:
             try:
-                manchu = spell_in_manchu(label)
+                # Through the dataset's romanization, to use the lexicon's
+                # spelling where it has the word
+                roman = manchu_to_roman(abkai_to_manchu(label))
             except ValueError:
                 raise RequestError(f"{label!r} isn't a word in Abkai.")
-        else:
-            manchu = None
+            manchu = spell_in_manchu(roman)
+            label = manchu_to_abkai(manchu)
         original = open_upload(data)
         return jsonify({"source": "upload", "font": None,
                         "label": label, "manchu": manchu,
                         "image": image_data_url(original),
                         "preprocessed-image": image_data_url(
                             prepare(original)),
-                        "results": read_all(original, label)})
+                        "results": read_all(original, roman)})
 
     return app

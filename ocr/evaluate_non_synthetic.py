@@ -17,7 +17,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from ocr.modelD import ModelD
-from ocr.photos import (DATA_DIRECTORY, load_photo, manchu_to_abkai,
+from ocr.photos import (DATA_DIRECTORY, load_photo, manchu_to_roman,
                         sample_images)
 from ocr.train import (CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM,
                        edit_distance, image_to_array, predict, read_words,
@@ -66,13 +66,13 @@ def read_batch(job):
     rows = []
     for (path, label), image, guess in zip(batch, images,
                                            read_words(model, y, entries)):
-        abkai = manchu_to_abkai(guess)
-        distance = edit_distance(abkai, label)
+        roman = manchu_to_roman(guess)
+        distance = edit_distance(roman, label)
         rows.append({"path": os.path.relpath(path, DATA_DIRECTORY),
-                     "label": label, "guess": guess, "guess_abkai": abkai,
+                     "label": label, "guess": guess, "guess_roman": roman,
                      "height": image.height, "edit_distance": distance,
                      "char_accuracy": max(0, 1 - distance / len(label)),
-                     "exact": int(abkai == label)})
+                     "exact": int(roman == label)})
     return rows
 
 def evaluate(pool, sample, crop, whiten, deadline):
@@ -113,7 +113,8 @@ def save_examples(rows, count, out, seed):
     '''
     Saves count random rows as images: the photo as it was before
     preprocessing on the left, the model's guess rendered as a lexigraph on
-    the right, with the Abkai under each.
+    the right, with each romanized under it as the dataset does (see
+    ocr.photos.MANCHU_TO_ROMAN).
     '''
     column = 220
     title_font, word_font = caption_font(14), caption_font(18)
@@ -124,8 +125,8 @@ def save_examples(rows, count, out, seed):
         sheet = Image.new("RGB", (2 * column, EXAMPLE_HEIGHT + 110), "white")
         draw = ImageDraw.Draw(sheet)
         sides = [(photo, "Photo (label)", row["label"]),
-                 (guess, "Model's guess", row["guess_abkai"] or "(empty)")]
-        for side, (image, title, abkai) in enumerate(sides):
+                 (guess, "Model's guess", row["guess_roman"] or "(empty)")]
+        for side, (image, title, roman) in enumerate(sides):
             middle = side * column + column // 2
             if image is not None:
                 width = max(1, round(image.width * EXAMPLE_HEIGHT
@@ -135,7 +136,7 @@ def save_examples(rows, count, out, seed):
                 sheet.paste(image, (middle - width // 2, 16))
             draw.text((middle, EXAMPLE_HEIGHT + 32), title, font=title_font,
                       fill="#555555", anchor="mm")
-            draw.text((middle, EXAMPLE_HEIGHT + 62), abkai, font=word_font,
+            draw.text((middle, EXAMPLE_HEIGHT + 62), roman, font=word_font,
                       fill="black", anchor="mm")
         if row["exact"]:
             verdict, colour = "exact match", "#2a78d6"
@@ -146,7 +147,7 @@ def save_examples(rows, count, out, seed):
         path = os.path.join(out, f"non_synthetic_example_{number}.png")
         sheet.save(path)
         print(f"Wrote {path}: {row['label']} -> "
-              f"{row['guess_abkai'] or '(empty)'}")
+              f"{row['guess_roman'] or '(empty)'}")
 
 def main():
     parser = argparse.ArgumentParser(

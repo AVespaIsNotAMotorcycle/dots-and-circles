@@ -327,7 +327,7 @@ class EpochBatches:
 
 def load_photo_set():
     '''
-    The fixed photo set as entries (image array, Abkai label, length), or
+    The fixed photo set as entries (image array, label, length), or
     None if the photos aren't here.
     '''
     if not photos.available():
@@ -342,7 +342,8 @@ def load_photo_set():
 def score_photos(model, photo_set):
     '''
     Reads the photo set, returning (mean char accuracy, share of words read
-    exactly), both comparing the guess's Abkai with the label.
+    exactly), both comparing the guess, romanized as the dataset does
+    (see photos.MANCHU_TO_ROMAN), with the label.
     '''
     model.set_training(False)
     accuracies = []
@@ -352,9 +353,9 @@ def score_photos(model, photo_set):
         _, y = predict(model, entries)
         for guess, (_, label, _) in zip(read_words(model, y, entries),
                                         entries):
-            abkai = photos.manchu_to_abkai(guess)
-            accuracies.append(character_accuracy(abkai, label))
-            exact += abkai == label
+            roman = photos.manchu_to_roman(guess)
+            accuracies.append(character_accuracy(roman, label))
+            exact += roman == label
     return np.mean(accuracies), exact / len(photo_set)
 
 def predict(model, entries):
@@ -724,7 +725,7 @@ def train_model(name, run, batches, photo_set, epochs,
             if photo_set:
                 accuracy, exact = score_photos(run["model"], photo_set)
                 with log_lock:
-                    # Photos have Abkai labels, so there's no CTC loss
+                    # Photos have romanized labels, so there's no CTC loss
                     for set_name, value in (("photo", accuracy),
                                             ("photo_exact", exact)):
                         log.writerow([name, (epoch + 1) * batch_count,

@@ -38,19 +38,27 @@ repository root. Locally, from the repository root:
   `source` is where the image came from (`photo`, `synthetic` or, from
   `/upload/single`, `upload`), and `font` the font a synthetic word was
   rendered in (`null` otherwise). `label` is the word in Abkai, `manchu`
-  the same in Manchu script, and `image` the photo before preprocessing. `preprocessed-image` is the photo
-  as a model with the default preprocessing reads it: a greyscale PNG,
-  whitened, cropped to the ink and scaled to the models' input width. `ctc` has the most likely class at
-  each of the photo's tokens (`null` for the blank), and `probs` that class's
-  probability. `score` is the character accuracy of `prediction-abkai`
-  against `label`: `max(0, 1 - edit distance / len(label))`, as in the run
-  reports.
+  the same in Manchu script, and `image` the photo before preprocessing.
+  `preprocessed-image` is the photo as a model with the default
+  preprocessing reads it: a greyscale PNG, whitened, cropped to the ink and
+  scaled to the models' input width. `ctc` has the most likely class at
+  each of the photo's tokens (`null` for the blank), and `probs` that
+  class's probability.
+
+  `label` and `prediction-abkai` are Abkai as in
+  [Wikipedia's chart](https://en.wikipedia.org/wiki/Transliterations_of_Manchu):
+  ᠴ is `q`, and loanword letters carry ‘ (U+2018) after k, g and h and ʻ
+  (U+02BB) elsewhere (`k‘`, `rʻ`, `syʻ`). `score`, though, is computed in
+  the photo dataset's own romanization (`ocr.photos.manchu_to_roman`), as
+  in the run reports: the character accuracy of the prediction against the
+  label, `max(0, 1 - edit distance / len(label))`.
 - `POST /upload/single`: reads an uploaded image of one word, written top to
   bottom, and returns the same JSON as `/random`. Send it either as
   `multipart/form-data` with the file in an `image` field, or as a JSON body
   `{"image": "data:image/png;base64,..."}` (bare base64 works too). Either
-  may also have a `label`, the word in Abkai. Without one, `label`,
-  `manchu` and every `score` are `null`.
+  may also have a `label`, the word in Abkai. Any of `'`, `’`, `‘` or `ʻ`
+  works for the marks, and the response gives it back in the standard
+  form. Without one, `label`, `manchu` and every `score` are `null`.
 
   The image is turned upright by its EXIF orientation, given a white
   background if it's transparent, and shrunk to at most 2000 pixels on its
@@ -79,8 +87,8 @@ repository root. Locally, from the repository root:
 
 `photos/` holds one photo each of 300 random words from the photographed
 print dataset (`ocr/non_synthetic_data`, which isn't in the repository).
-`select_photos.py` rebuilds it; each photo is saved under its Abkai label,
-and its original path in the dataset is kept in `manifest.json` as `source`.
+`select_photos.py` rebuilds it; each photo is saved under its label (the
+dataset's romanization, which `score` uses), and its original path in the dataset is kept in `manifest.json` as `source`.
 The photos are unmodified.
 
 The photos are from a

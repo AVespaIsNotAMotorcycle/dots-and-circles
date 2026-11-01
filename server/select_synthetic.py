@@ -18,7 +18,7 @@ import shutil
 
 import numpy as np
 
-from ocr.photos import manchu_to_abkai
+from ocr.photos import manchu_to_roman
 from ocr.preprocess import prepare
 from ocr.train import WORD_COUNT, generate_seeds
 from ocr.training_data import fonts, lexicon, render
@@ -83,7 +83,7 @@ def main():
         image.save(os.path.join(SYNTHETIC_DIRECTORY, path))
         font = os.path.splitext(os.path.basename(
             fonts[seed // WORD_COUNT]))[0]
-        manifest.append({"label": manchu_to_abkai(word), "manchu": word,
+        manifest.append({"label": manchu_to_roman(word), "manchu": word,
                          "font": font, "seed": seed, "path": path})
     with open(os.path.join(SYNTHETIC_DIRECTORY, "manifest.json"), "w",
               encoding="utf-8") as file:

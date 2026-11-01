@@ -3,9 +3,10 @@ import random
 import numpy as np
 from PIL import Image
 
-from ocr.photos import manchu_to_abkai
+from ocr.photos import (abkai_to_manchu, manchu_to_abkai, manchu_to_roman,
+                        roman_to_manchu)
 from ocr.preprocess import crop_to_ink, prepare, stretch
-from ocr.training_data import HEIGHT, WIDTH, generate, pad_top
+from ocr.training_data import HEIGHT, WIDTH, generate, lexicon, pad_top
 from ocr.training_data.augment import tokens_needed
 
 
@@ -81,14 +82,56 @@ class TestPreprocess:
         assert image.height == 4 * WIDTH
 
 
+class TestManchuToRoman:
+    def test_letters(self):
+        assert manchu_to_roman("ᠠᠪᡴᠠ") == "abka"
+        assert manchu_to_roman("ᡧᡠᠸᡝ") == "xuwe"
+        assert manchu_to_roman("ᠠᠴᠠᠮᠪᡳ") == "acambi"
+
+    def test_variation_selectors_are_dropped(self):
+        assert manchu_to_roman("ᡩ᠋ᡝ") == "de"
+
+    def test_loanword_letters(self):
+        assert manchu_to_roman("ᡮᠠᡳ") == "ts'ai"
+        assert manchu_to_roman("ᡯᡳ") == "dzi"
+
+    def test_round_trip(self):
+        assert roman_to_manchu("inenggi") == "ᡳᠨᡝᠩᡤᡳ"
+        assert roman_to_manchu("ts'ai") == "ᡮᠠᡳ"
+
+
 class TestManchuToAbkai:
     def test_letters(self):
         assert manchu_to_abkai("ᠠᠪᡴᠠ") == "abka"
         assert manchu_to_abkai("ᡧᡠᠸᡝ") == "xuwe"
+        assert manchu_to_abkai("ᠠᠴᠠᠮᠪᡳ") == "aqambi"
+        assert manchu_to_abkai("ᡤᡡᠨᡳᠮᠪᡳ") == "gvnimbi"
 
     def test_variation_selectors_are_dropped(self):
         assert manchu_to_abkai("ᡩ᠋ᡝ") == "de"
 
     def test_loanword_letters(self):
-        assert manchu_to_abkai("ᡮᠠᡳ") == "ts'ai"
-        assert manchu_to_abkai("ᡯᡳ") == "dzi"
+        assert manchu_to_abkai("ᡮᠠᡳ") == "cai"
+        assert manchu_to_abkai("ᠺᠠᠮᡩᡠᡵᡳ") == "k\u2018amduri"
+        assert manchu_to_abkai("ᠪᠠᡳᡰᡳᠨ") == "bair\u02bbin"
+
+    def test_apical_vowel(self):
+        assert manchu_to_abkai("ᠰᡟ") == "sy\u02bb"
+        assert manchu_to_abkai("ᡮᡟ") == "cy\u02bb"
+        assert manchu_to_abkai("ᡱᡳ") == "qy\u02bb"
+        assert manchu_to_abkai("ᡷᡳ") == "jy\u02bb"
+        assert manchu_to_abkai("ᡯᡳ\u180c") == "zy\u02bb"
+        # Without FVS2, ᡯᡳ is an ordinary zi
+        assert manchu_to_abkai("ᡯᡳ") == "zi"
+
+    def test_typed_marks(self):
+        for mark in "'\u2019\u2018\u02bb":
+            assert abkai_to_manchu(f"k{mark}amduri") == "ᠺᠠᠮᡩᡠᡵᡳ"
+            assert abkai_to_manchu(f"sy{mark}") == "ᠰᡟ"
+        assert abkai_to_manchu("qy'") == "ᡱᡳ"
+        assert abkai_to_manchu("aqambi") == "ᠠᠴᠠᠮᠪᡳ"
+
+    def test_round_trips_the_lexicon(self):
+        for word in lexicon:
+            abkai = manchu_to_abkai(word)
+            assert manchu_to_abkai(abkai_to_manchu(abkai)) == abkai

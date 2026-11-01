@@ -44,15 +44,20 @@ before and after a lexicon change aren't directly comparable.
 ## Photographed test data
 
 `ocr/non_synthetic_data/` holds photographed print words, one folder per
-word, named in Abkai. It's gitignored, so check it's there before relying on
-it. `train.py` scores a fixed 500-photo set (seed 1) after each epoch.
+word. It's gitignored, so check it's there before relying on it. `train.py`
+scores a fixed 500-photo set (seed 1) after each epoch. If a checkpoint is
+ever chosen by that score, evaluate on photos outside that set.
+
+The folders are named in the dataset's romanization: Möllendorff in ASCII
+with x and v, which isn't Abkai (it writes ᠴ as c). `ocr.photos.manchu_to_roman`
+gives it, and all scoring and label matching uses it. `manchu_to_abkai` is
+real Abkai, only for showing words to people.
 
 Train and test are split by word (`ocr/split.py`): a word is in one set in
 every font. All photo words go to test, using the committed list
 `ocr/training_data/photo_words.json` (CC BY 4.0). Rebuild it with
 `python -m ocr.training_data.list_photo_words` when the photos change. Runs
-before this split aren't comparable with runs after it. If a
-checkpoint is ever chosen by that score, evaluate on photos outside that set.
+before this split aren't comparable with runs after it.
 
 ## Memory use
 

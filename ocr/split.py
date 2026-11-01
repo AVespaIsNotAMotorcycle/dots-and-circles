@@ -9,8 +9,9 @@ its words, so a test word is never seen in training, in any font.
   this grouping: the labels keep their marks.
 - Every word in the photographed test data (training_data/photo_words.json)
   goes to test, so the photo score is always on words the models haven't
-  trained on. Photos are named in Abkai, so a word goes to test if its Abkai
-  spelling matches.
+  trained on. Photos are named in the dataset's romanization (see
+  ocr.photos.MANCHU_TO_ROMAN), so a word goes to test if its romanization
+  matches.
 - Then more groups are added to test, in order of a hash of their text,
   until it holds test_proportion of the words. Validation is filled the
   same way, after test. The hash means the split is the same every run, and
@@ -22,13 +23,13 @@ import hashlib
 import json
 import os
 
-from ocr.photos import manchu_to_abkai
+from ocr.photos import manchu_to_roman
 
 directory = os.path.dirname(os.path.abspath(__file__))
 PHOTO_WORDS_PATH = os.path.join(directory, "training_data", "photo_words.json")
 
 # FVS1-4, the Mongolian vowel separator, ZWNJ and ZWJ
-INVISIBLE_MARKS = "᠋᠌᠍᠏᠎‌‍"
+INVISIBLE_MARKS = "\u180b\u180c\u180d\u180f\u180e\u200c\u200d"
 
 
 def group_key(word):
@@ -52,7 +53,7 @@ def split_words(words, test_proportion=0.15, valid_proportion=0.0,
                 photo_words=None):
     '''
     Returns (train, valid, test), lists of indices into words. photo_words
-    is a set of Abkai spellings that must go to test (by default, the ones
+    is a set of romanized words that must go to test (by default, the ones
     in photo_words.json).
     '''
     if photo_words is None:
@@ -65,7 +66,7 @@ def split_words(words, test_proportion=0.15, valid_proportion=0.0,
     test = []
     remaining = []
     for key, members in groups.items():
-        if any(manchu_to_abkai(words[index]) in photo_words
+        if any(manchu_to_roman(words[index]) in photo_words
                for index in members):
             test.extend(members)
         else:

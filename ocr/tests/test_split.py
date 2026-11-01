@@ -3,7 +3,7 @@ import os
 import pytest
 
 from ocr import photos
-from ocr.photos import manchu_to_abkai
+from ocr.photos import manchu_to_roman
 from ocr.split import group_key, load_photo_words, split_words
 from ocr.training_data import lexicon
 
@@ -28,7 +28,7 @@ class TestSplitWords:
         train, _, _ = lexicon_split
         photo_words = load_photo_words()
         assert not [lexicon[index] for index in train
-                    if manchu_to_abkai(lexicon[index]) in photo_words]
+                    if manchu_to_roman(lexicon[index]) in photo_words]
 
     def test_variants_share_a_set(self):
         words = ["ᠠᠮᠠ", "ᠠ᠋ᠮᠠ", "ᠠᠮ᠌ᠠ"] + [f"ᠠ{'ᠨ' * n}" for n in range(1, 40)]
