@@ -39,6 +39,19 @@ repository root. Locally, from the repository root:
   probability. `score` is the character accuracy of `prediction-abkai`
   against `label`: `max(0, 1 - edit distance / len(label))`, as in the run
   reports.
+- `POST /upload/single`: reads an uploaded image of one word, written top to
+  bottom, and returns the same JSON as `/random`. Send it either as
+  `multipart/form-data` with the file in an `image` field, or as a JSON body
+  `{"image": "data:image/png;base64,..."}` (bare base64 works too). Either
+  may also have a `label`, the word in Abkai. Without one, `label`,
+  `manchu` and every `score` are `null`.
+
+  The image is turned upright by its EXIF orientation, given a white
+  background if it's transparent, and shrunk to at most 2000 pixels on its
+  longest side. `image` in the response is the upload after those steps, as
+  a PNG. Images over 10 MB or 50 million pixels get a 413, and a missing or
+  unreadable image or a label that isn't Abkai gets a 400. Both come back
+  as `{"error": "..."}`.
 
 ## config.json
 

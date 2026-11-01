@@ -39,6 +39,52 @@ def manchu_to_abkai(word):
     '''
     return "".join(MANCHU_TO_ABKAI[letter] for letter in word)
 
+# Manchu for each Abkai spelling, for words not in the lexicon. Where several
+# letters share a spelling (ᡳ and ᠢ, say), the Manchu one comes first in
+# MANCHU_TO_ABKAI, so it's the one kept.
+ABKAI_TO_MANCHU = {}
+for letter, abkai in MANCHU_TO_ABKAI.items():
+    if abkai:
+        ABKAI_TO_MANCHU.setdefault(abkai, letter)
+LONGEST_SPELLING = max(len(abkai) for abkai in ABKAI_TO_MANCHU)
+
+def abkai_to_manchu(word):
+    '''
+    Transliterates a word in Abkai to Manchu script, e.g. abka -> ᠠᠪᡴᠠ,
+    reading the longest spelling it can at each step (so ng is ᠩ, not ᠨᡤ).
+    '''
+    manchu = ""
+    position = 0
+    while position < len(word):
+        for length in range(LONGEST_SPELLING, 0, -1):
+            letter = ABKAI_TO_MANCHU.get(word[position:position + length])
+            if letter:
+                manchu += letter
+                position += length
+                break
+        else:
+            raise ValueError(f"No Manchu for {word[position:]!r} in {word!r}")
+    return manchu
+
+_spellings = None
+
+def spell_in_manchu(label):
+    '''
+    A photo's Abkai label in Manchu script: the lexicon's spelling where it
+    has the word, since it knows which letters each word really uses, or
+    else abkai_to_manchu's. Suffixes (᠊ᠨ and so on) aren't matched, since a
+    photo is of a whole word.
+    '''
+    global _spellings
+    if _spellings is None:
+        # Imported here: the lexicon is only needed once a label is spelled
+        from ocr.training_data import lexicon
+        _spellings = {}
+        for word in lexicon:
+            if not word.startswith("᠊"):
+                _spellings.setdefault(manchu_to_abkai(word), word)
+    return _spellings.get(label) or abkai_to_manchu(label)
+
 def available():
     # The photos aren't in the repository, so they may not be here
     return os.path.isdir(DATA_DIRECTORY)

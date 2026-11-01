@@ -11,6 +11,7 @@ import os
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 import base64
+import binascii
 import importlib
 import io
 import json
@@ -18,9 +19,11 @@ import mimetypes
 import random
 
 import numpy as np
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
+from PIL import Image, ImageOps, UnidentifiedImageError
 
-from ocr.photos import load_photo, manchu_to_abkai
+from ocr.photos import load_photo, manchu_to_abkai, spell_in_manchu
+from ocr.preprocess import prepare
 from ocr.train import (CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM, alphabet,
                        character_accuracy, ctc_decode, image_to_array,
                        predict, token_count)
@@ -28,6 +31,24 @@ from utils.softmax import softmax
 
 directory = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(directory, "config.json")
+# The largest image POST /upload/single takes, in bytes. A request may be a
+# third bigger than this, for a base64 image in a JSON body.
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+# Uploads longer than this on either side are shrunk to it before
+# preprocessing, to save the dyno's memory. Words are read at WIDTH (32)
+# pixels wide, so this costs nothing the models see.
+MAX_UPLOAD_SIDE = 2000
+# Uploads with more pixels than this are refused before they're decoded
+MAX_UPLOAD_PIXELS = 50_000_000
+
+class UploadError(Exception):
+    '''
+    A bad upload, with the message and HTTP status to send back.
+    '''
+    def __init__(self, message, status=400):
+        super().__init__(message)
+        self.message = message
+        self.status = status
 
 def load_model(entry, root):
     '''
@@ -51,7 +72,7 @@ def read_word(entry, model, image, label):
     '''
     Runs model on a prepared photo, returning the response's object for it.
     ctc and probs have one element per real token: the most likely class
-    (None for the blank) and its probability.
+    (None for the blank) and its probability. With no label, score is None.
     '''
     entries = [(image_to_array(image), None, token_count(image))]
     _, y = predict(model, entries)
@@ -69,7 +90,8 @@ def read_word(entry, model, image, label):
                 for index in indices],
         "probs": [float(probabilities[token, index])
                   for token, index in enumerate(indices)],
-        "score": float(character_accuracy(abkai, label)),
+        "score": (None if label is None
+                  else float(character_accuracy(abkai, label))),
     }
 
 def data_url(path):
@@ -86,6 +108,67 @@ def image_data_url(image):
     encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
     return f"data:image/png;base64,{encoded}"
 
+def read_upload():
+    '''
+    Returns (image bytes, label) from a POST /upload/single request: either
+    multipart/form-data with the file in an "image" field, or a JSON body
+    {"image": a base64 data: URL or bare base64}. Either may also have a
+    "label", the word in Abkai. label is None if it's left out or blank.
+    '''
+    if "image" in request.files:
+        data = request.files["image"].read()
+        label = request.form.get("label")
+    else:
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict) or not isinstance(body.get("image"),
+                                                        str):
+            raise UploadError("Send an image, either as a file in an "
+                              "\"image\" form field or as base64 in a JSON "
+                              "body's \"image\".")
+        encoded = body["image"]
+        if encoded.startswith("data:"):
+            encoded = encoded.partition(",")[2]
+        try:
+            data = base64.b64decode(encoded, validate=True)
+        except (binascii.Error, ValueError):
+            raise UploadError("\"image\" isn't valid base64.")
+        label = body.get("label")
+        if label is not None and not isinstance(label, str):
+            raise UploadError("\"label\" must be a string.")
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise UploadError(f"The image is over {MAX_UPLOAD_BYTES // 2**20} "
+                          "MB.", 413)
+    label = label.strip() if label else None
+    return data, label or None
+
+def open_upload(data):
+    '''
+    Opens uploaded image bytes as an RGB PIL image: turned upright by its
+    EXIF orientation (as phones save photos), transparency made white, and
+    shrunk to fit MAX_UPLOAD_SIDE.
+    '''
+    try:
+        image = Image.open(io.BytesIO(data))
+        if image.width * image.height > MAX_UPLOAD_PIXELS:
+            raise UploadError(f"The image is over {MAX_UPLOAD_PIXELS:,} "
+                              "pixels.", 413)
+        # JPEGs can decode at a smaller scale straight away
+        image.draft("RGB", (MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE))
+        image = ImageOps.exif_transpose(image)
+        if image.mode in ("RGBA", "LA", "PA") or (
+                image.mode == "P" and "transparency" in image.info):
+            image = image.convert("RGBA")
+            background = Image.new("RGBA", image.size, (255, 255, 255, 255))
+            image = Image.alpha_composite(background, image)
+        image = image.convert("RGB")
+    except UploadError:
+        raise
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError,
+            ValueError):
+        raise UploadError("The upload isn't an image that can be read.")
+    image.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
+    return image
+
 def create_app(config_path=CONFIG_PATH):
     with open(config_path, "r", encoding="utf-8") as file:
         config = json.load(file)
@@ -97,6 +180,8 @@ def create_app(config_path=CONFIG_PATH):
         photos = json.load(file)
 
     app = Flask(__name__)
+    # Room for a MAX_UPLOAD_BYTES image as base64, plus the rest of the body
+    app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES * 4 // 3 + 2**16
     # Send Manchu as itself rather than as \u escapes
     app.json.ensure_ascii = False
 
@@ -104,7 +189,28 @@ def create_app(config_path=CONFIG_PATH):
     def allow_origin(response):
         response.headers["Access-Control-Allow-Origin"] = \
             config["allowed_origin"]
+        # A JSON upload from another origin is preflighted, and the browser
+        # only sends it if Content-Type is allowed
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
         return response
+
+    @app.errorhandler(UploadError)
+    def upload_error(error):
+        return jsonify({"error": error.message}), error.status
+
+    @app.errorhandler(413)
+    def too_large(error):
+        return jsonify({"error": "The request is too large."}), 413
+
+    def read_all(original, label):
+        # Every model's reading of a PIL image, each with its preprocessing
+        results = []
+        for entry, model in models:
+            preprocess = entry.get("preprocess", {})
+            image = prepare(original, preprocess.get("crop", True),
+                            preprocess.get("whiten", True))
+            results.append(read_word(entry, model, image, label))
+        return results
 
     @app.get("/awake")
     def awake():
@@ -115,17 +221,31 @@ def create_app(config_path=CONFIG_PATH):
     def random_word():
         photo = random.choice(photos)
         path = os.path.join(photo_directory, photo["path"])
-        results = []
-        for entry, model in models:
-            preprocess = entry.get("preprocess", {})
-            image = load_photo(path, preprocess.get("crop", True),
-                               preprocess.get("whiten", True))
-            results.append(read_word(entry, model, image, photo["label"]))
+        with Image.open(path) as original:
+            results = read_all(original, photo["label"])
         # The photo as models with the default preprocessing see it
         preprocessed = load_photo(path)
         return jsonify({"label": photo["label"], "manchu": photo["manchu"],
                         "image": data_url(path),
                         "preprocessed-image": image_data_url(preprocessed),
                         "results": results})
+
+    @app.post("/upload/single")
+    def upload_single():
+        # Like /random, but for an uploaded image (see read_upload)
+        data, label = read_upload()
+        if label is not None:
+            try:
+                manchu = spell_in_manchu(label)
+            except ValueError:
+                raise UploadError(f"{label!r} isn't a word in Abkai.")
+        else:
+            manchu = None
+        original = open_upload(data)
+        return jsonify({"label": label, "manchu": manchu,
+                        "image": image_data_url(original),
+                        "preprocessed-image": image_data_url(
+                            prepare(original)),
+                        "results": read_all(original, label)})
 
     return app
