@@ -636,8 +636,8 @@ def run_models(run_directory, epochs, augment):
     # dicts hold factories (lambdas), since each run needs its own fresh
     # model and optimizer.
     models = {
-        # "A": lambda: ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-        #             num_classes=NUM_CLASSES, depth=4),
+        # "A-8": lambda: ModelA(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        #             num_classes=NUM_CLASSES, depth=8),
         # "B": lambda: ModelB(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=4,
         #             num_readouts=MAX_LABEL_LENGTH),
@@ -659,12 +659,15 @@ def run_models(run_directory, epochs, augment):
         #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=32),
         # "C-16/32": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=16, blank=END, emb_dim=32),
-        # "C-8/64": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-        #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64),
+        "C-8/64": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64),
         # "C-8/128": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=128),
         "D-8/64": lambda: ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
                     num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64,
+                    drop_rate=0.1),
+        "D-12/64": lambda: ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+                    num_classes=NUM_CLASSES, depth=12, blank=END, emb_dim=64,
                     drop_rate=0.1),
     }
     optimizers = {
@@ -838,4 +841,4 @@ def train_model(name, run, batches, photo_set, epochs,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=10, augment=True)
+    train(epochs=4, augment=True)
