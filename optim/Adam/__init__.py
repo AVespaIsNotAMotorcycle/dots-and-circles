@@ -15,9 +15,9 @@ class Adam(Optimizer):
 
     def delta(self, grads):
         self.t += 1
-        if self.m == None:
+        if self.m is None:
             self.m = self.scale(grads, 0)
-        if self.v == None:
+        if self.v is None:
             self.v = self.scale(grads, 0)
         
         self.m = self.add(self.scale(self.m, self.beta_one),
@@ -33,3 +33,13 @@ class Adam(Optimizer):
         delta = self.scale(self.divide(m, self.power(v, 0.5)),
                            self.learn_rate)
         return delta
+
+    def extract(self):
+        values = { 'm': self.m, 'v': self.v, 't': self.t }
+        return values
+
+    def inject(self, values):
+        self.m = values['m']
+        self.v = values['v']
+        self.t = values['t']
+

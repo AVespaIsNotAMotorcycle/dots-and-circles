@@ -62,3 +62,28 @@ class TestAdam:
             if last_loss is not None:
                 assert loss < last_loss
             last_loss = loss
+
+    def test_extract_inject(self):
+        # An Adam given another's state with inject should carry on exactly
+        # as the original would
+        rng = np.random.default_rng(0)
+
+        def grads():
+            # Nested like a model's gradients
+            return {"layers": {"0": {"w": rng.normal(size=(3, 4)),
+                                     "b": rng.normal(size=4)}}}
+
+        steps = [grads() for _ in range(6)]
+        original = Adam(0.003)
+        for step in steps[:5]:
+            original(step)
+
+        restored = Adam(0.003)
+        restored.inject(original.extract())
+        assert restored.t == original.t
+
+        expected = original(steps[5])
+        delta = restored(steps[5])
+        for key in ("w", "b"):
+            assert np.array_equal(delta["layers"]["0"][key],
+                                  expected["layers"]["0"][key])
