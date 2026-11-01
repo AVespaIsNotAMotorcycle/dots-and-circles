@@ -442,6 +442,66 @@ def weights_path(run_directory, name, epoch=None):
         file_name += f"_epoch{epoch:03}"
     return os.path.join(run_directory, f"weights_{file_name}.npz")
 
+def save_weights(model, path):
+    '''
+    Saves model's weights to path by way of a temporary file, so stopping
+    the run partway through a save (e.g. with Ctrl+C) can't leave a broken
+    file where the last good weights were.
+    '''
+    # np.savez adds ".npz" to a path that doesn't end in it
+    temporary = path[:-len(".npz")] + ".partial.npz"
+    model.save_weights(temporary)
+    os.replace(temporary, path)
+
+def progress_path(run_directory):
+    return os.path.join(run_directory, "progress.json")
+
+def read_progress(run_directory):
+    '''
+    {run name: epochs finished} for a run folder, from its progress.json,
+    or {} for a new run (or one from before progress was recorded).
+    '''
+    path = progress_path(run_directory)
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as file:
+        return json.load(file)
+
+def write_progress(run_directory, progress):
+    # Written whole and then swapped in, like the weights
+    path = progress_path(run_directory)
+    with open(path + ".partial", "w", encoding="utf-8") as file:
+        json.dump(progress, file, indent=2)
+    os.replace(path + ".partial", path)
+
+def trim_log(path, progress):
+    '''
+    Rewrites the log at path without rows from epochs that didn't finish
+    (by progress, {run name: epochs finished}), so a resumed run's log has
+    each epoch once. An epoch's photo rows are logged at its end, e.g. at
+    epoch 3 for the third, so they're kept up to and including the last
+    finished epoch.
+    '''
+    with open(path, newline="") as file:
+        reader = csv.DictReader(file)
+        columns = reader.fieldnames
+        rows = list(reader)
+    kept = []
+    for row in rows:
+        finished = progress.get(row["model"], 0)
+        epoch = float(row["epoch"])
+        if epoch < finished or (row["set"].startswith("photo")
+                                and epoch <= finished):
+            kept.append(row)
+    if len(kept) < len(rows):
+        print(f"Dropping {len(rows) - len(kept)} log rows from epochs that "
+              f"didn't finish.")
+    with open(path + ".partial", "w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=columns)
+        writer.writeheader()
+        writer.writerows(kept)
+    os.replace(path + ".partial", path)
+
 def read_log(run_directory):
     '''
     Reads a run's log.csv into {model: {set: rows}}, where rows is an array
@@ -530,14 +590,27 @@ def get_learn_rate(batch_count, initial_rate):
     # return initial_rate / ((0.001 * batch_count) + 1)
     return initial_rate
 
-def train(epochs = 3, augment = True):
+def train(epochs = 3, augment = True, resume = None):
     '''
     Trains every model in run_models for epochs. With augment=True the
     images are augmented to look like photographed prints, afresh each
     epoch; with augment=False they're the clean renders.
+
+    resume names an earlier run's folder, e.g. "run029", to carry on: each
+    model loads its latest weights and trains epochs more, counting on from
+    its last finished epoch (so augmentation, steps and snapshots carry on
+    too), and the log is added to. A model the run doesn't have yet starts
+    fresh. Optimizer state isn't saved, so Adam starts over, which shows as
+    a short loss spike.
     '''
-    run_directory = new_run_directory()
-    print(f"Saving this run to {run_directory}")
+    if resume:
+        run_directory = os.path.join(RUNS_DIRECTORY, resume)
+        if not os.path.isdir(run_directory):
+            raise FileNotFoundError(f"No run to resume at {run_directory}")
+        print(f"Resuming {run_directory}")
+    else:
+        run_directory = new_run_directory()
+        print(f"Saving this run to {run_directory}")
     run_models(run_directory, epochs, augment)
     # run_models has returned, so its batches and models are unreachable;
     # collect them now, before graphing
@@ -553,10 +626,9 @@ def run_models(run_directory, epochs, augment):
     makes is local, so it's all freed when it returns.
     '''
     train_seeds, test_seeds = generate_seeds()
-
-    print("Generating batches...")
-    batches = EpochBatches(train_seeds, test_seeds, epochs, augment)
     photo_set = load_photo_set()
+    # Epochs each model has finished, if this run is being resumed
+    progress = read_progress(run_directory)
 
     # Every model below is trained with every optimizer below, each pairing
     # as its own run, e.g. "D-8/64 Adam 1e-3". All runs train side by side,
@@ -605,28 +677,49 @@ def run_models(run_directory, epochs, augment):
     runs = {}
     for model_name, make_model in models.items():
         for optimizer_name, make_optimizer in optimizers.items():
+            name = f"{model_name} {optimizer_name}"
             model = make_model()
             optimizer = make_optimizer()
+            # A resumed model carries on from its latest weights
+            start = progress.get(name, 0)
+            if start:
+                model.load_weights(weights_path(run_directory, name))
+                print(f"Model {name}: resuming after epoch {start}.")
             if getattr(model, "uses_ctc", False):
                 loss_function = CTCLoss(model, blank=model.blank)
             else:
                 loss_function = CrossEntropyLoss(model)
-            runs[f"{model_name} {optimizer_name}"] = {
+            runs[name] = {
                 "model": model,
                 "loss_function": loss_function,
                 "optimizer": optimizer,
                 # get_learn_rate's schedule starts from each optimizer's
                 # own rate
                 "learn_rate": optimizer.learn_rate,
+                # Epochs count on from here, so a resumed run gets new
+                # augmentations and carries on its steps and snapshots
+                "start": start,
                 # Set by the run's thread if it crashes
                 "failed": False,
             }
 
+    # Models can stop an epoch apart, so the batches go up to the furthest
+    end = max(run["start"] for run in runs.values()) + epochs
+    print("Generating batches...")
+    batches = EpochBatches(train_seeds, test_seeds, end, augment)
+
     # One log for every model. Threads write rows to it in whatever order
     # they finish batches, so the lock stops two rows being written at once.
-    log_file = open(os.path.join(run_directory, "log.csv"), "w", newline="")
+    # A resumed run's log first loses the rows of any epoch that didn't
+    # finish, since that epoch is trained again.
+    log_path = os.path.join(run_directory, "log.csv")
+    resuming = os.path.exists(log_path)
+    if resuming:
+        trim_log(log_path, progress)
+    log_file = open(log_path, "a" if resuming else "w", newline="")
     log = csv.writer(log_file)
-    log.writerow(LOG_COLUMNS)
+    if not resuming:
+        log.writerow(LOG_COLUMNS)
     log_lock = threading.Lock()
 
     # Each model trains on its own thread, over the same batches in the same
@@ -639,7 +732,7 @@ def run_models(run_directory, epochs, augment):
         thread = threading.Thread(
             target=train_model, daemon=True,
             args=(name, run, batches, photo_set, epochs,
-                  run_directory, log, log_file, log_lock))
+                  run_directory, log, log_file, log_lock, progress))
         thread.start()
         threads.append(thread)
     for thread in threads:
@@ -654,7 +747,7 @@ def run_models(run_directory, epochs, augment):
     finished = {name: run["model"] for name, run in runs.items()
                 if not run["failed"]}
     if finished:
-        show_predictions(finished, batches.get(epochs - 1)[1])
+        show_predictions(finished, batches.get(end - 1)[1])
     batches.close()
 
 def epoch_schedule(train_set, test_set):
@@ -679,18 +772,19 @@ def epoch_schedule(train_set, test_set):
         yield batch_number, testing, batch
 
 def train_model(name, run, batches, photo_set, epochs,
-                run_directory, log, log_file, log_lock):
+                run_directory, log, log_file, log_lock, progress):
     '''
-    Runs on its own thread: trains one model for every epoch, logging each
-    batch, then saving the weights and scoring the photo set (if there is
-    one) after each epoch. An error stops only this model; it's printed,
-    and the other models carry on.
+    Runs on its own thread: trains one model for epochs, starting after
+    run["start"], logging each batch, then saving the weights, recording
+    the finished epoch in progress (and progress.json) and scoring the
+    photo set (if there is one) after each epoch. An error stops only this
+    model; it's printed, and the other models carry on.
     '''
     batch_count = batches.batch_count()
     # The latest [accuracy, loss] from each set, for printing
     last = {"train": None, "test": None}
     try:
-        for epoch in range(epochs):
+        for epoch in range(run["start"], run["start"] + epochs):
             train_set, test_set = batches.get(epoch)
             for batch_number, testing, batch in epoch_schedule(train_set,
                                                                test_set):
@@ -716,11 +810,16 @@ def train_model(name, run, batches, photo_set, epochs,
                               *last["test"])
 
             # Overwrites the last epoch's weights
-            run["model"].save_weights(weights_path(run_directory, name))
+            save_weights(run["model"], weights_path(run_directory, name))
             # and keeps some, so earlier epochs can be compared or evaluated
             if (epoch + 1) % SNAPSHOT_EVERY == 0:
-                run["model"].save_weights(
-                    weights_path(run_directory, name, epoch + 1))
+                save_weights(run["model"],
+                             weights_path(run_directory, name, epoch + 1))
+            # Only now that the weights are saved does the epoch count as
+            # finished, for resuming
+            with log_lock:
+                progress[name] = epoch + 1
+                write_progress(run_directory, progress)
 
             if photo_set:
                 accuracy, exact = score_photos(run["model"], photo_set)
