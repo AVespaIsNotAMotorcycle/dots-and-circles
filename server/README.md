@@ -10,11 +10,15 @@ repository root. Locally, from the repository root:
 ## Endpoints
 
 - `GET /awake`: an empty 200, so the frontend knows the dyno is up.
-- `GET /random`: reads a random photo from `photos/` with every model in
-  `config.json`:
+- `GET /random`: reads a random image with every model in `config.json`.
+  `?source=photo` (the default) picks a photographed word from `photos/`,
+  and `?source=synthetic` a rendered one from `synthetic/`. Any other source
+  gets a 400.
 
   ```json
   {
+    "source": "photo",
+    "font": null,
     "label": "abka",
     "manchu": "ᠠᠪᡴᠠ",
     "image": "data:image/png;base64,...",
@@ -31,8 +35,10 @@ repository root. Locally, from the repository root:
   }
   ```
 
-  `label` is the word in Abkai, `manchu` the same in Manchu script, and
-  `image` the photo before preprocessing. `preprocessed-image` is the photo
+  `source` is where the image came from (`photo`, `synthetic` or, from
+  `/upload/single`, `upload`), and `font` the font a synthetic word was
+  rendered in (`null` otherwise). `label` is the word in Abkai, `manchu`
+  the same in Manchu script, and `image` the photo before preprocessing. `preprocessed-image` is the photo
   as a model with the default preprocessing reads it: a greyscale PNG,
   whitened, cropped to the ink and scaled to the models' input width. `ctc` has the most likely class at
   each of the photo's tokens (`null` for the blank), and `probs` that class's
@@ -57,6 +63,8 @@ repository root. Locally, from the repository root:
 
 - `allowed_origin`: sent as `Access-Control-Allow-Origin`.
 - `photos`: the folder of photos, with their `manifest.json`.
+- `synthetic`: the folder of synthetic words, with their `manifest.json`.
+  Optional: without it, `?source=synthetic` gets a 400.
 - `models`: one entry per model, in the order they're returned:
   - `name`, `model`: the short and long names sent to the frontend.
   - `class`: a CTC model class in `ocr/`, e.g. `ModelD`.
@@ -82,3 +90,14 @@ licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/):
 Haipeng SUN, Wenhao TAO, Xiaojun BI. A dataset of Manchu ancient book words
 for OCR[J]. China Scientific Data, 2026, 11(1): 1-11. DOI:
 10.11922/11-6035.csd.2025.0069.zh.
+
+## Synthetic words
+
+`synthetic/` holds 300 random words from the test split (see
+`ocr/split.py`), so models trained on that split have never seen them. Each
+one is in a random font and made to look like a photographed print, as in
+training. They're saved before preprocessing, so the server prepares them
+exactly as it does the photos. The fonts aren't in the repository or on the
+server, so `select_synthetic.py` renders the set locally, and the PNGs are
+committed. Each word's font and its training seed are in
+`manifest.json`. Run it again after the lexicon, fonts or split change.

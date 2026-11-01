@@ -28,9 +28,18 @@ def client(tmp_path):
     image.save(tmp_path / "photos" / "abka" / "1.png")
     (tmp_path / "photos" / "manifest.json").write_text(json.dumps(
         [{"label": "abka", "manchu": "ᠠᠪᡴᠠ", "path": "abka/1.png"}]))
+    # And one synthetic word, a lighter bar on grey paper
+    (tmp_path / "synthetic").mkdir()
+    image = Image.new("L", (64, 200), 200)
+    image.paste(60, (24, 10, 40, 190))
+    image.save(tmp_path / "synthetic" / "000.png")
+    (tmp_path / "synthetic" / "manifest.json").write_text(json.dumps(
+        [{"label": "bira", "manchu": "ᠪᡳᡵᠠ", "font": "SomeFont", "seed": 7,
+          "path": "000.png"}]))
     (tmp_path / "config.json").write_text(json.dumps({
         "allowed_origin": "*",
         "photos": "photos",
+        "synthetic": "synthetic",
         "models": [{"name": "Test", "model": "Untrained ModelD",
                     "class": "ModelD", "weights": "model.npz",
                     "params": params}],
@@ -47,6 +56,8 @@ def test_random(client):
     assert response.status_code == 200
     assert response.headers["Access-Control-Allow-Origin"] == "*"
     body = response.get_json()
+    assert body["source"] == "photo"
+    assert body["font"] is None
     assert body["label"] == "abka"
     assert body["manchu"] == "ᠠᠪᡴᠠ"
     assert body["image"].startswith("data:image/png;base64,")
@@ -89,6 +100,8 @@ def check_upload_body(body, label, manchu):
     [result] = body["results"]
     assert result["name"] == "Test"
     assert len(result["ctc"]) == len(result["probs"]) > 0
+    assert body["source"] == "upload"
+    assert body["font"] is None
     if label is None:
         assert result["score"] is None
     else:
@@ -200,3 +213,27 @@ def test_upload_preflight(client):
     assert response.status_code == 200
     assert response.headers["Access-Control-Allow-Origin"] == "*"
     assert "Content-Type" in response.headers["Access-Control-Allow-Headers"]
+
+
+def test_random_photo_is_the_default(client):
+    for query in ("", "?source=", "?source=photo"):
+        assert client.get(f"/random{query}").get_json()["source"] == "photo"
+
+
+def test_random_synthetic(client):
+    response = client.get("/random?source=synthetic")
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["source"] == "synthetic"
+    assert body["font"] == "SomeFont"
+    assert body["label"] == "bira"
+    assert body["manchu"] == "ᠪᡳᡵᠠ"
+    assert body["image"].startswith("data:image/png;base64,")
+    [result] = body["results"]
+    assert 0 <= result["score"] <= 1
+
+
+def test_random_unknown_source(client):
+    response = client.get("/random?source=drawing")
+    assert response.status_code == 400
+    assert response.get_json()["error"]

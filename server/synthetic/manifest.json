@@ -1,0 +1,2102 @@
+[
+ {
+  "label": "xajingga",
+  "manchu": "ᡧᠠᠵᡳᠩᡤᠠ",
+  "font": "Abkai_Xanyan",
+  "seed": 15250,
+  "path": "000.png"
+ },
+ {
+  "label": "fak seme banjimbi",
+  "manchu": "ᡶᠠᡴ ᠰᡝᠮᡝ ᠪᠠᠨᠵᡳᠮᠪᡳ",
+  "font": "XM_XingShu",
+  "seed": 171156,
+  "path": "001.png"
+ },
+ {
+  "label": "yahanambi",
+  "manchu": "ᠶᠠᡥᠠᠨᠠᠮᠪᡳ",
+  "font": "XM_YaBai",
+  "seed": 181716,
+  "path": "002.png"
+ },
+ {
+  "label": "doigonde",
+  "manchu": "ᡩᠣᡳᡤᠣᠨᡩᡝ",
+  "font": "XM_WenQin",
+  "seed": 146979,
+  "path": "003.png"
+ },
+ {
+  "label": "suwaliyame",
+  "manchu": "ᠰᡠᠸᠠᠯᡳᠶᠠᠮᡝ",
+  "font": "XM_LiuYe",
+  "seed": 71329,
+  "path": "004.png"
+ },
+ {
+  "label": "ulebumbi",
+  "manchu": "ᡠᠯᡝᠪᡠᠮᠪᡳ",
+  "font": "XM_XingShu",
+  "seed": 161872,
+  "path": "005.png"
+ },
+ {
+  "label": "takvran be aliha hafan",
+  "manchu": "ᡨᠠᡴᡡᡵᠠᠨ ᠪᡝ ᠠᠯᡳᡥᠠ ᡥᠠᡶᠠᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 231498,
+  "path": "006.png"
+ },
+ {
+  "label": "guheren ilha",
+  "manchu": "ᡤᡠᡥᡝᡵᡝᠨ ᡳᠯᡥᠠ",
+  "font": "XM_ZhengHei",
+  "seed": 249456,
+  "path": "007.png"
+ },
+ {
+  "label": "gvninjambi",
+  "manchu": "ᡤᡡᠨᡳᠨᠵᠠᠮᠪᡳ",
+  "font": "XM_ZhengBai",
+  "seed": 228054,
+  "path": "008.png"
+ },
+ {
+  "label": "asu wexen",
+  "manchu": "ᠠᠰᡠ ᠸᡝᡧᡝᠨ",
+  "font": "XM_XingShu",
+  "seed": 151368,
+  "path": "009.png"
+ },
+ {
+  "label": "mucihiyan",
+  "manchu": "ᠮᡠᠴᡳᡥᡳᠶᠠᠨ",
+  "font": "XM_WenQin",
+  "seed": 133874,
+  "path": "010.png"
+ },
+ {
+  "label": "labi",
+  "manchu": "ᠯᠠᠪᡳ",
+  "font": "Abkai_Xanyan",
+  "seed": 5150,
+  "path": "011.png"
+ },
+ {
+  "label": "emu hvfan",
+  "manchu": "ᡝᠮᡠ ᡥᡡᡶᠠᠨ",
+  "font": "XM_ShuKai",
+  "seed": 96450,
+  "path": "012.png"
+ },
+ {
+  "label": "seseme",
+  "manchu": "ᠰᡝᠰᡝᠮᡝ",
+  "font": "Abkai_Xanyan",
+  "seed": 6371,
+  "path": "013.png"
+ },
+ {
+  "label": "kiyoo cambi",
+  "manchu": "ᡴᡳᠶᠣᠣ ᠴᠠᠮᠪᡳ",
+  "font": "XM_ShuKai",
+  "seed": 106291,
+  "path": "014.png"
+ },
+ {
+  "label": "uli",
+  "manchu": "ᡠᠯᡳ",
+  "font": "XM_ZhengHei",
+  "seed": 248076,
+  "path": "015.png"
+ },
+ {
+  "label": "jabumbi",
+  "manchu": "ᠵᠠᠪᡠᠮᠪᡳ",
+  "font": "XM_ZhengHei",
+  "seed": 245001,
+  "path": "016.png"
+ },
+ {
+  "label": "yabubumbi",
+  "manchu": "ᠶᠠᠪᡠᠪᡠᠮᠪᡳ",
+  "font": "XM_ZhengHei",
+  "seed": 246170,
+  "path": "017.png"
+ },
+ {
+  "label": "niowanggiyan gurjen",
+  "manchu": "ᠨᡳᠣᠸᠠᠩᡤᡳᠶᠠᠨ ᡤᡠᡵᠵᡝᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 217462,
+  "path": "018.png"
+ },
+ {
+  "label": "suihe",
+  "manchu": "ᠰᡠᡳᡥᡝ",
+  "font": "XM_GuFeng",
+  "seed": 49919,
+  "path": "019.png"
+ },
+ {
+  "label": "hvwaliyasun",
+  "manchu": "ᡥᡡᠸᠠᠯᡳᠶᠠᠰᡠᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 229885,
+  "path": "020.png"
+ },
+ {
+  "label": "gise hehe i falan",
+  "manchu": "ᡤᡳᠰᡝ ᡥᡝᡥᡝ ᡳ ᡶᠠᠯᠠᠨ",
+  "font": "XM_XingShu",
+  "seed": 163741,
+  "path": "021.png"
+ },
+ {
+  "label": "aikte",
+  "manchu": "ᠠᡳᡴᡨᡝ",
+  "font": "XM_YaBai",
+  "seed": 173403,
+  "path": "022.png"
+ },
+ {
+  "label": "jurguntu cecike",
+  "manchu": "ᠵᡠᡵᡤᡠᠨᡨᡠ ᠴᡝᠴᡳᡴᡝ",
+  "font": "XM_YingBi",
+  "seed": 202856,
+  "path": "023.png"
+ },
+ {
+  "label": "juwari be bodoro hafan",
+  "manchu": "ᠵᡠᠸᠠᡵᡳ ᠪᡝ ᠪᠣᡩᠣᡵᠣ ᡥᠠᡶᠠᠨ",
+  "font": "Abkai_Xanyan",
+  "seed": 8882,
+  "path": "024.png"
+ },
+ {
+  "label": "jalin",
+  "manchu": "ᠵᠠᠯᡳᠨ",
+  "font": "XM_YingBi",
+  "seed": 202033,
+  "path": "025.png"
+ },
+ {
+  "label": "tang",
+  "manchu": "ᡨᠠᠩ",
+  "font": "XM_WenJian",
+  "seed": 123547,
+  "path": "026.png"
+ },
+ {
+  "label": "angga gakahvn",
+  "manchu": "ᠠᠩᡤᠠ ᡤᠠᡴᠠᡥᡡᠨ",
+  "font": "XM_YingBi",
+  "seed": 193954,
+  "path": "027.png"
+ },
+ {
+  "label": "aide",
+  "manchu": "ᠠᡳᡩᡝ",
+  "font": "XM_ZhengHei",
+  "seed": 237989,
+  "path": "028.png"
+ },
+ {
+  "label": "kalcun sain",
+  "manchu": "ᡴᠠᠯᠴᡠᠨ ᠰᠠᡳᠨ",
+  "font": "XM_LiuYe",
+  "seed": 83844,
+  "path": "029.png"
+ },
+ {
+  "label": "genggiyen",
+  "manchu": "ᡤᡝᠩᡤᡳᠶᡝᠨ",
+  "font": "XM_BiaoHei",
+  "seed": 33759,
+  "path": "030.png"
+ },
+ {
+  "label": "tukiyembi",
+  "manchu": "ᡨᡠᡴᡳᠶᡝᠮᠪᡳ",
+  "font": "XM_ZhengHei",
+  "seed": 253972,
+  "path": "031.png"
+ },
+ {
+  "label": "memeniye",
+  "manchu": "ᠮᡝᠮᡝᠨᡳᠶᡝ",
+  "font": "XM_ShuKai",
+  "seed": 90574,
+  "path": "032.png"
+ },
+ {
+  "label": "banin sain",
+  "manchu": "ᠪᠠᠨᡳᠨ ᠰᠠᡳᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 217978,
+  "path": "033.png"
+ },
+ {
+  "label": "siyan el",
+  "manchu": "ᠰᡳᠶᠠᠨ ᡝᠯ",
+  "font": "XM_ZhengBai",
+  "seed": 222538,
+  "path": "034.png"
+ },
+ {
+  "label": "ilhangga moo",
+  "manchu": "ᡳᠯᡥᠠᠩᡤᠠ ᠮᠣᠣ",
+  "font": "XM_LiuYe",
+  "seed": 83429,
+  "path": "035.png"
+ },
+ {
+  "label": "gajirtai",
+  "manchu": "ᡤᠠᠵᡳᡵᡨᠠᡳ",
+  "font": "XM_LiuYe",
+  "seed": 76492,
+  "path": "036.png"
+ },
+ {
+  "label": "ufaracun",
+  "manchu": "ᡠᡶᠠᡵᠠᠴᡠᠨ",
+  "font": "XM_XingShu",
+  "seed": 162476,
+  "path": "037.png"
+ },
+ {
+  "label": "untuhulebumbi",
+  "manchu": "ᡠᠨᡨᡠᡥᡠᠯᡝᠪᡠᠮᠪᡳ",
+  "font": "XM_YingBi",
+  "seed": 204755,
+  "path": "038.png"
+ },
+ {
+  "label": "cunceo",
+  "manchu": "ᠴᡠᠨᠴᡝᠣ",
+  "font": "Abkai_Xanyan",
+  "seed": 7813,
+  "path": "039.png"
+ },
+ {
+  "label": "wehe",
+  "manchu": "ᠸᡝᡥᡝ",
+  "font": "XM_LiuYe",
+  "seed": 74570,
+  "path": "040.png"
+ },
+ {
+  "label": "tacikv",
+  "manchu": "ᡨᠠᠴᡳᡴᡡ",
+  "font": "XM_LiuYe",
+  "seed": 80653,
+  "path": "041.png"
+ },
+ {
+  "label": "isinaha",
+  "manchu": "ᡳᠰᡳᠨᠠᡥᠠ",
+  "font": "XM_WenJian",
+  "seed": 126620,
+  "path": "042.png"
+ },
+ {
+  "label": "selgiyebukv",
+  "manchu": "ᠰᡝᠯᡤᡳᠶᡝᠪᡠᡴᡡ",
+  "font": "XM_GuFeng",
+  "seed": 49421,
+  "path": "043.png"
+ },
+ {
+  "label": "erdemungge",
+  "manchu": "ᡝᡵᡩᡝᠮᡠᠩᡤᡝ",
+  "font": "XM_GuFeng",
+  "seed": 53909,
+  "path": "044.png"
+ },
+ {
+  "label": "alban jafambi",
+  "manchu": "ᠠᠯᠪᠠᠨ ᠵᠠᡶᠠᠮᠪᡳ",
+  "font": "XM_ZhengHei",
+  "seed": 237341,
+  "path": "045.png"
+ },
+ {
+  "label": "biyabiyashvn",
+  "manchu": "ᠪᡳᠶᠠᠪᡳᠶᠠᠰᡥᡡᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 219135,
+  "path": "046.png"
+ },
+ {
+  "label": "bayabumbi",
+  "manchu": "ᠪᠠᠶᠠᠪᡠᠮᠪᡳ",
+  "font": "XM_WenJian",
+  "seed": 110399,
+  "path": "047.png"
+ },
+ {
+  "label": "kaitu",
+  "manchu": "ᡴᠠᡳᡨᡠ",
+  "font": "XM_ZhengHei",
+  "seed": 256207,
+  "path": "048.png"
+ },
+ {
+  "label": "manggaxacuka",
+  "manchu": "ᠮᠠᠩᡤᠠᡧᠠᠴᡠᡴᠠ",
+  "font": "XM_ShuKai",
+  "seed": 90146,
+  "path": "049.png"
+ },
+ {
+  "label": "iletungge",
+  "manchu": "ᡳᠯᡝᡨᡠᠩᡤᡝ",
+  "font": "XM_XingShu",
+  "seed": 169521,
+  "path": "050.png"
+ },
+ {
+  "label": "juwe ujan",
+  "manchu": "ᠵᡠᠸᡝ ᡠᠵᠠᠨ",
+  "font": "XM_YingBi",
+  "seed": 202682,
+  "path": "051.png"
+ },
+ {
+  "label": "fi",
+  "manchu": "ᡶᡳ",
+  "font": "XM_ZhengBai",
+  "seed": 236580,
+  "path": "052.png"
+ },
+ {
+  "label": "xusihaxambi",
+  "manchu": "ᡧᡠᠰᡳᡥᠠᡧᠠᠮᠪᡳ",
+  "font": "XM_YingBi",
+  "seed": 209481,
+  "path": "053.png"
+ },
+ {
+  "label": "maka",
+  "manchu": "ᠮᠠᡴᠠ",
+  "font": "XM_ShuKai",
+  "seed": 90315,
+  "path": "054.png"
+ },
+ {
+  "label": "yanggilambi",
+  "manchu": "ᠶᠠᠩᡤᡳᠯᠠᠮᠪᡳ",
+  "font": "XM_BiaoHei",
+  "seed": 30831,
+  "path": "055.png"
+ },
+ {
+  "label": "juwanci",
+  "manchu": "ᠵᡠᠸᠠᠨᠴᡳ",
+  "font": "XM_ZhengHei",
+  "seed": 245720,
+  "path": "056.png"
+ },
+ {
+  "label": "fulha",
+  "manchu": "ᡶ᠋ᡠᠯᡥᠠ",
+  "font": "XM_BiaoHei",
+  "seed": 41763,
+  "path": "057.png"
+ },
+ {
+  "label": "simacuka",
+  "manchu": "ᠰᡳᠮᠠᠴᡠᡴᠠ",
+  "font": "XM_ZhengBai",
+  "seed": 222378,
+  "path": "058.png"
+ },
+ {
+  "label": "cuse",
+  "manchu": "ᠴᡠᠰᡝ",
+  "font": "XM_ShuKai",
+  "seed": 93961,
+  "path": "059.png"
+ },
+ {
+  "label": "onggosu",
+  "manchu": "ᠣᠩᡤᠣᠰᡠ",
+  "font": "XM_YaBai",
+  "seed": 173648,
+  "path": "060.png"
+ },
+ {
+  "label": "bungjan",
+  "manchu": "ᠪᡠᠩᠵᠠᠨ",
+  "font": "XM_BiaoHei",
+  "seed": 24944,
+  "path": "061.png"
+ },
+ {
+  "label": "fulgiyan alan",
+  "manchu": "ᡶᡠᠯᡤᡳᠶᠠᠨ ᠠᠯᠠᠨ",
+  "font": "Abkai_Xanyan",
+  "seed": 20985,
+  "path": "062.png"
+ },
+ {
+  "label": "xo",
+  "manchu": "ᡧᠣ",
+  "font": "XM_GuFeng",
+  "seed": 58414,
+  "path": "063.png"
+ },
+ {
+  "label": "ta seme",
+  "manchu": "ᡨᠠ ᠰᡝᠮᡝ",
+  "font": "XM_ZhengBai",
+  "seed": 231192,
+  "path": "064.png"
+ },
+ {
+  "label": "bodogon",
+  "manchu": "ᠪᠣᡩᠣᡤᠣᠨ",
+  "font": "XM_GuFeng",
+  "seed": 46176,
+  "path": "065.png"
+ },
+ {
+  "label": "jeku",
+  "manchu": "ᠵᡝᡴᡠ",
+  "font": "XM_ZhengBai",
+  "seed": 223973,
+  "path": "066.png"
+ },
+ {
+  "label": "ambakasi",
+  "manchu": "ᠠᠮᠪᠠᡴᠠᠰᡳ",
+  "font": "XM_LiuYe",
+  "seed": 64970,
+  "path": "067.png"
+ },
+ {
+  "label": "in du gurun",
+  "manchu": "ᡳᠨ ᡩᡠ ᡤᡠᡵᡠᠨ",
+  "font": "XM_ShuKai",
+  "seed": 104704,
+  "path": "068.png"
+ },
+ {
+  "label": "albatu",
+  "manchu": "ᠠᠯᠪᠠᡨᡠ",
+  "font": "XM_YaBai",
+  "seed": 172761,
+  "path": "069.png"
+ },
+ {
+  "label": "tanggin",
+  "manchu": "ᡨᠠᠩᡤᡳᠨ",
+  "font": "XM_WenJian",
+  "seed": 123578,
+  "path": "070.png"
+ },
+ {
+  "label": "senggi",
+  "manchu": "ᠰᡝᠩᡤᡳ",
+  "font": "XM_WenQin",
+  "seed": 135436,
+  "path": "071.png"
+ },
+ {
+  "label": "kundulen",
+  "manchu": "ᡴᡠᠨᡩᡠᠯᡝᠨ",
+  "font": "Abkai_Xanyan",
+  "seed": 19775,
+  "path": "072.png"
+ },
+ {
+  "label": "fushv gurjen",
+  "manchu": "ᡶᡠᠰᡥᡡ ᡤᡠᡵᠵᡝᠨ",
+  "font": "XM_ShuKai",
+  "seed": 107214,
+  "path": "073.png"
+ },
+ {
+  "label": "jilgan",
+  "manchu": "ᠵᡳᠯᡤᠠᠨ",
+  "font": "XM_LiuYe",
+  "seed": 73751,
+  "path": "074.png"
+ },
+ {
+  "label": "jurgangga",
+  "manchu": "ᠵᡠᡵᡤᠠᠩᡤᠠ",
+  "font": "XM_WenQin",
+  "seed": 138251,
+  "path": "075.png"
+ },
+ {
+  "label": "fiyan",
+  "manchu": "ᡶᡳᠶᠠᠨ",
+  "font": "XM_ShuKai",
+  "seed": 107463,
+  "path": "076.png"
+ },
+ {
+  "label": "habxan",
+  "manchu": "ᡥᠠᠪᡧᠠᠨ",
+  "font": "XM_BiaoHei",
+  "seed": 34858,
+  "path": "077.png"
+ },
+ {
+  "label": "miningge",
+  "manchu": "ᠮᡳᠨᡳᠩᡤᡝ",
+  "font": "XM_ShuKai",
+  "seed": 91089,
+  "path": "078.png"
+ },
+ {
+  "label": "galirakv",
+  "manchu": "ᡤᠠᠯᡳᡵᠠᡴᡡ",
+  "font": "XM_ShuKai",
+  "seed": 97992,
+  "path": "079.png"
+ },
+ {
+  "label": "fakvri ferge",
+  "manchu": "ᡶᠠᡴᡡᡵᡳ ᡶᡝᡵᡤᡝ",
+  "font": "XM_YingBi",
+  "seed": 214258,
+  "path": "080.png"
+ },
+ {
+  "label": "hiyan",
+  "manchu": "ᡥᡳᠶᠠᠨ",
+  "font": "XM_WenQin",
+  "seed": 143952,
+  "path": "081.png"
+ },
+ {
+  "label": "waidanambi",
+  "manchu": "ᠸᠠᡳᡩᠠᠨᠠᠮᠪᡳ",
+  "font": "XM_ZhengBai",
+  "seed": 225157,
+  "path": "082.png"
+ },
+ {
+  "label": "ulabun",
+  "manchu": "ᡠᠯᠠᠪᡠᠨ",
+  "font": "XM_LiuYe",
+  "seed": 75722,
+  "path": "083.png"
+ },
+ {
+  "label": "bu",
+  "manchu": "ᠪᡠ",
+  "font": "XM_WenJian",
+  "seed": 111066,
+  "path": "084.png"
+ },
+ {
+  "label": "sindambi",
+  "manchu": "ᠰᡳᠨᡩᠠᠮᠪᡳ",
+  "font": "XM_ZhengBai",
+  "seed": 222305,
+  "path": "085.png"
+ },
+ {
+  "label": "indahvn nacin",
+  "manchu": "ᡳᠨᡩᠠᡥᡡᠨ ᠨᠠᠴᡳᠨ",
+  "font": "XM_BiaoHei",
+  "seed": 40153,
+  "path": "086.png"
+ },
+ {
+  "label": "jidere",
+  "manchu": "ᠵᡳᡩᡝᡵᡝ",
+  "font": "XM_ShuKai",
+  "seed": 95347,
+  "path": "087.png"
+ },
+ {
+  "label": "jedzi",
+  "manchu": "ᠵᡝᡯᡳ᠌",
+  "font": "XM_ZhengBai",
+  "seed": 223963,
+  "path": "088.png"
+ },
+ {
+  "label": "hocikosaka",
+  "manchu": "ᡥᠣᠴᡳᡴᠣᠰᠠᡴᠠ",
+  "font": "XM_YaBai",
+  "seed": 186134,
+  "path": "089.png"
+ },
+ {
+  "label": "bolin gecuheri",
+  "manchu": "ᠪᠣᠯᡳᠨ ᡤᡝᠴᡠᡥᡝᡵᡳ",
+  "font": "XM_BiaoHei",
+  "seed": 24587,
+  "path": "090.png"
+ },
+ {
+  "label": "wesingge ilha",
+  "manchu": "ᠸᡝᠰᡳᠩᡤᡝ ᡳᠯᡥᠠ",
+  "font": "XM_BiaoHei",
+  "seed": 31460,
+  "path": "091.png"
+ },
+ {
+  "label": "oho",
+  "manchu": "ᠣᡥᠣ",
+  "font": "XM_XingShu",
+  "seed": 152255,
+  "path": "092.png"
+ },
+ {
+  "label": "seibeni",
+  "manchu": "ᠰᡝᡳᠪᡝᠨᡳ",
+  "font": "XM_ZhengBai",
+  "seed": 221764,
+  "path": "093.png"
+ },
+ {
+  "label": "bombokon",
+  "manchu": "ᠪᠣᠮᠪᠣᡴᠣᠨ",
+  "font": "XM_WenQin",
+  "seed": 132206,
+  "path": "094.png"
+ },
+ {
+  "label": "ama",
+  "manchu": "ᠠᠮᠠ",
+  "font": "XM_WenQin",
+  "seed": 129497,
+  "path": "095.png"
+ },
+ {
+  "label": "teseingge",
+  "manchu": "ᡨᡝᠰᡝᡳᠩᡤᡝ",
+  "font": "XM_ShuKai",
+  "seed": 102759,
+  "path": "096.png"
+ },
+ {
+  "label": "on gaime yabumbi",
+  "manchu": "ᠣᠨ ᡤᠠᡳᠮᡝ ᠶᠠᠪᡠᠮᠪᡳ",
+  "font": "XM_XingShu",
+  "seed": 152092,
+  "path": "097.png"
+ },
+ {
+  "label": "bohori",
+  "manchu": "ᠪᠣᡥᠣᡵᡳ",
+  "font": "XM_BiaoHei",
+  "seed": 24619,
+  "path": "098.png"
+ },
+ {
+  "label": "okto",
+  "manchu": "ᠣᡴ᠋ᡨ᠋ᠣ",
+  "font": "XM_YingBi",
+  "seed": 195368,
+  "path": "099.png"
+ },
+ {
+  "label": "fa",
+  "manchu": "ᡶᠠ",
+  "font": "XM_XingShu",
+  "seed": 170970,
+  "path": "100.png"
+ },
+ {
+  "label": "onggolo",
+  "manchu": "ᠣᠩᡤᠣᠯᠣ",
+  "font": "XM_BiaoHei",
+  "seed": 22922,
+  "path": "101.png"
+ },
+ {
+  "label": "katak",
+  "manchu": "ᡴᠠᡨᠠᡴ",
+  "font": "XM_ZhengHei",
+  "seed": 256162,
+  "path": "102.png"
+ },
+ {
+  "label": "bederembi",
+  "manchu": "ᠪᡝᡩᡝᡵᡝᠮᠪᡳ",
+  "font": "XM_YingBi",
+  "seed": 197108,
+  "path": "103.png"
+ },
+ {
+  "label": "teike teike",
+  "manchu": "ᡨᡝᡳᡴᡝ ᡨᡝᡳᡴᡝ",
+  "font": "XM_GuFeng",
+  "seed": 59777,
+  "path": "104.png"
+ },
+ {
+  "label": "minggan",
+  "manchu": "ᠮᡳᠩᡤᠠᠨ",
+  "font": "XM_WenQin",
+  "seed": 134157,
+  "path": "105.png"
+ },
+ {
+  "label": "luwan",
+  "manchu": "ᠯᡠᠸᠠᠨ",
+  "font": "XM_ZhengHei",
+  "seed": 242320,
+  "path": "106.png"
+ },
+ {
+  "label": "aha",
+  "manchu": "ᠠᡥᠠ",
+  "font": "XM_LiuYe",
+  "seed": 65458,
+  "path": "107.png"
+ },
+ {
+  "label": "kara",
+  "manchu": "ᡴᠠᡵᠠ",
+  "font": "XM_WenQin",
+  "seed": 148575,
+  "path": "108.png"
+ },
+ {
+  "label": "kadalara",
+  "manchu": "ᡴᠠᡩᠠᠯᠠᡵᠠ",
+  "font": "XM_LiuYe",
+  "seed": 83929,
+  "path": "109.png"
+ },
+ {
+  "label": "tacikvi yamun",
+  "manchu": "ᡨᠠᠴᡳᡴᡡᡳ ᠶᠠᠮᡠᠨ",
+  "font": "XM_YaBai",
+  "seed": 188317,
+  "path": "110.png"
+ },
+ {
+  "label": "muduringga doyonggo",
+  "manchu": "ᠮᡠᡩᡠᡵᡳᠩᡤᠠ ᡩᠣᠶᠣᠩᡤᠣ",
+  "font": "XM_WenQin",
+  "seed": 134022,
+  "path": "111.png"
+ },
+ {
+  "label": "ijishvn",
+  "manchu": "ᡳᠵᡳᠰᡥᡡᠨ",
+  "font": "XM_WenQin",
+  "seed": 148245,
+  "path": "112.png"
+ },
+ {
+  "label": "ebimbi",
+  "manchu": "ᡝᠪᡳᠮᠪᡳ",
+  "font": "XM_WenQin",
+  "seed": 139465,
+  "path": "113.png"
+ },
+ {
+  "label": "xurubumbi",
+  "manchu": "ᡧᡠᡵᡠᠪᡠᠮᠪᡳ",
+  "font": "XM_BiaoHei",
+  "seed": 37332,
+  "path": "114.png"
+ },
+ {
+  "label": "mergen",
+  "manchu": "ᠮᡝᡵᡤᡝᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 219919,
+  "path": "115.png"
+ },
+ {
+  "label": "fodoho",
+  "manchu": "ᡶ᠋ᠣᡩ᠋ᠣᡥᠣ",
+  "font": "Abkai_Xanyan",
+  "seed": 20224,
+  "path": "116.png"
+ },
+ {
+  "label": "ere",
+  "manchu": "ᡝᡵᡝ",
+  "font": "XM_LiuYe",
+  "seed": 75341,
+  "path": "117.png"
+ },
+ {
+  "label": "ai ganaha",
+  "manchu": "ᠠᡳ ᡤᠠᠨᠠᡥᠠ",
+  "font": "Abkai_Xanyan",
+  "seed": 988,
+  "path": "118.png"
+ },
+ {
+  "label": "temgetu mahala",
+  "manchu": "ᡨᡝᠮᡤᡝᡨᡠ ᠮᠠᡥᠠᠯᠠ",
+  "font": "XM_LiuYe",
+  "seed": 81191,
+  "path": "119.png"
+ },
+ {
+  "label": "hailan",
+  "manchu": "ᡥᠠᡳᠯᠠᠨ",
+  "font": "Abkai_Xanyan",
+  "seed": 13582,
+  "path": "120.png"
+ },
+ {
+  "label": "kvtambi",
+  "manchu": "ᡴᡡᡨᠠᠮᠪᡳ",
+  "font": "XM_WenQin",
+  "seed": 149215,
+  "path": "121.png"
+ },
+ {
+  "label": "tuttu oso",
+  "manchu": "ᡨᡠᡨᡨᡠ ᠣᠰᠣ",
+  "font": "XM_WenJian",
+  "seed": 124736,
+  "path": "122.png"
+ },
+ {
+  "label": "hengke",
+  "manchu": "ᡥᡝᠩᡴᡝ",
+  "font": "XM_LiuYe",
+  "seed": 78637,
+  "path": "123.png"
+ },
+ {
+  "label": "niyengniyeri dosimbi",
+  "manchu": "ᠨᡳᠶᡝᠩᠨᡳᠶᡝᡵᡳ ᡩᠣᠰᡳᠮᠪᡳ",
+  "font": "XM_ShuKai",
+  "seed": 88599,
+  "path": "124.png"
+ },
+ {
+  "label": "lekderembi",
+  "manchu": "ᠯᡝᡴᡩᡝᡵᡝᠮᠪᡳ",
+  "font": "XM_WenQin",
+  "seed": 134625,
+  "path": "125.png"
+ },
+ {
+  "label": "haksan",
+  "manchu": "ᡥᠠᡴᠰᠠᠨ",
+  "font": "XM_YaBai",
+  "seed": 185890,
+  "path": "126.png"
+ },
+ {
+  "label": "dogo ija",
+  "manchu": "ᡩᠣᡤᠣ ᡳᠵᠠ",
+  "font": "XM_ShuKai",
+  "seed": 103892,
+  "path": "127.png"
+ },
+ {
+  "label": "jekenembi",
+  "manchu": "ᠵᡝᡴᡝᠨᡝᠮᠪᡳ",
+  "font": "XM_ShuKai",
+  "seed": 94780,
+  "path": "128.png"
+ },
+ {
+  "label": "sukdun",
+  "manchu": "ᠰᡠᡴᡩᡠᠨ",
+  "font": "XM_LiuYe",
+  "seed": 71498,
+  "path": "129.png"
+ },
+ {
+  "label": "ergingge",
+  "manchu": "ᡝᡵᡤᡳᠩᡤᡝ",
+  "font": "XM_WenJian",
+  "seed": 118483,
+  "path": "130.png"
+ },
+ {
+  "label": "tohombi",
+  "manchu": "ᡨᠣᡥᠣᠮᠪᡳ",
+  "font": "XM_WenQin",
+  "seed": 145615,
+  "path": "131.png"
+ },
+ {
+  "label": "yarsi dambagu",
+  "manchu": "ᠶᠠᡵᠰᡳ ᡩᠠᠮᠪᠠᡤᡠ",
+  "font": "XM_BiaoHei",
+  "seed": 31040,
+  "path": "132.png"
+ },
+ {
+  "label": "me",
+  "manchu": "ᠮᡝ",
+  "font": "XM_LiuYe",
+  "seed": 68999,
+  "path": "133.png"
+ },
+ {
+  "label": "muke",
+  "manchu": "ᠮᡠᡴᡝ",
+  "font": "XM_YaBai",
+  "seed": 177094,
+  "path": "134.png"
+ },
+ {
+  "label": "helnebumbi",
+  "manchu": "ᡥᡝᠯᠨᡝᠪᡠᠮᠪᡳ",
+  "font": "XM_BiaoHei",
+  "seed": 35612,
+  "path": "135.png"
+ },
+ {
+  "label": "komso",
+  "manchu": "ᡴᠣᠮᠰᠣ",
+  "font": "XM_LiuYe",
+  "seed": 84110,
+  "path": "136.png"
+ },
+ {
+  "label": "niyanggvbumbi",
+  "manchu": "ᠨᡳᠶᠠᠩᡤᡡᠪᡠᠮᠪᡳ",
+  "font": "XM_ShuKai",
+  "seed": 88486,
+  "path": "137.png"
+ },
+ {
+  "label": "teni",
+  "manchu": "ᡨᡝᠨᡳ",
+  "font": "XM_YingBi",
+  "seed": 210320,
+  "path": "138.png"
+ },
+ {
+  "label": "baniha",
+  "manchu": "ᠪᠠᠨᡳᡥᠠ",
+  "font": "XM_WenJian",
+  "seed": 110325,
+  "path": "139.png"
+ },
+ {
+  "label": "giru sacimbi",
+  "manchu": "ᡤᡳᡵᡠ ᠰᠠᠴᡳᠮᠪᡳ",
+  "font": "XM_YaBai",
+  "seed": 185505,
+  "path": "140.png"
+ },
+ {
+  "label": "ukcabumbi",
+  "manchu": "ᡠᡴᠴᠠᠪᡠᠮᠪᡳ",
+  "font": "XM_YingBi",
+  "seed": 205403,
+  "path": "141.png"
+ },
+ {
+  "label": "xurdere nanggin",
+  "manchu": "ᡧᡠᡵᡩᡝᡵᡝ ᠨᠠᠩᡤᡳᠨ",
+  "font": "XM_XingShu",
+  "seed": 166556,
+  "path": "142.png"
+ },
+ {
+  "label": "batkalambi",
+  "manchu": "ᠪᠠᡨᡴᠠᠯᠠᠮᠪᡳ",
+  "font": "XM_GuFeng",
+  "seed": 45843,
+  "path": "143.png"
+ },
+ {
+  "label": "arkan seme",
+  "manchu": "ᠠᡵᡴᠠᠨ ᠰᡝᠮᡝ",
+  "font": "Abkai_Xanyan",
+  "seed": 1311,
+  "path": "144.png"
+ },
+ {
+  "label": "dasumbi",
+  "manchu": "ᡩᠠᠰᡠᠮᠪᡳ",
+  "font": "XM_WenQin",
+  "seed": 146644,
+  "path": "145.png"
+ },
+ {
+  "label": "jofohoci",
+  "manchu": "ᠵᠣᡶᠣᡥᠣᠴᡳ",
+  "font": "XM_YingBi",
+  "seed": 202348,
+  "path": "146.png"
+ },
+ {
+  "label": "amu",
+  "manchu": "ᠠᠮᡠ",
+  "font": "XM_BiaoHei",
+  "seed": 21947,
+  "path": "147.png"
+ },
+ {
+  "label": "heo",
+  "manchu": "ᡥᡝᠣ",
+  "font": "XM_XingShu",
+  "seed": 164736,
+  "path": "148.png"
+ },
+ {
+  "label": "amaga",
+  "manchu": "ᠠᠮᠠᡤᠠ",
+  "font": "XM_YaBai",
+  "seed": 172571,
+  "path": "149.png"
+ },
+ {
+  "label": "hacihiyambi",
+  "manchu": "ᡥᠠᠴᡳᡥᡳᠶᠠᠮᠪᡳ",
+  "font": "XM_XingShu",
+  "seed": 164209,
+  "path": "150.png"
+ },
+ {
+  "label": "jangkv",
+  "manchu": "ᠵᠠᠩᡴᡡ",
+  "font": "XM_WenJian",
+  "seed": 115797,
+  "path": "151.png"
+ },
+ {
+  "label": "uju fusimbi",
+  "manchu": "ᡠᠵᡠ ᡶᡠᠰᡳᠮᠪᡳ",
+  "font": "XM_ZhengBai",
+  "seed": 226699,
+  "path": "152.png"
+ },
+ {
+  "label": "waliyambi",
+  "manchu": "ᠸᠠᠯᡳᠶᠠᠮᠪᡳ",
+  "font": "XM_YaBai",
+  "seed": 182011,
+  "path": "153.png"
+ },
+ {
+  "label": "siseku",
+  "manchu": "ᠰᡳᠰᡝᡴᡠ",
+  "font": "XM_GuFeng",
+  "seed": 50246,
+  "path": "154.png"
+ },
+ {
+  "label": "ulhisu",
+  "manchu": "ᡠᠯᡥᡳᠰᡠ",
+  "font": "XM_LiuYe",
+  "seed": 75807,
+  "path": "155.png"
+ },
+ {
+  "label": "sucunumbi",
+  "manchu": "ᠰᡠᠴᡠᠨᡠᠮᠪᡳ",
+  "font": "XM_XingShu",
+  "seed": 157414,
+  "path": "156.png"
+ },
+ {
+  "label": "amganambi",
+  "manchu": "ᠠᠮᡤᠠᠨᠠᠮᠪᡳ",
+  "font": "XM_YaBai",
+  "seed": 172682,
+  "path": "157.png"
+ },
+ {
+  "label": "ishvn muduri",
+  "manchu": "ᡳᠰᡥᡡᠨ ᠮᡠᡩᡠᡵᡳ",
+  "font": "XM_ZhengHei",
+  "seed": 255805,
+  "path": "158.png"
+ },
+ {
+  "label": "wer wer",
+  "manchu": "ᠸᡝᡵ ᠸᡝᡵ",
+  "font": "XM_XingShu",
+  "seed": 160806,
+  "path": "159.png"
+ },
+ {
+  "label": "karu temgetu",
+  "manchu": "ᡴᠠᡵᡠ ᡨᡝᠮᡤᡝᡨᡠ",
+  "font": "XM_YingBi",
+  "seed": 213224,
+  "path": "160.png"
+ },
+ {
+  "label": "hoxo",
+  "manchu": "ᡥᠣᡧᠣ",
+  "font": "XM_LiuYe",
+  "seed": 78500,
+  "path": "161.png"
+ },
+ {
+  "label": "falga",
+  "manchu": "ᡶᠠᠯᡤᠠ",
+  "font": "XM_ZhengHei",
+  "seed": 257156,
+  "path": "162.png"
+ },
+ {
+  "label": "xayu buda",
+  "manchu": "ᡧᠠᠶᡠ ᠪᡠᡩᠠ",
+  "font": "XM_ZhengBai",
+  "seed": 230583,
+  "path": "163.png"
+ },
+ {
+  "label": "niohe yoo",
+  "manchu": "ᠨᡳᠣᡥᡝ ᠶᠣᠣ",
+  "font": "XM_WenQin",
+  "seed": 131362,
+  "path": "164.png"
+ },
+ {
+  "label": "anabumbi",
+  "manchu": "ᠠᠨᠠᠪᡠᠮᠪᡳ",
+  "font": "XM_WenJian",
+  "seed": 107714,
+  "path": "165.png"
+ },
+ {
+  "label": "mibsehenembi",
+  "manchu": "ᠮᡳᠪᠰᡝᡥᡝᠨᡝᠮᠪᡳ",
+  "font": "Abkai_Xanyan",
+  "seed": 4975,
+  "path": "166.png"
+ },
+ {
+  "label": "hvsimbi",
+  "manchu": "ᡥᡡᠰᡳᠮᠪᡳ",
+  "font": "XM_WenQin",
+  "seed": 143692,
+  "path": "167.png"
+ },
+ {
+  "label": "ujui",
+  "manchu": "ᡠᠵᡠᡳ",
+  "font": "XM_XingShu",
+  "seed": 162113,
+  "path": "168.png"
+ },
+ {
+  "label": "dang",
+  "manchu": "ᡩᠠᠩ",
+  "font": "XM_ZhengHei",
+  "seed": 254117,
+  "path": "169.png"
+ },
+ {
+  "label": "amtangga",
+  "manchu": "ᠠᠮᡨᠠᠩᡤᠠ",
+  "font": "XM_YingBi",
+  "seed": 194234,
+  "path": "170.png"
+ },
+ {
+  "label": "xun halangga",
+  "manchu": "ᡧᡠᠨ ᡥᠠᠯᠠᠩᡤᠠ",
+  "font": "XM_WenJian",
+  "seed": 123230,
+  "path": "171.png"
+ },
+ {
+  "label": "namu ulgiyan",
+  "manchu": "ᠨᠠᠮᡠ ᡠᠯᡤᡳᠶᠠᠨ",
+  "font": "XM_LiuYe",
+  "seed": 66346,
+  "path": "172.png"
+ },
+ {
+  "label": "guwan",
+  "manchu": "ᡤᡠᠸᠠᠨ",
+  "font": "XM_XingShu",
+  "seed": 163268,
+  "path": "173.png"
+ },
+ {
+  "label": "asha",
+  "manchu": "ᠠᠰᡥᠠ",
+  "font": "XM_WenJian",
+  "seed": 108319,
+  "path": "174.png"
+ },
+ {
+  "label": "leose",
+  "manchu": "ᠯᡝᠣᠰᡝ",
+  "font": "XM_LiuYe",
+  "seed": 69973,
+  "path": "175.png"
+ },
+ {
+  "label": "afaha",
+  "manchu": "ᠠᡶᠠᡥᠠ",
+  "font": "XM_LiuYe",
+  "seed": 65926,
+  "path": "176.png"
+ },
+ {
+  "label": "cuwan",
+  "manchu": "ᠴᡠᠸᠠᠨ",
+  "font": "XM_WenJian",
+  "seed": 115499,
+  "path": "177.png"
+ },
+ {
+  "label": "bodisatu",
+  "manchu": "ᠪᠣᡩᡳᠰᠠᡨᡠ",
+  "font": "XM_GuFeng",
+  "seed": 46185,
+  "path": "178.png"
+ },
+ {
+  "label": "hahvrabumbi",
+  "manchu": "ᡥᠠᡥᡡᡵᠠᠪᡠᠮᠪᡳ",
+  "font": "XM_LiuYe",
+  "seed": 78120,
+  "path": "179.png"
+ },
+ {
+  "label": "ajambi",
+  "manchu": "ᠠᠵᠠᠮᠪᡳ",
+  "font": "XM_ZhengBai",
+  "seed": 216079,
+  "path": "180.png"
+ },
+ {
+  "label": "bithe",
+  "manchu": "ᠪᡳᡨᡥᡝ",
+  "font": "XM_ZhengHei",
+  "seed": 240752,
+  "path": "181.png"
+ },
+ {
+  "label": "suwende",
+  "manchu": "ᠰᡠᠸᡝᠨᡩᡝ",
+  "font": "XM_YaBai",
+  "seed": 179035,
+  "path": "182.png"
+ },
+ {
+  "label": "tuxan de kicehe daifan",
+  "manchu": "ᡨᡠᡧᠠᠨ ᡩᡝ ᡴᡳᠴᡝᡥᡝ ᡩᠠᡳᡶᠠᠨ",
+  "font": "Abkai_Xanyan",
+  "seed": 17064,
+  "path": "183.png"
+ },
+ {
+  "label": "emteli",
+  "manchu": "ᡝᠮᡨᡝᠯᡳ",
+  "font": "XM_WenQin",
+  "seed": 139547,
+  "path": "184.png"
+ },
+ {
+  "label": "xidzi",
+  "manchu": "ᡧᡳᡯᡳ᠌",
+  "font": "XM_ShuKai",
+  "seed": 101991,
+  "path": "185.png"
+ },
+ {
+  "label": "kubuhen",
+  "manchu": "ᡴᡠᠪᡠᡥᡝᠨ",
+  "font": "XM_YingBi",
+  "seed": 213607,
+  "path": "186.png"
+ },
+ {
+  "label": "teifun",
+  "manchu": "ᡨᡝᡳᡶᡠᠨ",
+  "font": "XM_ShuKai",
+  "seed": 102842,
+  "path": "187.png"
+ },
+ {
+  "label": "sohon",
+  "manchu": "ᠰᠣᡥᠣᠨ",
+  "font": "XM_GuFeng",
+  "seed": 49161,
+  "path": "188.png"
+ },
+ {
+  "label": "jai",
+  "manchu": "ᠵᠠᡳ",
+  "font": "XM_ZhengBai",
+  "seed": 223628,
+  "path": "189.png"
+ },
+ {
+  "label": "tungzi",
+  "manchu": "ᡨᡠᠩᡷᡳ",
+  "font": "XM_YaBai",
+  "seed": 189078,
+  "path": "190.png"
+ },
+ {
+  "label": "taifin",
+  "manchu": "ᡨᠠᡳᡶᡳᠨ",
+  "font": "XM_GuFeng",
+  "seed": 59218,
+  "path": "191.png"
+ },
+ {
+  "label": "e",
+  "manchu": "ᡝ",
+  "font": "XM_ZhengHei",
+  "seed": 246956,
+  "path": "192.png"
+ },
+ {
+  "label": "foringga hvsun",
+  "manchu": "ᡶᠣᡵᡳᠩᡤᠠ ᡥᡡᠰᡠᠨ",
+  "font": "XM_GuFeng",
+  "seed": 63683,
+  "path": "193.png"
+ },
+ {
+  "label": "ija niyehe",
+  "manchu": "ᡳᠵᠠ ᠨᡳᠶᡝᡥᡝ",
+  "font": "XM_YingBi",
+  "seed": 212822,
+  "path": "194.png"
+ },
+ {
+  "label": "buyen",
+  "manchu": "ᠪᡠᠶᡝᠨ",
+  "font": "XM_ShuKai",
+  "seed": 89657,
+  "path": "195.png"
+ },
+ {
+  "label": "sonambi",
+  "manchu": "ᠰᠣᠨᠠᠮᠪᡳ",
+  "font": "XM_YaBai",
+  "seed": 178220,
+  "path": "196.png"
+ },
+ {
+  "label": "ulgiyan",
+  "manchu": "ᡠᠯᡤᡳᠶᠠᠨ",
+  "font": "XM_ShuKai",
+  "seed": 97301,
+  "path": "197.png"
+ },
+ {
+  "label": "juhe",
+  "manchu": "ᠵᡠᡥᡝ",
+  "font": "XM_ZhengBai",
+  "seed": 224251,
+  "path": "198.png"
+ },
+ {
+  "label": "kiyakvng",
+  "manchu": "ᡴᡳᠶᠠᡴᡡᠩ",
+  "font": "XM_WenQin",
+  "seed": 149338,
+  "path": "199.png"
+ },
+ {
+  "label": "jerguwen i bongko",
+  "manchu": "ᠵᡝᡵᡤᡠᠸᡝᠨ ᡳ ᠪᠣᠩᡴᠣ",
+  "font": "XM_ShuKai",
+  "seed": 94806,
+  "path": "200.png"
+ },
+ {
+  "label": "bulari moo",
+  "manchu": "ᠪᡠᠯᠠᡵᡳ ᠮᠣᠣ",
+  "font": "XM_WenJian",
+  "seed": 111092,
+  "path": "201.png"
+ },
+ {
+  "label": "hiyooxun",
+  "manchu": "ᡥᡳᠶᠣᠣᡧᡠᠨ",
+  "font": "XM_ShuKai",
+  "seed": 100972,
+  "path": "202.png"
+ },
+ {
+  "label": "goitobumbi",
+  "manchu": "ᡤᠣᡳᡨᠣᠪᡠᠮᠪᡳ",
+  "font": "XM_YaBai",
+  "seed": 184415,
+  "path": "203.png"
+ },
+ {
+  "label": "heolen",
+  "manchu": "ᡥᡝᠣᠯᡝᠨ",
+  "font": "Abkai_Xanyan",
+  "seed": 14016,
+  "path": "204.png"
+ },
+ {
+  "label": "bai",
+  "manchu": "ᠪᠠᡳ",
+  "font": "XM_ShuKai",
+  "seed": 88925,
+  "path": "205.png"
+ },
+ {
+  "label": "timu",
+  "manchu": "ᡨᡳᠮᡠ",
+  "font": "XM_YaBai",
+  "seed": 189458,
+  "path": "206.png"
+ },
+ {
+  "label": "fukjin",
+  "manchu": "ᡶᡠᡴᠵᡳᠨ",
+  "font": "XM_GuFeng",
+  "seed": 64266,
+  "path": "207.png"
+ },
+ {
+  "label": "sibxa tutaha",
+  "manchu": "ᠰᡳᠪᡧᠠ ᡨᡠᡨᠠᡥᠠ",
+  "font": "XM_ZhengBai",
+  "seed": 222353,
+  "path": "208.png"
+ },
+ {
+  "label": "korsocun",
+  "manchu": "ᡴᠣᡵᠰᠣᠴᡠᠨ",
+  "font": "Abkai_Xanyan",
+  "seed": 19590,
+  "path": "209.png"
+ },
+ {
+  "label": "keikuhen",
+  "manchu": "ᡴᡝᡳᡴᡠᡥᡝᠨ",
+  "font": "XM_WenJian",
+  "seed": 127387,
+  "path": "210.png"
+ },
+ {
+  "label": "sambi",
+  "manchu": "ᠰᠠᠮᠪᡳ",
+  "font": "Abkai_Xanyan",
+  "seed": 5665,
+  "path": "211.png"
+ },
+ {
+  "label": "sabka sele",
+  "manchu": "ᠰᠠᠪᡴᠠ ᠰᡝᠯᡝ",
+  "font": "XM_ZhengBai",
+  "seed": 220965,
+  "path": "212.png"
+ },
+ {
+  "label": "elden",
+  "manchu": "ᡝᠯᡩᡝᠨ",
+  "font": "Abkai_Xanyan",
+  "seed": 10460,
+  "path": "213.png"
+ },
+ {
+  "label": "ekcin jolo",
+  "manchu": "ᡝᡴᠴᡳᠨ ᠵᠣᠯᠣ",
+  "font": "XM_YingBi",
+  "seed": 204503,
+  "path": "214.png"
+ },
+ {
+  "label": "urse",
+  "manchu": "ᡠᡵᠰᡝ",
+  "font": "Abkai_Xanyan",
+  "seed": 11656,
+  "path": "215.png"
+ },
+ {
+  "label": "misuijan",
+  "manchu": "ᠮᡳᠰᡠᡳᠵᠠᠨ",
+  "font": "XM_YingBi",
+  "seed": 198789,
+  "path": "216.png"
+ },
+ {
+  "label": "jalgan",
+  "manchu": "ᠵᠠᠯᡤᠠᠨ",
+  "font": "XM_YingBi",
+  "seed": 202018,
+  "path": "217.png"
+ },
+ {
+  "label": "kaningga",
+  "manchu": "ᡴᠠᠨᡳᠩᡤᠠ",
+  "font": "XM_ShuKai",
+  "seed": 105310,
+  "path": "218.png"
+ },
+ {
+  "label": "jijun",
+  "manchu": "ᠵᡳᠵᡠᠨ",
+  "font": "XM_YingBi",
+  "seed": 202971,
+  "path": "219.png"
+ },
+ {
+  "label": "duibuleci",
+  "manchu": "ᡩᡠᡳᠪᡠᠯᡝᠴᡳ",
+  "font": "XM_YingBi",
+  "seed": 212161,
+  "path": "220.png"
+ },
+ {
+  "label": "elgiyen",
+  "manchu": "ᡝᠯᡤᡳᠶᡝᠨ",
+  "font": "XM_GuFeng",
+  "seed": 53498,
+  "path": "221.png"
+ },
+ {
+  "label": "buceli",
+  "manchu": "ᠪᡠᠴᡝᠯᡳ",
+  "font": "XM_XingShu",
+  "seed": 154219,
+  "path": "222.png"
+ },
+ {
+  "label": "hereku",
+  "manchu": "ᡥᡝᡵᡝᡴᡠ",
+  "font": "XM_ZhengBai",
+  "seed": 229552,
+  "path": "223.png"
+ },
+ {
+  "label": "kamtun",
+  "manchu": "ᡴᠠᠮᡨᡠᠨ",
+  "font": "XM_ZhengHei",
+  "seed": 256085,
+  "path": "224.png"
+ },
+ {
+  "label": "yo",
+  "manchu": "ᠶᠣ",
+  "font": "XM_BiaoHei",
+  "seed": 31094,
+  "path": "225.png"
+ },
+ {
+  "label": "xeolen bojiri ilha",
+  "manchu": "ᡧᡝᠣᠯᡝᠨ ᠪᠣᠵᡳᡵᡳ ᡳᠯᡥᠠ",
+  "font": "XM_BiaoHei",
+  "seed": 36991,
+  "path": "226.png"
+ },
+ {
+  "label": "uluncu",
+  "manchu": "ᡠᠯᡠᠨᠴᡠ",
+  "font": "XM_WenJian",
+  "seed": 118818,
+  "path": "227.png"
+ },
+ {
+  "label": "ondonumbi",
+  "manchu": "ᠣᠨᡩᠣᠨᡠᠮᠪᡳ",
+  "font": "XM_YingBi",
+  "seed": 195170,
+  "path": "228.png"
+ },
+ {
+  "label": "bederceku",
+  "manchu": "ᠪᡝᡩᡝᡵᠴᡝᡴᡠ",
+  "font": "XM_BiaoHei",
+  "seed": 24850,
+  "path": "229.png"
+ },
+ {
+  "label": "fiyanggvxambi",
+  "manchu": "ᡶᡳᠶᠠᠩᡤᡡᡧᠠᠮᠪᡳ",
+  "font": "XM_WenJian",
+  "seed": 129018,
+  "path": "230.png"
+ },
+ {
+  "label": "anambi",
+  "manchu": "ᠠᠨᠠᠮᠪᡳ",
+  "font": "XM_ZhengHei",
+  "seed": 236908,
+  "path": "231.png"
+ },
+ {
+  "label": "teile",
+  "manchu": "ᡨᡝᡳᠯᡝ",
+  "font": "XM_LiuYe",
+  "seed": 81289,
+  "path": "232.png"
+ },
+ {
+  "label": "bithei kuren",
+  "manchu": "ᠪᡳᡨᡥᡝᡳ ᡴᡠᡵᡝᠨ",
+  "font": "XM_XingShu",
+  "seed": 154646,
+  "path": "233.png"
+ },
+ {
+  "label": "tanggibumbi",
+  "manchu": "ᡨᠠᠩᡤᡳᠪᡠᠮᠪᡳ",
+  "font": "Abkai_Xanyan",
+  "seed": 15921,
+  "path": "234.png"
+ },
+ {
+  "label": "dukjime durgimbi",
+  "manchu": "ᡩᡠᡴᠵᡳᠮᡝ ᡩᡠᡵᡤᡳᠮᠪᡳ",
+  "font": "XM_XingShu",
+  "seed": 169118,
+  "path": "235.png"
+ },
+ {
+  "label": "u hv",
+  "manchu": "ᡠ ᡥᡡ",
+  "font": "XM_ZhengHei",
+  "seed": 247776,
+  "path": "236.png"
+ },
+ {
+  "label": "baltaha",
+  "manchu": "ᠪᠠᠯᡨᠠᡥᠠ",
+  "font": "XM_ZhengBai",
+  "seed": 218023,
+  "path": "237.png"
+ },
+ {
+  "label": "besergen",
+  "manchu": "ᠪᡝᠰᡝᡵᡤᡝᠨ",
+  "font": "Abkai_Xanyan",
+  "seed": 3247,
+  "path": "238.png"
+ },
+ {
+  "label": "nirumbi",
+  "manchu": "ᠨᡳᡵᡠᠮᠪᡳ",
+  "font": "XM_WenQin",
+  "seed": 131776,
+  "path": "239.png"
+ },
+ {
+  "label": "ferguwecuke karan",
+  "manchu": "ᡶᡝᡵᡤᡠᠸᡝᠴᡠᡴᡝ ᡴᠠᡵᠠᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 236151,
+  "path": "240.png"
+ },
+ {
+  "label": "ban",
+  "manchu": "ᠪᠠᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 217932,
+  "path": "241.png"
+ },
+ {
+  "label": "amji",
+  "manchu": "ᠠᠮᠵᡳ",
+  "font": "XM_ShuKai",
+  "seed": 86541,
+  "path": "242.png"
+ },
+ {
+  "label": "gaihv",
+  "manchu": "ᡤᠠᡳᡥᡡ",
+  "font": "XM_LiuYe",
+  "seed": 76548,
+  "path": "243.png"
+ },
+ {
+  "label": "karan",
+  "manchu": "ᡴᠠᡵᠠᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 234714,
+  "path": "244.png"
+ },
+ {
+  "label": "biyan sio",
+  "manchu": "ᠪᡳᠶᠠᠨ ᠰᡳᠣ",
+  "font": "XM_WenJian",
+  "seed": 111461,
+  "path": "245.png"
+ },
+ {
+  "label": "ahantumbi",
+  "manchu": "ᠠᡥᠠᠨᡨᡠᠮᠪᡳ",
+  "font": "XM_LiuYe",
+  "seed": 65461,
+  "path": "246.png"
+ },
+ {
+  "label": "joringga hooxan",
+  "manchu": "ᠵᠣᡵᡳᠩᡤᠠ ᡥᠣᠣᡧᠠᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 223864,
+  "path": "247.png"
+ },
+ {
+  "label": "boconggo",
+  "manchu": "ᠪᠣᠴᠣᠩᡤᠣ",
+  "font": "XM_XingShu",
+  "seed": 153793,
+  "path": "248.png"
+ },
+ {
+  "label": "ayari ilha",
+  "manchu": "ᠠᠶᠠᡵᡳ ᡳᠯᡥᠠ",
+  "font": "XM_YaBai",
+  "seed": 173092,
+  "path": "249.png"
+ },
+ {
+  "label": "yangse",
+  "manchu": "ᠶᠠᠩᠰᡝ",
+  "font": "XM_ShuKai",
+  "seed": 95413,
+  "path": "250.png"
+ },
+ {
+  "label": "hoilalambi",
+  "manchu": "ᡥᠣᡳᠯᠠᠯᠠᠮᠪᡳ",
+  "font": "XM_ZhengBai",
+  "seed": 229268,
+  "path": "251.png"
+ },
+ {
+  "label": "sarkiyabumbi",
+  "manchu": "ᠰᠠᡵᡴᡳᠶᠠᠪᡠᠮᠪᡳ",
+  "font": "XM_ShuKai",
+  "seed": 92078,
+  "path": "252.png"
+ },
+ {
+  "label": "idarxambi",
+  "manchu": "ᡳᡩᠠᡵᡧᠠᠮᠪᡳ",
+  "font": "XM_WenQin",
+  "seed": 148283,
+  "path": "253.png"
+ },
+ {
+  "label": "dalhihanambi",
+  "manchu": "ᡩᠠᠯᡥᡳᡥᠠᠨᠠᠮᠪᡳ",
+  "font": "XM_XingShu",
+  "seed": 168140,
+  "path": "254.png"
+ },
+ {
+  "label": "geolembi",
+  "manchu": "ᡤᡝᠣᠯᡝᠮᠪᡳ",
+  "font": "XM_WenJian",
+  "seed": 119854,
+  "path": "255.png"
+ },
+ {
+  "label": "songko",
+  "manchu": "ᠰᠣᠩᡴᠣ",
+  "font": "XM_YingBi",
+  "seed": 199791,
+  "path": "256.png"
+ },
+ {
+  "label": "tubihe",
+  "manchu": "ᡨᡠᠪᡳᡥᡝ",
+  "font": "XM_YaBai",
+  "seed": 189093,
+  "path": "257.png"
+ },
+ {
+  "label": "kamkv",
+  "manchu": "ᡴᠠᠮᡴᡡ",
+  "font": "XM_BiaoHei",
+  "seed": 40766,
+  "path": "258.png"
+ },
+ {
+  "label": "tubade",
+  "manchu": "ᡨᡠᠪᠠᡩᡝ",
+  "font": "XM_WenQin",
+  "seed": 146018,
+  "path": "259.png"
+ },
+ {
+  "label": "giranggi",
+  "manchu": "ᡤᡳᡵᠠᠩᡤᡳ",
+  "font": "XM_BiaoHei",
+  "seed": 34772,
+  "path": "260.png"
+ },
+ {
+  "label": "gugun gasha",
+  "manchu": "ᡤᡠᡤᡠᠨ ᡤᠠᠰᡥᠠ",
+  "font": "XM_ZhengBai",
+  "seed": 227916,
+  "path": "261.png"
+ },
+ {
+  "label": "gungceo",
+  "manchu": "ᡤᡠᠩᠴᡝᠣ",
+  "font": "XM_GuFeng",
+  "seed": 55525,
+  "path": "262.png"
+ },
+ {
+  "label": "jukten i usin",
+  "manchu": "ᠵᡠᡴᡨᡝᠨ ᡳ ᡠᠰᡳᠨ",
+  "font": "XM_YaBai",
+  "seed": 181251,
+  "path": "263.png"
+ },
+ {
+  "label": "saha",
+  "manchu": "ᠰᠠᡥᠠ",
+  "font": "XM_BiaoHei",
+  "seed": 27280,
+  "path": "264.png"
+ },
+ {
+  "label": "ici",
+  "manchu": "ᡳᠴᡳ",
+  "font": "XM_BiaoHei",
+  "seed": 40541,
+  "path": "265.png"
+ },
+ {
+  "label": "bayan",
+  "manchu": "ᠪᠠᠶᠠᠨ",
+  "font": "XM_GuFeng",
+  "seed": 45800,
+  "path": "266.png"
+ },
+ {
+  "label": "uju",
+  "manchu": "ᡠᠵᡠ",
+  "font": "XM_LiuYe",
+  "seed": 75962,
+  "path": "267.png"
+ },
+ {
+  "label": "sajingga deo",
+  "manchu": "ᠰᠠᠵᡳᠩᡤᠠ ᡩᡝᠣ",
+  "font": "XM_ZhengHei",
+  "seed": 242596,
+  "path": "268.png"
+ },
+ {
+  "label": "pusa",
+  "manchu": "ᡦᡠᠰᠠ",
+  "font": "XM_ZhengHei",
+  "seed": 251861,
+  "path": "269.png"
+ },
+ {
+  "label": "gereken",
+  "manchu": "ᡤᡝᡵᡝᡴᡝᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 227723,
+  "path": "270.png"
+ },
+ {
+  "label": "fenihiyen",
+  "manchu": "ᡶᡝᠨᡳᡥᡳᠶᡝᠨ",
+  "font": "XM_BiaoHei",
+  "seed": 42185,
+  "path": "271.png"
+ },
+ {
+  "label": "kurbuxetembi",
+  "manchu": "ᡴᡠᡵᠪᡠᡧᡝᡨᡝᠮᠪᡳ",
+  "font": "XM_XingShu",
+  "seed": 170651,
+  "path": "272.png"
+ },
+ {
+  "label": "deoc'i",
+  "manchu": "ᡩᡝᠣᡱᡳ",
+  "font": "XM_YaBai",
+  "seed": 190173,
+  "path": "273.png"
+ },
+ {
+  "label": "durahvn",
+  "manchu": "ᡩᡠᡵᠠᡥᡡᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 233725,
+  "path": "274.png"
+ },
+ {
+  "label": "siren tatambi",
+  "manchu": "ᠰᡳᡵᡝᠨ ᡨᠠᡨᠠᠮᠪᡳ",
+  "font": "XM_BiaoHei",
+  "seed": 28904,
+  "path": "275.png"
+ },
+ {
+  "label": "aika",
+  "manchu": "ᠠᡳᡴᠠ",
+  "font": "XM_LiuYe",
+  "seed": 65735,
+  "path": "276.png"
+ },
+ {
+  "label": "fatakv",
+  "manchu": "ᡶᠠᡨᠠᡴᡡ",
+  "font": "XM_ZhengBai",
+  "seed": 235699,
+  "path": "277.png"
+ },
+ {
+  "label": "haran",
+  "manchu": "ᡥᠠᡵᠠᠨ",
+  "font": "XM_BiaoHei",
+  "seed": 35181,
+  "path": "278.png"
+ },
+ {
+  "label": "ui nimaha",
+  "manchu": "ᡠᡳ ᠨᡳᠮᠠᡥᠠ",
+  "font": "XM_WenJian",
+  "seed": 119233,
+  "path": "279.png"
+ },
+ {
+  "label": "uksajambi",
+  "manchu": "ᡠᡴᠰᠠᠵᠠᠮᠪᡳ",
+  "font": "XM_ShuKai",
+  "seed": 97730,
+  "path": "280.png"
+ },
+ {
+  "label": "gemu",
+  "manchu": "ᡤᡝᠮᡠ",
+  "font": "XM_YaBai",
+  "seed": 184528,
+  "path": "281.png"
+ },
+ {
+  "label": "gili",
+  "manchu": "ᡤᡳᠯᡳ",
+  "font": "XM_ZhengBai",
+  "seed": 228330,
+  "path": "282.png"
+ },
+ {
+  "label": "kemungge",
+  "manchu": "ᡴᡝᠮᡠᠩᡤᡝ",
+  "font": "Abkai_Xanyan",
+  "seed": 19661,
+  "path": "283.png"
+ },
+ {
+  "label": "olombi",
+  "manchu": "ᠣᠯᠣᠮᠪᡳ",
+  "font": "Abkai_Xanyan",
+  "seed": 1453,
+  "path": "284.png"
+ },
+ {
+  "label": "jiyanggiyvn",
+  "manchu": "ᠵᡳᠶᠠᠩᡤᡳᠶᡡᠨ",
+  "font": "XM_ShuKai",
+  "seed": 95326,
+  "path": "285.png"
+ },
+ {
+  "label": "turi",
+  "manchu": "ᡨᡠᡵᡳ",
+  "font": "XM_ZhengBai",
+  "seed": 232491,
+  "path": "286.png"
+ },
+ {
+  "label": "fulun",
+  "manchu": "ᡶᡠᠯᡠᠨ",
+  "font": "XM_YaBai",
+  "seed": 193233,
+  "path": "287.png"
+ },
+ {
+  "label": "neigen",
+  "manchu": "ᠨᡝᡳᡤᡝᠨ",
+  "font": "XM_WenJian",
+  "seed": 109653,
+  "path": "288.png"
+ },
+ {
+  "label": "odontu kailun",
+  "manchu": "ᠣᡩᠣᠨᡨᡠ ᡴᠠᡳᠯᡠᠨ",
+  "font": "XM_YaBai",
+  "seed": 173811,
+  "path": "289.png"
+ },
+ {
+  "label": "duwali",
+  "manchu": "ᡩᡠᠸᠠᠯᡳ",
+  "font": "XM_YaBai",
+  "seed": 190579,
+  "path": "290.png"
+ },
+ {
+  "label": "dooseda",
+  "manchu": "ᡩᠣᠣᠰᡝᡩᠠ",
+  "font": "XM_ZhengBai",
+  "seed": 232981,
+  "path": "291.png"
+ },
+ {
+  "label": "muduringga aniya",
+  "manchu": "ᠮᡠᡩᡠᡵᡳᠩᡤᠠ ᠠᠨᡳᠶᠠ",
+  "font": "XM_WenQin",
+  "seed": 134020,
+  "path": "292.png"
+ },
+ {
+  "label": "ujen",
+  "manchu": "ᡠᠵᡝᠨ",
+  "font": "XM_LiuYe",
+  "seed": 75954,
+  "path": "293.png"
+ },
+ {
+  "label": "giolu",
+  "manchu": "ᡤᡳᠣᠯᡠ",
+  "font": "XM_BiaoHei",
+  "seed": 34418,
+  "path": "294.png"
+ },
+ {
+  "label": "usun",
+  "manchu": "ᡠᠰᡠᠨ",
+  "font": "XM_ZhengBai",
+  "seed": 226598,
+  "path": "295.png"
+ },
+ {
+  "label": "isangga mekten",
+  "manchu": "ᡳᠰᠠᠩᡤᠠ ᠮᡝᡴᡨᡝᠨ",
+  "font": "XM_YaBai",
+  "seed": 191175,
+  "path": "296.png"
+ },
+ {
+  "label": "uyan matan xatan",
+  "manchu": "ᡠᠶᠠᠨ ᠮᠠᡨᠠᠨ ᡧᠠᡨᠠᠨ",
+  "font": "XM_YaBai",
+  "seed": 183672,
+  "path": "297.png"
+ },
+ {
+  "label": "ebeci",
+  "manchu": "ᡝᠪᡝᠴᡳ",
+  "font": "XM_BiaoHei",
+  "seed": 31769,
+  "path": "298.png"
+ },
+ {
+  "label": "hiya",
+  "manchu": "ᡥᡳᠶᠠ",
+  "font": "XM_ShuKai",
+  "seed": 100885,
+  "path": "299.png"
+ }
+]

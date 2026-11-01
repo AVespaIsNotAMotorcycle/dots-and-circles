@@ -1,6 +1,7 @@
 {
   "allowed_origin": "*",
   "photos": "photos",
+  "synthetic": "synthetic",
   "models": [
     {
       "name": "Run 26",

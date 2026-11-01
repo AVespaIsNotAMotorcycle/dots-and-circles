@@ -190,6 +190,13 @@ def tokens_needed(word):
     return len(word) + repeats
 
 def augment_once(canvas, rng):
+    return prepare(photograph(canvas, rng), crop=True, whiten=True)
+
+def photograph(canvas, rng):
+    '''
+    Makes a rendered word look like a photo of a print, before
+    preprocessing: greyscale, about PHOTO_WIDTH wide, on grey paper.
+    '''
     image = scale_to_width(canvas, WORK_WIDTH)
     image = vary_strokes(image, rng)
     image = distort(image, rng)
@@ -197,8 +204,7 @@ def augment_once(canvas, rng):
     blur = rng.uniform(0, MAX_BLUR)
     if blur > 0.2:
         image = image.filter(ImageFilter.GaussianBlur(blur))
-    image = print_and_photograph(scale_to_width(image, PHOTO_WIDTH), rng)
-    return prepare(image, crop=True, whiten=True)
+    return print_and_photograph(scale_to_width(image, PHOTO_WIDTH), rng)
 
 def augment(canvas, word, seed, epoch):
     '''

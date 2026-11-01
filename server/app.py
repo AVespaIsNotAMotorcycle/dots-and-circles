@@ -41,9 +41,9 @@ MAX_UPLOAD_SIDE = 2000
 # Uploads with more pixels than this are refused before they're decoded
 MAX_UPLOAD_PIXELS = 50_000_000
 
-class UploadError(Exception):
+class RequestError(Exception):
     '''
-    A bad upload, with the message and HTTP status to send back.
+    A bad request, with the message and HTTP status to send back.
     '''
     def __init__(self, message, status=400):
         super().__init__(message)
@@ -122,7 +122,7 @@ def read_upload():
         body = request.get_json(silent=True)
         if not isinstance(body, dict) or not isinstance(body.get("image"),
                                                         str):
-            raise UploadError("Send an image, either as a file in an "
+            raise RequestError("Send an image, either as a file in an "
                               "\"image\" form field or as base64 in a JSON "
                               "body's \"image\".")
         encoded = body["image"]
@@ -131,12 +131,12 @@ def read_upload():
         try:
             data = base64.b64decode(encoded, validate=True)
         except (binascii.Error, ValueError):
-            raise UploadError("\"image\" isn't valid base64.")
+            raise RequestError("\"image\" isn't valid base64.")
         label = body.get("label")
         if label is not None and not isinstance(label, str):
-            raise UploadError("\"label\" must be a string.")
+            raise RequestError("\"label\" must be a string.")
     if len(data) > MAX_UPLOAD_BYTES:
-        raise UploadError(f"The image is over {MAX_UPLOAD_BYTES // 2**20} "
+        raise RequestError(f"The image is over {MAX_UPLOAD_BYTES // 2**20} "
                           "MB.", 413)
     label = label.strip() if label else None
     return data, label or None
@@ -150,7 +150,7 @@ def open_upload(data):
     try:
         image = Image.open(io.BytesIO(data))
         if image.width * image.height > MAX_UPLOAD_PIXELS:
-            raise UploadError(f"The image is over {MAX_UPLOAD_PIXELS:,} "
+            raise RequestError(f"The image is over {MAX_UPLOAD_PIXELS:,} "
                               "pixels.", 413)
         # JPEGs can decode at a smaller scale straight away
         image.draft("RGB", (MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE))
@@ -161,11 +161,11 @@ def open_upload(data):
             background = Image.new("RGBA", image.size, (255, 255, 255, 255))
             image = Image.alpha_composite(background, image)
         image = image.convert("RGB")
-    except UploadError:
+    except RequestError:
         raise
     except (UnidentifiedImageError, Image.DecompressionBombError, OSError,
             ValueError):
-        raise UploadError("The upload isn't an image that can be read.")
+        raise RequestError("The upload isn't an image that can be read.")
     image.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
     return image
 
@@ -174,10 +174,15 @@ def create_app(config_path=CONFIG_PATH):
         config = json.load(file)
     root = os.path.dirname(os.path.abspath(config_path))
     models = [(entry, load_model(entry, root)) for entry in config["models"]]
-    photo_directory = os.path.join(root, config["photos"])
-    with open(os.path.join(photo_directory, "manifest.json"), "r",
-              encoding="utf-8") as file:
-        photos = json.load(file)
+    # The images GET /random picks from, by source: a folder and its
+    # manifest.json for each. "synthetic" is optional in config.json.
+    sources = {}
+    for source, key in (("photo", "photos"), ("synthetic", "synthetic")):
+        if key in config:
+            folder = os.path.join(root, config[key])
+            with open(os.path.join(folder, "manifest.json"), "r",
+                      encoding="utf-8") as file:
+                sources[source] = (folder, json.load(file))
 
     app = Flask(__name__)
     # Room for a MAX_UPLOAD_BYTES image as base64, plus the rest of the body
@@ -194,7 +199,7 @@ def create_app(config_path=CONFIG_PATH):
         response.headers["Access-Control-Allow-Headers"] = "Content-Type"
         return response
 
-    @app.errorhandler(UploadError)
+    @app.errorhandler(RequestError)
     def upload_error(error):
         return jsonify({"error": error.message}), error.status
 
@@ -219,13 +224,21 @@ def create_app(config_path=CONFIG_PATH):
 
     @app.get("/random")
     def random_word():
-        photo = random.choice(photos)
-        path = os.path.join(photo_directory, photo["path"])
+        # ?source=photo (the default) for a photographed word, or
+        # ?source=synthetic for a rendered one
+        source = request.args.get("source") or "photo"
+        if source not in sources:
+            raise RequestError(f"Unknown source {source!r}: use one of "
+                               f"{', '.join(sources)}.")
+        folder, entries = sources[source]
+        photo = random.choice(entries)
+        path = os.path.join(folder, photo["path"])
         with Image.open(path) as original:
             results = read_all(original, photo["label"])
         # The photo as models with the default preprocessing see it
         preprocessed = load_photo(path)
-        return jsonify({"label": photo["label"], "manchu": photo["manchu"],
+        return jsonify({"source": source, "font": photo.get("font"),
+                        "label": photo["label"], "manchu": photo["manchu"],
                         "image": data_url(path),
                         "preprocessed-image": image_data_url(preprocessed),
                         "results": results})
@@ -238,11 +251,12 @@ def create_app(config_path=CONFIG_PATH):
             try:
                 manchu = spell_in_manchu(label)
             except ValueError:
-                raise UploadError(f"{label!r} isn't a word in Abkai.")
+                raise RequestError(f"{label!r} isn't a word in Abkai.")
         else:
             manchu = None
         original = open_upload(data)
-        return jsonify({"label": label, "manchu": manchu,
+        return jsonify({"source": "upload", "font": None,
+                        "label": label, "manchu": manchu,
                         "image": image_data_url(original),
                         "preprocessed-image": image_data_url(
                             prepare(original)),
