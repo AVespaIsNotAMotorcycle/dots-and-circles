@@ -227,4 +227,43 @@ The reason I had started with the Kaikki dictionary is that it contains
 Manchu script, while the Norman dictionary is in Norman transliteration.
 In Norman transliteration, ᡴ᠊ and ᡴᡝ᠊are both written as "k." Usually it's
 clear which letter it should be from context, but when it's at the end of
-a syllable AND not the final letter in a word, it's ambiguous.
+a syllable AND not the final letter in a word, it's ambiguous. Nonetheless,
+converting from Norman to Manchu will yield valid strings, and with the
+Norman dictionary added, the corpus went from 1,989 words to 21,532.
+
+**Run 27**
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run027.png" />
+
+A short 3-epoch run (each epoch contains about 11x more samples than before)
+showed character accuracy was down on 3.9 percentage points photos relative
+to Run 26's epoch-35 snapshot, up 1.7 on synthetic images of words both had
+seen in training, and up 15.3 on synthetic images of words that Run 26 never
+saw. Accuracy was still rising, indicating Run 27 was undertrained.
+
+One thing to note is the train/test split: Run 27 and prior used a 70/30 split,
+and test batches were skewed towards the end of an epoch (notice the long, flat
+lines in training scores just before a new epoch). After Run 27, test batches
+were more even distributed, and an 85/15 split was used.
+
+**Run 28**
+<img width="1280" height="960" alt="image" src="./ocr/run_graphs/run028.png" />
+
+Run 28 scored a new best, with 62.3% of preprocessed (whitened and cropped)
+real-world photos guessed exactly (90.5% character accuracy), compared to
+Run 25's 16.4% and Run 26's 47.0%. For comparison,
+[tyotakuki/ManchuOCR](https://github.com/tyotakuki/ManchuOCR) gets 33.3% of
+whitened and cropped real-world photos exactly correct (26.6% on the same
+photos without preprocessing).
+
+A comparison against
+[mic7ch1/ManchuAI-OCR](https://github.com/mic7ch1/ManchuAI-OCR) was a bit harder,
+since my real-world test data is in their training data. For this comparison,
+I used their test sets, which are not in either my training or test data. Their
+CRNN-3M (72.5% exact) was roughly equivalent to Run 28 (73.9% exact), but their
+CRNN v3 (a later release) and LLaMA-3.2-11B models clearly beat Run 28, with
+97.7% and 93.1% exact-word accuracy, respectively.
+
+Run 28 was still improving at the end of 10 epochs. One issue with the training
+data (which has been a known issue this whole time) is that it's split by
+word-font combination: one word may appear in both the train and (synthetic)
+test sets, but in different fonts. For Run 29, this was fixed.
