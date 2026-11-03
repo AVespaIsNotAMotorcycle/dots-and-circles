@@ -28,7 +28,7 @@ from ocr.training_data import fonts, render
 # forward pass, so memory grows quickly with batch size; 16 images with 8
 # workers stays around 2 GB.
 BATCH_SIZE = 16
-WORKERS = 8
+WORKERS = 1
 # Example images show each word at this height, the model's guess rendered
 # in EXAMPLE_FONT and captioned in CAPTION_FONT (PIL's own font if missing)
 EXAMPLE_HEIGHT = 300

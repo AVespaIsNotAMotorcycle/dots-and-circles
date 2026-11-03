@@ -665,8 +665,8 @@ def show_predictions(models, batches, count=5):
             readings.append(f"{mark} {guess or '(empty)'}")
         print(f"{word} -> " + " | ".join(readings))
 
-def get_learn_rate(batch_count, initial_rate):
-    # return initial_rate / ((0.001 * batch_count) + 1)
+def get_learn_rate(epoch, batch_number, step, initial_rate):
+    if epoch >= 10: return initial_rate / 3
     return initial_rate
 
 def train(epochs = 3, augment = True, resume = None):
@@ -879,7 +879,9 @@ def train_model(name, run, batches, photo_set, epochs,
                                                                test_set):
                 step = epoch * batch_count + batch_number
                 set_name = "test" if testing else "train"
-                run["optimizer"].set_rate(get_learn_rate(step,
+                run["optimizer"].set_rate(get_learn_rate(epoch,
+                                                         batch_number,
+                                                         step,
                                                          run["learn_rate"]))
                 accuracy, loss = train_on_batch(
                     run["model"], run["loss_function"], run["optimizer"],
@@ -930,4 +932,4 @@ def train_model(name, run, batches, photo_set, epochs,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=4, augment=True)
+    train(epochs=4, augment=True, resume="run029")
