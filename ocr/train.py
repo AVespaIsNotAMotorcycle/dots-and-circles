@@ -764,8 +764,8 @@ def run_models(run_directory, epochs, augment):
         #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=32),
         # "C-16/32": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=16, blank=END, emb_dim=32),
-        "C-8/64": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-                    num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64),
+        # "C-8/64": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64),
         # "C-8/128": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=128),
         "D-8/64": lambda: ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
@@ -957,4 +957,4 @@ def train_model(name, run, batches, photo_set, epochs,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=4, augment=True, resume="run029")
+    train(epochs=4, augment=True, resume="run030")
