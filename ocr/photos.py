@@ -1,7 +1,8 @@
 '''
-Photographed words from printed Manchu books, for testing the models on real
-pages: used by ocr/evaluate_non_synthetic.py, and by ocr/train.py to score a
-fixed set of photos after each epoch.
+Photographed words from printed Manchu books. They're split by word (see
+ocr.split.split_photo_words): ocr/train.py trains on the training photos and
+scores the monitor set after each epoch, and ocr/evaluate_non_synthetic.py
+tests on the benchmark.
 '''
 
 import os
@@ -158,17 +159,37 @@ def available():
     # The photos aren't in the repository, so they may not be here
     return os.path.isdir(DATA_DIRECTORY)
 
-def sample_images(count, seed=0):
+def all_images(words=None):
     '''
-    Picks count random (path, label) pairs from DATA_DIRECTORY, the same ones
-    for the same seed. The label is the folder name, in the dataset's
+    Every (path, label) pair in DATA_DIRECTORY, in order, or only those of
+    words if given. The label is the folder name, in the dataset's
     romanization (see MANCHU_TO_ROMAN).
     '''
     images = []
     for label in sorted(os.listdir(DATA_DIRECTORY)):
+        if words is not None and label not in words:
+            continue
         folder = os.path.join(DATA_DIRECTORY, label)
         for name in sorted(os.listdir(folder)):
             images.append((os.path.join(folder, name), label))
+    return images
+
+def set_images(name):
+    '''
+    Every (path, label) pair of one set of the photo split: "train",
+    "monitor" or "benchmark" (see ocr.split.split_photo_words).
+    '''
+    # Imported here, since ocr.split imports this module
+    from ocr.split import load_photo_split
+    return all_images(load_photo_split()[name])
+
+def sample_images(count, seed=0, images=None):
+    '''
+    Picks count random (path, label) pairs from images (by default, every
+    photo), the same ones for the same seed.
+    '''
+    if images is None:
+        images = all_images()
     return random.Random(seed).sample(images, min(count, len(images)))
 
 def load_photo(path, crop=True, whiten=True):

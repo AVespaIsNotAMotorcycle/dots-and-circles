@@ -3,7 +3,8 @@
 #
 # Copies a fixed subset of ocr/non_synthetic_data into server/photos, one
 # photo per word, for GET /random to choose from. The full set is too big to
-# deploy, and isn't in the repository.
+# deploy, and isn't in the repository. The words are from the benchmark (see
+# ocr/split.py), so models trained on the split have never seen them.
 
 import argparse
 import json
@@ -12,20 +13,22 @@ import random
 import shutil
 
 from ocr.photos import DATA_DIRECTORY, spell_in_manchu
+from ocr.split import load_photo_split
 
 directory = os.path.dirname(os.path.abspath(__file__))
 PHOTO_DIRECTORY = os.path.join(directory, "photos")
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Copies one photo each of some random words into "
-        "server/photos.")
+        description="Copies one photo each of some random benchmark words "
+        "into server/photos.")
     parser.add_argument("--words", type=int, default=300)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
     rng = random.Random(args.seed)
-    labels = rng.sample(sorted(os.listdir(DATA_DIRECTORY)), args.words)
+    benchmark = sorted(load_photo_split()["benchmark"])
+    labels = rng.sample(benchmark, min(args.words, len(benchmark)))
     if os.path.isdir(PHOTO_DIRECTORY):
         shutil.rmtree(PHOTO_DIRECTORY)
     manifest = []

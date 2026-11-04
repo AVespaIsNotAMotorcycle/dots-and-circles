@@ -41,12 +41,21 @@ Run from the repo root:
 Changing the lexicon changes which word each training seed maps to, so runs
 before and after a lexicon change aren't directly comparable.
 
-## Photographed test data
+## Photographed data
 
 `ocr/non_synthetic_data/` holds photographed print words, one folder per
-word. It's gitignored, so check it's there before relying on it. `train.py`
-scores a fixed 500-photo set (seed 1) after each epoch. If a checkpoint is
-ever chosen by that score, evaluate on photos outside that set.
+word. It's gitignored, so check it's there before relying on it.
+
+The photos are split by word (`ocr.split.split_photo_words`) into three
+sets, listed in the committed `ocr/training_data/photo_words.json`:
+
+- **train** (85% of photos): added to every epoch's training batches,
+  prepared as for testing and not augmented.
+- **monitor** (500 photos): scored after each epoch and logged as
+  `photo`/`photo_exact`. If a checkpoint is ever chosen by that score, the
+  benchmark is still clean.
+- **benchmark** (the rest, ~3,150 photos): the held-out test.
+  `evaluate_non_synthetic.py` uses it by default (`--set` picks another).
 
 The folders are named in the dataset's romanization: Möllendorff in ASCII
 with x and v, which isn't Abkai (it writes ᠴ as c). `ocr.photos.manchu_to_roman`
@@ -54,10 +63,15 @@ gives it, and all scoring and label matching uses it. `manchu_to_abkai` is
 real Abkai, only for showing words to people.
 
 Train and test are split by word (`ocr/split.py`): a word is in one set in
-every font. All photo words go to test, using the committed list
-`ocr/training_data/photo_words.json` (CC BY 4.0). Rebuild it with
-`python -m ocr.training_data.list_photo_words` when the photos change. Runs
-before this split aren't comparable with runs after it.
+every font and as a photo. Lexicon words matching training photo words go
+to train, and those matching monitor or benchmark words go to test.
+`photo_words.json` is CC BY 4.0. Rebuild it with
+`python -m ocr.training_data.list_photo_words` when the photos change, then
+rebuild the demo sets (`server/select_photos.py`,
+`server/select_synthetic.py`). Runs from run 30 on train on photos and on a
+different lexicon split. Earlier runs never saw any photo word, so they can
+be scored on the benchmark, but their synthetic test scores aren't
+comparable.
 
 ## Memory use
 

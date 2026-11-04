@@ -87,7 +87,9 @@ repository root. Locally, from the repository root:
 
 `photos/` holds one photo each of 300 random words from the photographed
 print dataset (`ocr/non_synthetic_data`, which isn't in the repository).
-`select_photos.py` rebuilds it; each photo is saved under its label (the
+They're all benchmark words (see `ocr/split.py`), so models trained on the
+split have never seen them. Run `select_photos.py` again after the photo
+split changes. It rebuilds the folder; each photo is saved under its label (the
 dataset's romanization, which `score` uses), and its original path in the dataset is kept in `manifest.json` as `source`.
 The photos are unmodified.
 

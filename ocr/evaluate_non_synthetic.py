@@ -17,8 +17,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from ocr.modelD import ModelD
-from ocr.photos import (DATA_DIRECTORY, load_photo, manchu_to_roman,
-                        sample_images)
+from ocr.photos import (DATA_DIRECTORY, all_images, load_photo,
+                        manchu_to_roman, sample_images, set_images)
 from ocr.train import (CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM,
                        edit_distance, image_to_array, predict, read_words,
                        token_count)
@@ -155,8 +155,14 @@ def main():
     parser.add_argument("weights", help="a weights .npz file")
     parser.add_argument("--depth", type=int, default=8)
     parser.add_argument("--emb-dim", type=int, default=64)
-    parser.add_argument("--sample", type=int, default=5000,
-                        help="number of images to test")
+    parser.add_argument("--set", default="benchmark",
+                        choices=["benchmark", "monitor", "train", "all"],
+                        help="which photos to test: a set of the photo split "
+                        "(see ocr/split.py), or all of them (default: the "
+                        "benchmark)")
+    parser.add_argument("--sample", type=int,
+                        help="test only this many random images of the set "
+                        "(default: all of it)")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--minutes", type=float, default=5,
                         help="time limit for the whole test")
@@ -172,7 +178,9 @@ def main():
     args = parser.parse_args()
 
     deadline = time.time() + args.minutes * 60
-    sample = sample_images(args.sample, args.seed)
+    images = all_images() if args.set == "all" else set_images(args.set)
+    sample = (sample_images(args.sample, args.seed, images) if args.sample
+              else images)
     out = args.out or os.path.dirname(os.path.abspath(args.weights))
     rows = []
 

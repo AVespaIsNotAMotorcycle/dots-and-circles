@@ -64,23 +64,27 @@ AUGMENT_WORKERS = 4
 # While training waits for an epoch's images, how often (in seconds) to print
 # how many are ready
 PROGRESS_EVERY = 30
-# A fixed set of photographed words, scored after every epoch to show how
-# well the models read real books. Only watched: nothing is tuned on them,
-# so they stay an honest test.
-PHOTO_COUNT = 500
-PHOTO_SEED = 1
+# The training photos (see ocr/split.py) are added to every epoch's training
+# batches, and the monitor set is scored after every epoch to show how well
+# the models read real books. The monitor set is only watched, and its words
+# aren't in the benchmark, so the benchmark stays an honest test even if a
+# checkpoint is ever chosen by the monitor score.
 # Besides the latest weights, a copy is kept every this many epochs
 SNAPSHOT_EVERY = 5
 # Photos per batch when scoring them. The models keep every layer's
 # activations, so smaller batches use less memory.
 PHOTO_BATCH_SIZE = 16
 
-def generate_seeds(validation_set = False):
+def generate_seeds(validation_set = False, training_photos = True):
     '''
     Returns (train seeds, test seeds), or (train, validation, test) with
     validation_set. The lexicon is split by word (see ocr/split.py), and
     each set gets every font of its words, so no word is in two sets. Test
     is the same either way, and the same every run.
+
+    With training_photos (and the photos here), train also gets every
+    training photo, as a (path, label) pair in place of a seed (see
+    make_batch).
     '''
     test_proportion = 0.15
     valid_proportion = 0.15 if validation_set else 0
@@ -103,6 +107,14 @@ def generate_seeds(validation_set = False):
         for positions in word_sets)
     print(f"Words: {len(word_sets[0])} train, {len(word_sets[1])} "
           f"validation, {len(word_sets[2])} test.")
+    if training_photos:
+        if photos.available():
+            training = photos.set_images("train")
+            train_set += training
+            print(f"Training photos: {len(training)}.")
+        else:
+            print(f"No photos in {photos.DATA_DIRECTORY}, so training is on "
+                  f"rendered words only.")
 
     random.shuffle(train_set)
     random.shuffle(valid_set)
@@ -223,11 +235,24 @@ def generate_batches(seeds, batch_size=64):
 def make_batch(seeds, epoch=None):
     '''
     One batch of entries (see generate_batches) for seeds. With an epoch
-    the images are augmented, differently for each epoch.
+    the images are augmented, differently for each epoch. A seed can also be
+    a training photo as a (path, label) pair: it's prepared as photos are
+    for testing, never augmented, and labelled with the label's Manchu
+    spelling (see photos.spell_in_manchu).
     '''
     batch = []
     for seed in seeds:
-        image, word = generate(seed, epoch)
+        if isinstance(seed, tuple):
+            path, label = seed
+            image = photos.load_photo(path)
+            word = photos.spell_in_manchu(label)
+            # CTC can't spell a word in fewer tokens than it needs, so a
+            # photo that's too short is left out (none were when the
+            # photos were split)
+            if token_count(image) < tokens_needed(word):
+                continue
+        else:
+            image, word = generate(seed, epoch)
         batch.append((image_to_array(image), word_to_array(word),
                       token_count(image)))
     return batch
@@ -327,14 +352,14 @@ class EpochBatches:
 
 def load_photo_set():
     '''
-    The fixed photo set as entries (image array, label, length), or
-    None if the photos aren't here.
+    The monitor set (see ocr/split.py) as entries (image array, label,
+    length), or None if the photos aren't here.
     '''
     if not photos.available():
         print(f"No photos in {photos.DATA_DIRECTORY}, so none will be scored.")
         return None
     photo_set = []
-    for path, label in photos.sample_images(PHOTO_COUNT, PHOTO_SEED):
+    for path, label in photos.set_images("monitor"):
         image = photos.load_photo(path)
         photo_set.append((image_to_array(image), label, token_count(image)))
     return photo_set

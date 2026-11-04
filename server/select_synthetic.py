@@ -56,7 +56,7 @@ def main():
     if not fonts:
         raise SystemExit("No fonts in ocr/training_data/fonts")
 
-    _, test_seeds = generate_seeds()
+    _, test_seeds = generate_seeds(training_photos=False)
     # Every test seed is a (word, font) pair; group them by word
     by_word = {}
     for seed in sorted(test_seeds):
