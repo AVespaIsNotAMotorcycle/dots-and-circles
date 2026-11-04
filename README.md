@@ -4,25 +4,31 @@
 
 - Transformer-based OCR for Manchu script
 - Neural net code handwritten without autograd, then trained on all-synthetic data
-- Against whitened and cropped real-world data, guessed 62.3% of words exactly correct (90.5% character accuracy)
+- Against whitened and cropped real-world data, guessed 71.7% of words exactly correct (93.2% character accuracy)
 - [Try the live demo](https://dots-and-circles.sasha-m-ebersole.com/)
 
 ## Results
-| Test set | Run 28 | Comparison |
-|---|---|---|
-| Photographed words (Sun et al. 2026) | 62.3% exact / 90.5% char | ManchuOCR: 33.3% / 74.2% |
-| ManchuAI-OCR handwritten (218 words) | 73.9% exact | CRNN-3M 72.5%, Qwen2.5-VL-7B 43.1%, CRNN v3 97.7% |
+| Test set | Run 29 | ManchuOCR | CRNN-3M | LLaMA-3.2-11B | CRNN v3 |
+|---|---|---|---|---|---|
+| Photographed words (Sun et al. 2026) | 71.7% | 68.4%\* | | | |
+| ManchuAI-OCR handwritten (218 words) | 76.1% | 60.6% | 72.5% | 93.1% | 97.7% |
+| ManchuAI-OCR handwritten (753 words) | 70.3% | 58.0% | 56.8% | 87.4% | 97.3% |
 
-Trained only on rendered fonts; runs ~135 img/s on one CPU core.
-Full write-ups: [vs ManchuOCR](ocr/runs/run028/comparison_tyotakuki_manchuocr.md) · [vs ManchuAI-OCR](ocr/runs/run028/comparison_manchuai_ocr.md)
+Numbers show percentage of words guessed exactly correctly.
+
+\* With Dots and Circles' preprocessing, since it did better with it on that dataset.
+
+Trained only on rendered fonts; runs ~90 img/s on one CPU core.
+Accuracy figures are from [this report](ocr/runs/run029/comparison_epoch014_photos_manchuai.md).
 
 ## Architecture
 
-Best performance: Run 28
+Best performance: Run 29
 - 1 input token is 4 rows of pixels (32px each)
 - Tokens are collapsed down to a 64 dimension embedding vector by a linear layer
-- Tokens are then fed through 8 transformer blocks to produce CTC output
-- Optimized with Adam, with a learning rate of 3e-3
+- Tokens are then fed through 12 transformer blocks to produce CTC output
+- Dropout of 0.1
+- Optimized with Adam, with a learning rate of 3e-3 for 10 epochs, then 1e-3 for 4
 - Entirely synthetic data, generated from 21,532 words (Wiktionary + Norman dictionary) and 12 fonts
 
 ### What was hand-written

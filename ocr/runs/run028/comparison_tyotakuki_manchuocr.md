@@ -1,5 +1,13 @@
 # Photographed words: run 28 against tyotakuki/ManchuOCR
 
+> **Correction (2026-11-03):** this comparison understates ManchuOCR. Step 3
+> below crops across the word by the word's own row sums. On a page,
+> `readmanchu.py` takes those from the whole line, and on a single word
+> they clip the tips of letters. Without that crop, ManchuOCR model 1 gets
+> 68.4% exact / 90.9% char on all 24,280 photos (whitened + cropped first),
+> ahead of run 28's 62.5% / 90.4%. See
+> `ocr/runs/run029/comparison_epoch014_photos_manchuai.md`.
+
 [tyotakuki/ManchuOCR](https://github.com/tyotakuki/ManchuOCR) (commit
 7f1e910, June 2023) is a PyTorch CNN + BiLSTM encoder with an attention GRU
 decoder, based on bai-shang/crnn_seq2seq_ocr_pytorch. It outputs Möllendorff
