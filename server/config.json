@@ -20,10 +20,10 @@
       "preprocess": {"crop": true, "whiten": true}
     },
     {
-      "name": "Run 29",
-      "model": "ModelD (12 transformers, 64-dim embeddings), Adam 3e-3 for 10 epochs then 1e-3, print augmentation, 21,532-entry Wiktionary + Norman lexicon, 12 fonts, train/test split by word, 14 epochs",
+      "name": "Run 30",
+      "model": "ModelD (12 transformers, 64-dim embeddings), run 29 resumed at 1e-3 with 85% of the photographed words added to training, print augmentation, 21,532-entry Wiktionary + Norman lexicon, 12 fonts, train/test split by word, 18 epochs",
       "class": "ModelD",
-      "weights": "weights/run029.npz",
+      "weights": "weights/run030.npz",
       "params": {"depth": 12, "emb_dim": 64},
       "preprocess": {"crop": true, "whiten": true}
     }
