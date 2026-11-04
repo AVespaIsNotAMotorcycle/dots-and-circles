@@ -3,33 +3,36 @@
 ## Summary
 
 - Transformer-based OCR for Manchu script
-- Neural net code handwritten without autograd, then trained on all-synthetic data
-- Against whitened and cropped real-world data, guessed 71.7% of words exactly correct (93.2% character accuracy)
+- Neural net code handwritten without autograd, then trained on synthetic data plus photographed print words
+- Against whitened and cropped photographs of words it never trained on, guessed 92.9% of words exactly correct (98.5% character accuracy)
 - [Try the live demo](https://dots-and-circles.sasha-m-ebersole.com/)
 
 ## Results
-| Test set | Run 29 | ManchuOCR | CRNN-3M | LLaMA-3.2-11B | CRNN v3 |
-|---|---|---|---|---|---|
-| Photographed words (Sun et al. 2026) | 71.7% | 68.4%\* | | | |
-| ManchuAI-OCR handwritten (218 words) | 76.1% | 60.6% | 72.5% | 93.1% | 97.7% |
-| ManchuAI-OCR handwritten (753 words) | 70.3% | 58.0% | 56.8% | 87.4% | 97.3% |
+| Test set | Run 30 | Run 29 | ManchuOCR | CRNN-3M | LLaMA-3.2-11B | CRNN v3 |
+|---|---|---|---|---|---|---|
+| Photographed words, held-out benchmark (Sun et al. 2026) | 92.9% | 72.1% | 69.2%\* | | | |
+| ManchuAI-OCR handwritten (218 words) | 90.4% | 76.1% | 60.6% | 72.5%† | 93.1%† | 97.7% |
+| ManchuAI-OCR handwritten (753 words) | 85.5% | 70.3% | 58.0% | 56.8% | 87.4% | 97.3% |
 
 Numbers show percentage of words guessed exactly correctly.
 
 \* With Dots and Circles' preprocessing, since it did better with it on that dataset.
 
-Trained only on rendered fonts; runs ~90 img/s on one CPU core.
-Accuracy figures are from [this report](ocr/runs/run029/comparison_epoch014_photos_manchuai.md).
+† Checkpoint chosen on this test set, so the figure is optimistic.
+
+Run 30 trained on rendered fonts plus 85% of the photographed words; the benchmark is the other 315 words (3,150 photos), which it never saw. It has never seen handwriting. Run 29 trained only on rendered fonts. CRNN v3 trained on these same photos (split by image, not by word), so it can't be scored on the benchmark. Both runs process ~90 img/s on one CPU core.
+Accuracy figures are from [this report](ocr/runs/run030/comparison_epoch018_benchmark_manchuai.md).
 
 ## Architecture
 
-Best performance: Run 29
+Best performance: Run 30
 - 1 input token is 4 rows of pixels (32px each)
 - Tokens are collapsed down to a 64 dimension embedding vector by a linear layer
 - Tokens are then fed through 12 transformer blocks to produce CTC output
 - Dropout of 0.1
-- Optimized with Adam, with a learning rate of 3e-3 for 10 epochs, then 1e-3 for 4
-- Entirely synthetic data, generated from 21,532 words (Wiktionary + Norman dictionary) and 12 fonts
+- Optimized with Adam, with a learning rate of 3e-3 for 10 epochs, then 1e-3 for 8
+- Epochs 1–14 (run 29) on entirely synthetic data, generated from 21,532 words (Wiktionary + Norman dictionary) and 12 fonts
+- Epochs 15–18 add 20,630 photos of 2,063 printed words (85% of the dataset's words) to each epoch
 
 ### What was hand-written
 
