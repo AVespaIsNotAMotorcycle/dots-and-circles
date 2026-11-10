@@ -4,7 +4,7 @@ pageNNN (.png or .jpg) with a transcription pageNNN.txt beside it, one line
 per column of Manchu, in Abkai. Columns of Chinese aren't transcribed.
 
 The reader's text and the transcription are compared without punctuation
-(the reader leaves it out). Each transcribed line is matched to the found
+(the reader leaves it out), and without footnote marks such as [1]. Each transcribed line is matched to the found
 line closest to it, so a line found in the wrong place or a column split
 in two still counts, and found lines left over (other text read as Manchu,
 usually) are listed. Scores are character and word accuracy:
@@ -17,6 +17,7 @@ its box classifier.
 
 import argparse
 import os
+import re
 
 from PIL import Image
 
@@ -33,7 +34,9 @@ PUNCTUATION = ",.᠈᠉"
 
 
 def clean(line):
-    # A line without punctuation, its words separated by single spaces
+    # A line without punctuation or footnote marks ([1]), its words
+    # separated by single spaces
+    line = re.sub(r"\[\d+\]", " ", line)
     for mark in PUNCTUATION:
         line = line.replace(mark, " ")
     return " ".join(line.split())

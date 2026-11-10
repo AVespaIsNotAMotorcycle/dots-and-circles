@@ -141,3 +141,16 @@ def test_stemless_column_is_all_other():
                 (60, 300))
     label_words(page, Constant())
     assert {word["kind"] for word in page.words} == {"other"}
+
+def test_frame_lines():
+    from ocr.layout import frame_lines
+    ink = np.zeros((400, 300), dtype=bool)
+    ink[20:24, 10:290] = True        # top and bottom of a frame
+    ink[376:380, 10:290] = True
+    ink[20:380, 10:14] = True        # its sides
+    ink[20:380, 286:290] = True
+    ink[20:380, 60:62] = True        # a ruled line between columns
+    ink[50:350, 30:33] = True        # a stem
+    top, bottom, left, right = frame_lines(ink)
+    assert top == 24 and bottom == 376
+    assert left == 14 and right == 286

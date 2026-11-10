@@ -449,10 +449,12 @@ def page_lines(items, abkai=False):
                               item["position"])
         if all(item["kind"] != "manchu" for item in column_items):
             continue
+        # A Manchu box read as nothing (a stray mark) is left out
         lines.append(" ".join(
             OTHER if item["kind"] != "manchu"
             else manchu_to_abkai(item["text"]) if abkai else item["text"]
-            for item in column_items))
+            for item in column_items
+            if item["kind"] != "manchu" or item["text"]))
     return "\n".join(lines)
 
 def draw_boxes(page, items):

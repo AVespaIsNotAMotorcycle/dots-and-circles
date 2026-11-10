@@ -39,6 +39,8 @@ FINE_STEP = 0.05
 # Ruled lines: runs at least this share of the ink's extent, touched by
 # other ink along at most RULE_CONTACT of their length
 RULE_LENGTH = 0.6
+# and at least this share of its extent the other way
+RULE_ACROSS = 0.3
 RULE_CONTACT = 0.1
 # Breaks in a line up to this share of the ink's extent are bridged, and up
 # to RULE_EDGE_ROWS rows either side inked along at least RULE_EDGE of the
@@ -46,6 +48,13 @@ RULE_CONTACT = 0.1
 RULE_GAP = 0.01
 RULE_EDGE = 0.5
 RULE_EDGE_ROWS = 2
+# A frame's lines are within FRAME_BAND of the image's edges, and rows
+# inside them inked along at least FRAME_HALO of them, up to
+# FRAME_HALO_ROWS, are their ragged edges
+FRAME_BAND = 0.25
+FRAME_WIDTH = 0.02
+FRAME_HALO = 0.15
+FRAME_HALO_ROWS = 4
 # Ink within this share of the image's shorter side of its edges is
 # cleared, as the page's edge rather than text
 BORDER = 0.01
@@ -61,6 +70,8 @@ UNIT_SHARE = 0.3
 # the unit
 CORE_INK = 0.05
 GUTTER_INK = 0.01
+# A column reaches at most this many cores' widths beyond its core
+COLUMN_REACH = 0.6
 # A core whose most ink is under WEAK_CORE of the page's most is weak, and
 # joins a neighbouring core less than JOIN_GAP cores' widths away
 WEAK_CORE = 0.18
@@ -253,8 +264,8 @@ def close_gaps(mask, length):
 def remove_rules(ink):
     '''
     The ink without ruled lines: horizontal or vertical runs at least
-    RULE_LENGTH of the ink's extent, with other ink touching their sides
-    along at most RULE_CONTACT of their length. Small breaks in a line, from
+    RULE_LENGTH of the ink's extent along them and RULE_ACROSS of it across, and for vertical ones, with other ink
+    touching their sides along at most RULE_CONTACT of their length. Small breaks in a line, from
     blur and noise, are bridged first. A line is several pixels thick, so
     neighbouring runs are taken together, along with the blurred rows
     either side.
@@ -269,9 +280,14 @@ def remove_rules(ink):
         # Runs go along the mask's rows: across the page, then down it
         extent = (rows[-1] - rows[0] if transposed
                   else columns[-1] - columns[0])
+        across = (columns[-1] - columns[0] if transposed
+                  else rows[-1] - rows[0])
         closed = close_gaps(mask, max(2, round(RULE_GAP * extent)))
         line_rows, starts, ends = runs(closed)
-        long = ends - starts >= RULE_LENGTH * extent
+        # Long against the page both ways: a narrow image of one word is
+        # no wider than its teeth
+        long = ((ends - starts >= RULE_LENGTH * extent)
+                & (ends - starts >= RULE_ACROSS * across))
         if not long.any():
             continue
         long_rows = np.zeros(mask.shape[0], dtype=bool)
@@ -290,14 +306,64 @@ def remove_rules(ink):
                         >= RULE_EDGE):
                     last += 1
             # Touching ink: one row beyond the line on either side, skipping
-            # a row of blur
+            # a row of blur. Only vertical lines need the test, as stems are
+            # as long and straight; no text has a horizontal stroke this
+            # long.
             touches = np.zeros(end - start, dtype=bool)
             for row in (first - 2, last + 1):
                 if 0 <= row < mask.shape[0]:
                     touches |= mask[row, start:end]
-            if touches.mean() <= RULE_CONTACT:
+            if not transposed or touches.mean() <= RULE_CONTACT:
                 mask[max(0, first - 1):last + 1, start:end] = False
     return ink
+
+def frame_lines(ink):
+    '''
+    Where a frame around the text is: (top, bottom, left, right), the first
+    row or column inside each of its lines, or the image's edge where there
+    is none. A frame line is a run of ink at least RULE_LENGTH of the ink's
+    extent, within FRAME_BAND of the image's edge: the outermost there,
+    with any others within FRAME_WIDTH of it (a frame drawn thick, or
+    double), but not a ruled line further in, between two columns. Rows or columns just inside it inked
+    along at least FRAME_HALO of it (its ragged or blurred edge) count as
+    the line too, up to FRAME_HALO_ROWS of them.
+    '''
+    height, width = ink.shape
+    rows = np.nonzero(ink.any(axis=1))[0]
+    columns = np.nonzero(ink.any(axis=0))[0]
+    bounds = [0, height, 0, width]
+    if not len(rows):
+        return bounds
+    for transposed in (False, True):
+        mask = ink.T if transposed else ink
+        extent = (rows[-1] - rows[0] if transposed
+                  else columns[-1] - columns[0])
+        across = (columns[-1] - columns[0] if transposed
+                  else rows[-1] - rows[0])
+        closed = close_gaps(mask, max(2, round(RULE_GAP * extent)))
+        line_rows, starts, ends = runs(closed)
+        long = ((ends - starts >= RULE_LENGTH * extent)
+                & (ends - starts >= RULE_ACROSS * across))
+        size = mask.shape[0]
+        near = line_rows[long & (line_rows < FRAME_BAND * size)]
+        far = line_rows[long & (line_rows >= (1 - FRAME_BAND) * size)]
+        # The line's span, to measure its halo along
+        span = (slice(None) if not long.any()
+                else slice(int(starts[long].min()), int(ends[long].max())))
+        first, last = (2, 3) if transposed else (0, 1)
+        if len(near):
+            edge = int(near[near <= near.min() + FRAME_WIDTH * size].max()) + 1
+            for _ in range(FRAME_HALO_ROWS):
+                if edge < size and closed[edge, span].mean() >= FRAME_HALO:
+                    edge += 1
+            bounds[first] = edge
+        if len(far):
+            edge = int(far[far >= far.max() - FRAME_WIDTH * size].min())
+            for _ in range(FRAME_HALO_ROWS):
+                if edge > 0 and closed[edge - 1, span].mean() >= FRAME_HALO:
+                    edge -= 1
+            bounds[last] = edge
+    return bounds
 
 def stretches(flags):
     # The (start, end) of each run of True in a 1D boolean array
@@ -359,7 +425,13 @@ def find_columns(ink):
         bounds.append(left_end + int(np.argmin(smooth[left_end:right_start]))
                       if right_start > left_end else left_end)
     bounds.append(int(inked[-1]) + 1)
-    spans = list(zip(bounds, bounds[1:]))
+    # But no further than COLUMN_REACH cores' widths beyond its core, so
+    # stray ink in a wide margin (what's left of a frame, say) is in no
+    # column
+    reach = COLUMN_REACH * core_unit
+    spans = [(max(start, int(core[0] - reach)),
+              min(end, int(core[1] + reach)))
+             for (start, end), core in zip(zip(bounds, bounds[1:]), cores)]
 
     # The unit is measured on each column's ink, as on a page with blank
     # gutters: from its first to last pixel column with more than a trace
@@ -495,7 +567,12 @@ def find_words(image):
                            fillcolor=paper)
     else:
         angle = 0.0
-    ink = remove_rules(binarize(grey))
+    ink = binarize(grey)
+    # Only the text inside a frame, if there is one
+    top, bottom, left, right = frame_lines(ink)
+    ink[:top] = ink[bottom:] = False
+    ink[:, :left] = ink[:, right:] = False
+    ink = remove_rules(ink)
     # The edges of a photo or scan often hold the page's edge or shadow,
     # not text
     border = max(2, round(BORDER * min(ink.shape)))
