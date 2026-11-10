@@ -103,3 +103,41 @@ def test_split_characters():
     assert characters[0][1] == 10 and characters[0][3] == 50
     assert abs(characters[1][3] - 100) <= 3
     assert characters[2][3] == 140
+
+def test_longest_stroke_follows_a_swaying_stem():
+    from ocr.layout import longest_stroke
+    ink = np.zeros((200, 40), dtype=bool)
+    # A stem that steps one pixel sideways every 20 rows, as cursive ones do
+    for top in range(0, 200, 20):
+        ink[top:top + 20, 15 + (top // 20) % 2:18 + (top // 20) % 2] = True
+    assert longest_stroke(ink, [0, 0, 40, 200], unit=40) == 200
+    # Separate short strokes, as in a column of small characters
+    ink = np.zeros((200, 40), dtype=bool)
+    for top in range(0, 200, 30):
+        ink[top:top + 20, 15:18] = True
+    assert longest_stroke(ink, [0, 0, 40, 200], unit=40) == 20
+
+def test_stemless_column_is_all_other():
+    from ocr.box_classifier import label_words
+    from ocr.layout import Page
+
+    class Constant:
+        # A classifier calling every box Manchu but the first two
+        def __call__(self, features):
+            logits = np.zeros((len(features), 2))
+            logits[:, 0] = 5
+            logits[:2] = [-5, 5]
+            return logits
+    ink = np.zeros((300, 60), dtype=bool)
+    boxes = []
+    for top in range(10, 290, 40):
+        ink[top:top + 25, 20:45] = True
+        ink[top + 5:top + 20, 20:45] = False
+        ink[top + 10:top + 12, 20:45] = True
+        boxes.append([20, top, 45, top + 25])
+    words = [{"box": box, "column": 0, "position": index}
+             for index, box in enumerate(boxes)]
+    page = Page(Image.new("L", (60, 300)), ink, 0.0, 25.0, words,
+                (60, 300))
+    label_words(page, Constant())
+    assert {word["kind"] for word in page.words} == {"other"}

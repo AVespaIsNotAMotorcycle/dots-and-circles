@@ -46,6 +46,9 @@ RULE_CONTACT = 0.1
 RULE_GAP = 0.01
 RULE_EDGE = 0.5
 RULE_EDGE_ROWS = 2
+# Ink within this share of the image's shorter side of its edges is
+# cleared, as the page's edge rather than text
+BORDER = 0.01
 # Binarizing: the radius of the blur against pixel noise, and ink pixels
 # with fewer inked neighbours than SPECK_NEIGHBOURS are noise
 NOISE_BLUR = 1
@@ -53,9 +56,15 @@ SPECK_NEIGHBOURS = 2
 # Columns: the unit is measured on stretches of ink at least this share as
 # wide as the widest
 UNIT_SHARE = 0.3
-# Columns: pixel columns with at most this share of the tallest column's
-# ink count as gutter
+# Columns: pixel columns with at least CORE_INK of the most ink are in a
+# column's core; those with GUTTER_INK or less are blank, for measuring
+# the unit
+CORE_INK = 0.05
 GUTTER_INK = 0.01
+# A core whose most ink is under WEAK_CORE of the page's most is weak, and
+# joins a neighbouring core less than JOIN_GAP cores' widths away
+WEAK_CORE = 0.18
+JOIN_GAP = 0.3
 # A stretch of ink wider than this many units may be two columns touching,
 # and is split if its ink, per pixel column, falls to SPLIT_VALLEY of the
 # lower of the peaks either side
@@ -67,7 +76,16 @@ MIN_COLUMN_WIDTH = 0.25
 # Words: gaps of at least WORD_GAP units separate words; pieces shorter
 # than FRAGMENT units join their nearer neighbour, as do pieces with less
 # than MIN_INK square units of ink
-WORD_GAP = 0.12
+WORD_GAP = 0.08
+# Pieces shorter than this many units, with no ink on the stem, are
+# fragments too
+STEMLESS = 0.6
+# Measuring strokes, ink is widened by this many units either side
+STROKE_SWAY = 0.06
+# Rows of a column with at most TRACE_INK units of ink, none of it within
+# STEM_BAND units of the stem, are gap
+TRACE_INK = 0.0
+STEM_BAND = 0.08
 FRAGMENT = 0.2
 MIN_INK = 0.03
 
@@ -289,39 +307,70 @@ def stretches(flags):
 
 def find_columns(ink):
     '''
-    The (left, right) of each column of ink, left to right: stretches of
-    pixel columns with ink, with touching columns split at their thinnest
-    point and narrow stretches joined to a close neighbour or dropped.
-    Returns them with the unit.
+    The (left, right) of each column of ink, left to right, the unit, and
+    the (left, right) of narrow stray marks, such as what's left of ruled
+    lines.
+
+    Gutters aren't always blank: paper specks, and small glosses set
+    between the columns, leave some ink in them. So a column's core is a
+    stretch of pixel columns with at least CORE_INK of the most ink, and
+    the gutter between two cores is shared at its least inked point, so no
+    column loses the tips of its teeth. Narrow cores are joined to a close
+    neighbour or dropped, and cores too wide for one column are split
+    where their ink dips.
     '''
     profile = ink.sum(axis=0)
     if not profile.any():
-        return [], 1
-    spans = stretches(profile > GUTTER_INK * profile.max())
-    # Noise makes narrow stretches, so the unit is the median width of the
-    # stretches at least UNIT_SHARE as wide as the widest
-    widths = [end - start for start, end in spans]
-    unit = float(np.median([width for width in widths
-                            if width >= UNIT_SHARE * max(widths)]))
+        return [], 1, []
+    smooth = np.convolve(profile, np.ones(3) / 3, mode="same")
+    cores = stretches(smooth > CORE_INK * smooth.max())
+    widths = [end - start for start, end in cores]
+    core_unit = float(np.median([width for width in widths
+                                 if width >= UNIT_SHARE * max(widths)]))
 
+    # A weak core (marks standing out from a stem, in some typefaces) right
+    # beside a strong one is part of its column. Small glosses between
+    # columns are as weak but stand clear of them.
+    def weak(core):
+        return smooth[core[0]:core[1]].max() < WEAK_CORE * smooth.max()
     joined = []
-    for start, end in spans:
-        if (joined and end - start < MIN_COLUMN_WIDTH * unit
-                and start - joined[-1][1] < MIN_COLUMN_WIDTH * unit):
-            joined[-1] = (joined[-1][0], end)
-        elif (joined and joined[-1][1] - joined[-1][0]
-              < MIN_COLUMN_WIDTH * unit
-              and start - joined[-1][1] < MIN_COLUMN_WIDTH * unit):
-            joined[-1] = (joined[-1][0], end)
+    for core in cores:
+        if joined and core[0] - joined[-1][1] < JOIN_GAP * core_unit \
+                and (weak(core) or weak(joined[-1])):
+            joined[-1] = (joined[-1][0], core[1])
         else:
-            joined.append((start, end))
-    spans = [span for span in joined
-             if span[1] - span[0] >= MIN_COLUMN_WIDTH * unit]
-
+            joined.append(core)
+    # Narrow cores standing alone aren't columns: specks, or what's left of
+    # a ruled line or the page's edge. find_words erases them.
+    lines = [core for core in joined
+             if core[1] - core[0] < MIN_COLUMN_WIDTH * core_unit]
+    cores = [core for core in joined if core not in lines]
+    if not cores:
+        return [], 1, lines
     split = []
+    for start, end in cores:
+        split.extend(split_span(profile, start, end, core_unit))
+    cores = split
+
+    # Share each gutter at its least inked point
+    inked = np.nonzero(profile)[0]
+    bounds = [int(inked[0])]
+    for (_, left_end), (right_start, _) in zip(cores, cores[1:]):
+        bounds.append(left_end + int(np.argmin(smooth[left_end:right_start]))
+                      if right_start > left_end else left_end)
+    bounds.append(int(inked[-1]) + 1)
+    spans = list(zip(bounds, bounds[1:]))
+
+    # The unit is measured on each column's ink, as on a page with blank
+    # gutters: from its first to last pixel column with more than a trace
+    extents = []
     for start, end in spans:
-        split.extend(split_span(profile, start, end, unit))
-    return split, unit
+        inked = np.nonzero(smooth[start:end] > GUTTER_INK * smooth.max())[0]
+        if len(inked):
+            extents.append(inked[-1] - inked[0] + 1)
+    unit = float(np.median([width for width in extents
+                            if width >= UNIT_SHARE * max(extents)]))
+    return spans, unit, lines
 
 def split_span(profile, start, end, unit):
     # A stretch of ink, split at its thinnest point while it's too wide
@@ -347,12 +396,25 @@ def split_span(profile, start, end, unit):
 def find_words_in_column(ink, left, right, unit):
     '''
     The boxes of the words in one column of ink, top to bottom: stretches of
-    rows with ink, joined across gaps under WORD_GAP units, with fragments
-    joined to their nearer neighbour.
+    rows with more than a trace of ink, joined across gaps under WORD_GAP
+    units, with fragments joined to their nearer neighbour.
+
+    In print, words are often closer than a blank row: punctuation, or a
+    stray mark, crosses the gap. So a row also counts as gap when it has at
+    most TRACE_INK units of ink and none of it on the stem (within
+    STEM_BAND units of the pixel column with the most ink): inside a word
+    the stem is continuous, though in some typefaces the strokes along it
+    are as thin as a trace. Each word then reaches into its gaps as far as
+    their least inked rows, so the thin tips of its letters stay in its
+    box.
     '''
     column = ink[:, left:right]
     profile = column.sum(axis=1)
-    pieces = [[start, end] for start, end in stretches(profile > 0)]
+    stem = int(np.argmax(column.sum(axis=0)))
+    band = max(1, round(STEM_BAND * unit))
+    on_stem = column[:, max(0, stem - band):stem + band + 1].any(axis=1)
+    gap_rows = (profile == 0) | ((profile <= TRACE_INK * unit) & ~on_stem)
+    pieces = [[start, end] for start, end in stretches(~gap_rows)]
 
     def gap(index):
         # The gap below pieces[index]
@@ -366,11 +428,15 @@ def find_words_in_column(ink, left, right, unit):
         else:
             index += 1
 
-    # Join fragments to the nearer neighbour
+    # Join fragments to the nearer neighbour: pieces too short or faint to
+    # be a word, and short pieces off the stem (a tail curving away from
+    # it, or punctuation beside it), since every word has a stem
     def is_fragment(piece):
         start, end = piece
         return (end - start < FRAGMENT * unit
-                or profile[start:end].sum() < MIN_INK * unit * unit)
+                or profile[start:end].sum() < MIN_INK * unit * unit
+                or (end - start < STEMLESS * unit
+                    and not on_stem[start:end].any()))
     changed = True
     while changed and len(pieces) > 1:
         changed = False
@@ -389,10 +455,27 @@ def find_words_in_column(ink, left, right, unit):
             changed = True
             break
 
+    # Reach into the gaps, up to their least inked rows, and as far as the
+    # ink goes at the top and bottom
+    inked = np.nonzero(profile)[0]
+    if not len(inked):
+        return []
+    edges = [int(inked[0])]
+    for (_, above_end), (below_start, _) in zip(pieces, pieces[1:]):
+        gap_profile = profile[above_end:below_start]
+        lowest = np.nonzero(gap_profile == gap_profile.min())[0]
+        # The middle of the least inked rows
+        edges.append(above_end + int(lowest[len(lowest) // 2]))
+    edges.append(int(inked[-1]) + 1)
+    pieces = [[edges[index], edges[index + 1]]
+              for index in range(len(pieces))]
+
     boxes = []
     for start, end in pieces:
         if profile[start:end].sum() < MIN_INK * unit * unit:
             continue
+        rows = np.nonzero(column[start:end].any(axis=1))[0]
+        start, end = start + int(rows[0]), start + int(rows[-1]) + 1
         ink_columns = np.nonzero(column[start:end].any(axis=0))[0]
         boxes.append([left + int(ink_columns[0]), int(start),
                       left + int(ink_columns[-1]) + 1, int(end)])
@@ -413,7 +496,14 @@ def find_words(image):
     else:
         angle = 0.0
     ink = remove_rules(binarize(grey))
-    spans, unit = find_columns(ink)
+    # The edges of a photo or scan often hold the page's edge or shadow,
+    # not text
+    border = max(2, round(BORDER * min(ink.shape)))
+    ink[:border] = ink[-border:] = False
+    ink[:, :border] = ink[:, -border:] = False
+    spans, unit, lines = find_columns(ink)
+    for left, right in lines:
+        ink[:, left:right] = False
     words = []
     for column, (left, right) in enumerate(spans):
         boxes = find_words_in_column(ink, left, right, unit)
@@ -427,3 +517,21 @@ def find_words(image):
     for word in words:
         word["column"] = renumber[word["column"]]
     return Page(grey, ink, angle, float(unit), words, image.size)
+
+def longest_stroke(ink, box, unit):
+    '''
+    The length, in pixels, of the longest vertical run of ink in a box,
+    bridging one-pixel breaks. The ink is first widened by STROKE_SWAY
+    units either side, so a stem that sways, as in cursive typefaces,
+    still counts as one run. Manchu stems run for several units; small
+    Chinese glosses have no stroke that long.
+    '''
+    left, top, right, bottom = box
+    region = ink[top:bottom, left:right]
+    sway = max(1, round(STROKE_SWAY * unit))
+    padded = np.pad(region, ((0, 0), (sway, sway)))
+    widened = np.zeros_like(region)
+    for shift in range(2 * sway + 1):
+        widened |= padded[:, shift:shift + region.shape[1]]
+    _, starts, ends = runs(close_gaps(widened.T, 1))
+    return int((ends - starts).max()) if len(starts) else 0
