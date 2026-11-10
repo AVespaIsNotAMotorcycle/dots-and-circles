@@ -9,13 +9,16 @@ page_text gives the page's text, a line per column (see
 training_data.pages.page_lines), and draw_page the page with its boxes.
 '''
 
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from ocr.box_classifier import label_words
 from ocr.layout import find_words
 from ocr.photos import manchu_to_abkai
 from ocr.preprocess import prepare
-from ocr.train import ctc_decode, image_to_array, predict, token_count
+from ocr.train import (ROWS_PER_TOKEN, alphabet, image_to_array, predict,
+                       token_count)
+from ocr.training_data import HEIGHT
 from ocr.training_data.pages import page_lines
 from utils.softmax import softmax
 
@@ -36,11 +39,35 @@ MIN_TEXT_SIZE = 8
 DRAWN_AS = {"ʻ": "‘"}
 
 
+def decode_words(output, length, blank):
+    '''
+    Reads a CTC model's output for one image, as ctc_decode does, and finds
+    where it puts spaces. Returns the reading and, for each run of spaces,
+    the token in its middle.
+    '''
+    classes = np.argmax(output[:length], axis=-1)
+    text = ""
+    spaces = []
+    start = 0
+    # Each run of one class is one letter (or nothing, for the blank)
+    for token in range(1, length + 1):
+        if token < length and classes[token] == classes[start]:
+            continue
+        index = classes[start]
+        if index != blank:
+            text += alphabet[index]
+            if alphabet[index] == " ":
+                spaces.append((start + token - 1) / 2)
+        start = token
+    return text, spaces
+
 def read_crops(model, crops, crop=True, whiten=True):
     '''
-    Reads greyscale PIL word images with a CTC model. Returns (word,
-    confidence) for each: the confidence is the mean, over the image's
-    tokens, of the probability of the class read there.
+    Reads greyscale PIL word images with a CTC model. Returns (reading,
+    confidence, spaces) for each: the confidence is the mean, over the
+    image's tokens, of the probability of the class read there, and spaces
+    are where the model put spaces between words, as shares of the
+    prepared image's height.
     '''
     readings = []
     for start in range(0, len(crops), BATCH_SIZE):
@@ -49,11 +76,41 @@ def read_crops(model, crops, crop=True, whiten=True):
         entries = [(image_to_array(image), None, token_count(image))
                    for image in images]
         _, y = predict(model, entries)
-        for output, (_, _, length) in zip(y, entries):
+        for image, output, (_, _, length) in zip(images, y, entries):
             probabilities = softmax(output[:length])
-            readings.append((ctc_decode(output, length, model.blank),
-                             float(probabilities.max(axis=-1).mean())))
+            text, spaces = decode_words(output, length, model.blank)
+            # Images taller than HEIGHT are squeezed into it
+            rows = min(image.height, HEIGHT)
+            readings.append((text, float(probabilities.max(axis=-1).mean()),
+                             [((token + 0.5) * ROWS_PER_TOKEN) / rows
+                              for token in spaces]))
     return readings
+
+def split_reading(ink, box, text, spaces):
+    '''
+    Splits a box the model read as several words where it put the spaces,
+    as (box, word) pairs: the model knows where words end better than
+    gaps do, since words in print are often closer than a blank row.
+    '''
+    words = text.split(" ")
+    if len(words) != len(spaces) + 1:
+        # Spaces at the ends, or doubled, don't split anything
+        words = [word for word in words if word]
+        return [(box, " ".join(words))] if words else [(box, "")]
+    left, top, right, bottom = box
+    edges = [top] + [top + round(share * (bottom - top))
+                     for share in spaces] + [bottom]
+    parts = []
+    for word, first, last in zip(words, edges, edges[1:]):
+        region = ink[first:last, left:right]
+        rows = np.nonzero(region.any(axis=1))[0]
+        columns = np.nonzero(region.any(axis=0))[0]
+        if not len(rows) or not word:
+            continue
+        parts.append(([left + int(columns[0]), first + int(rows[0]),
+                       left + int(columns[-1]) + 1, first + int(rows[-1]) + 1],
+                      word))
+    return parts or [(box, text.strip())]
 
 def read_page(image, model, classifier, crop=True, whiten=True):
     '''
@@ -62,16 +119,29 @@ def read_page(image, model, classifier, crop=True, whiten=True):
     Page (see ocr.layout), whose words each have "box", "column",
     "position", "kind" and "manchu" (the classifier's probability that it's
     Manchu), and for Manchu words "text" (the reading in Manchu),
-    "abkai" and "confidence".
+    "abkai" and "confidence". A box the model reads as several words is
+    split into one box per word.
     '''
     page = label_words(find_words(image), classifier)
     manchu = [word for word in page.words if word["kind"] == "manchu"]
     crops = [page.image.crop(word["box"]) for word in manchu]
-    for word, (text, confidence) in zip(manchu, read_crops(model, crops,
-                                                           crop, whiten)):
-        word["text"] = text
-        word["abkai"] = manchu_to_abkai(text)
-        word["confidence"] = confidence
+    readings = dict(zip(map(id, manchu), read_crops(model, crops, crop,
+                                                    whiten)))
+    words = []
+    for word in page.words:
+        if word["kind"] != "manchu":
+            words.append(word)
+            continue
+        text, confidence, spaces = readings[id(word)]
+        for box, part in split_reading(page.ink, word["box"], text, spaces):
+            words.append(dict(word, box=box, text=part,
+                              abkai=manchu_to_abkai(part),
+                              confidence=confidence))
+    position = {}
+    for word in words:
+        word["position"] = position.get(word["column"], 0)
+        position[word["column"]] = word["position"] + 1
+    page.words = words
     return page
 
 def page_text(page, abkai=False):

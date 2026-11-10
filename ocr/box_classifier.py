@@ -21,7 +21,7 @@ from PIL import Image
 from nn.GELU import GELU
 from nn.Linear import Linear
 from nn.Sequential import Sequential
-from ocr.layout import stretches
+from ocr.layout import longest_stroke, stretches
 from utils.softmax import softmax
 
 SIZE = 24
@@ -31,6 +31,15 @@ KINDS = ["manchu", "other"]
 # A box of other text this many times taller than wide is split into
 # characters
 RUN_ASPECT = 1.4
+# A column at least this share (by height) other text is all other text,
+# and its boxes less than RUN_GAP units apart are joined before splitting
+# into characters
+OTHER_COLUMN = 0.5
+RUN_GAP = 0.5
+# A column at least SOME_OTHER other text, with no stroke as long as
+# LONG_STROKE units, is all other text too
+SOME_OTHER = 0.2
+LONG_STROKE = 1.5
 
 
 def make_classifier():
@@ -122,28 +131,78 @@ def split_characters(ink, box):
                            left + int(columns[-1]) + 1, last])
     return characters
 
+def other_runs(words, unit):
+    '''
+    The boxes of a column of other text, its words' boxes joined into runs
+    wherever they're less than RUN_GAP units apart.
+    '''
+    runs = []
+    for word in sorted(words, key=lambda word: word["box"][1]):
+        box = list(word["box"])
+        if runs and box[1] - runs[-1][3] < RUN_GAP * unit:
+            last = runs[-1]
+            runs[-1] = [min(last[0], box[0]), last[1], max(last[2], box[2]),
+                        max(last[3], box[3])]
+        else:
+            runs.append(box)
+    return runs
+
 def label_words(page, model):
     '''
     Gives each word of a Page (from ocr.layout.find_words) a "kind",
     "manchu" or "other", and a "manchu" probability, splitting tall boxes of
     other text into characters and renumbering positions. Changes page in
     place and returns it.
+
+    A column mostly (by height) of other text, or of more than one box,
+    partly other text and with no stroke as long as LONG_STROKE units (no
+    Manchu stem), is taken to be all other text, such as small Chinese glosses between Manchu columns:
+    those are often cut at blank rows inside their characters, and the
+    pieces can look like Manchu. Its boxes are joined into runs and split
+    into characters again.
     '''
     probabilities = classify(model, page.ink,
                              [word["box"] for word in page.words], page.unit)
-    words = []
     for word, probability in zip(page.words, probabilities):
-        kind = "manchu" if probability >= 0.5 else "other"
-        box = word["box"]
-        tall = (box[3] - box[1]) > RUN_ASPECT * (box[2] - box[0])
-        boxes = (split_characters(page.ink, box)
-                 if kind == "other" and tall else [box])
-        for part in boxes:
-            words.append({"box": [int(value) for value in part],
-                          "column": word["column"],
-                          "kind": kind, "manchu": float(probability)})
+        word["manchu"] = float(probability)
+        word["kind"] = "manchu" if probability >= 0.5 else "other"
+    columns = {}
+    for word in page.words:
+        columns.setdefault(word["column"], []).append(word)
+
+    words = []
+    for column in sorted(columns):
+        column_words = columns[column]
+        height = lambda word: word["box"][3] - word["box"][1]
+        other = sum(height(word) for word in column_words
+                    if word["kind"] == "other")
+        extent = [min(word["box"][0] for word in column_words),
+                  min(word["box"][1] for word in column_words),
+                  max(word["box"][2] for word in column_words),
+                  max(word["box"][3] for word in column_words)]
+        total = sum(map(height, column_words))
+        stemless = (len(column_words) > 1 and other >= SOME_OTHER * total
+                    and longest_stroke(page.ink, extent, page.unit)
+                    < LONG_STROKE * page.unit)
+        if stemless or other >= OTHER_COLUMN * total:
+            probability = min(word["manchu"] for word in column_words)
+            for run in other_runs(column_words, page.unit):
+                for part in split_characters(page.ink, run):
+                    words.append({"box": part, "column": column,
+                                  "kind": "other", "manchu": probability})
+            continue
+        for word in column_words:
+            box = word["box"]
+            tall = (box[3] - box[1]) > RUN_ASPECT * (box[2] - box[0])
+            boxes = (split_characters(page.ink, box)
+                     if word["kind"] == "other" and tall else [box])
+            for part in boxes:
+                words.append({"box": part, "column": column,
+                              "kind": word["kind"],
+                              "manchu": word["manchu"]})
     position = {}
     for word in words:
+        word["box"] = [int(value) for value in word["box"]]
         word["position"] = position.get(word["column"], 0)
         position[word["column"]] = word["position"] + 1
     page.words = words
