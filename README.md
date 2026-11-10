@@ -32,16 +32,22 @@ processing (`ocr/layout.py`), tells Manchu from Chinese with a small MLP
 
 On 100 synthetic pages (`python -m ocr.evaluate_pages`) of words no model
 trained on, a third each of all-Manchu, alternating Manchu and Chinese
-columns, and Manchu with Chinese characters mixed in:
+columns, and Manchu with Chinese characters mixed in, and about a third
+with small Chinese glosses between the Manchu columns:
 
 | Pages | Boxes found (precision / recall) | Kind right (Manchu / Chinese) | Manchu words exact | Page text character accuracy |
 |---|---|---|---|---|
-| Clean | 99.7% / 99.4% | 100% / 99.7% | 97.0% | 99.3% |
-| Made to look photographed | 99.5% / 99.2% | 100% / 99.9% | 96.3% | 99.3% |
+| Clean | 98.6% / 99.0% | 99.5% / 100% | 98.0% | 98.2% |
+| Made to look photographed | 98.7% / 98.9% | 99.6% / 99.7% | 97.6% | 98.2% |
 
-With Run 28 the photographed-looking pages read 91.5% exactly, and with
-Run 26 79.3%. A page takes about a second on one CPU core. These are
-synthetic pages only: no real photographed pages have been scored yet.
+With Run 28 the photographed-looking pages read 93.2% exactly, and with
+Run 26 80.6%. A page takes about a second on one CPU core.
+
+On one real page so far (a bilingual print with seven Manchu columns and
+six columns of small Chinese glosses), the Manchu text reads at 95.7%
+character / 81.0% word accuracy against its transcription, with every
+gloss left out. Most word errors are pairs of words set so close that
+they're read as one (`hotonde` for `hoton de`).
 
 ## Architecture
 
@@ -84,5 +90,6 @@ Fonts:
 - Poor performance on free variation selectors
 - Poor performance on non-preprocessed (whitened+cropped) images
 - Poor performance on long words
-- Page reading is untested on real photographed pages, and doesn't handle
-  curved pages, perspective, two-line small Chinese glosses or Mongolian
+- Page reading is tested on only one real page, and doesn't handle curved
+  pages, perspective, two-line small Chinese glosses or Mongolian; Manchu
+  punctuation is left out of the text
