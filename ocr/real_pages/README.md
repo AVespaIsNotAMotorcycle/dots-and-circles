@@ -21,13 +21,30 @@ aren't transcribed; punctuation may be, and is ignored when scoring.
 - **Transcription:** from [manc.hu](https://manc.hu/) (© Fresco Sam-Sin,
   Léon Rodenburg).
 
+## page002 to page004
+
+Sources not yet recorded:
+
+- **page002:** apparently the same book as page001 (the story 考城隍).
+- **page003:** a woodblock print of military regulations (qoohai fafun),
+  opening with an edict of Yongzheng 9 (1731).
+- **page004:** a handwritten letter from the Daoguang emperor, dated
+  Daoguang 24 (1844).
+
+Transcriptions supplied with the images; page004's footnote marks ([1],
+[2]) are ignored when scoring.
+
 ## Results
 
-| Model | page001 characters | page001 words |
-|---|---|---|
-| Run 30 | 95.7% | 81.0% |
-| Run 28 | 89.8% | 55.7% |
-| Run 26 | 82.0% | 44.3% |
+Characters / words, as of 2026-11-10:
 
-As of 2026-11-10. Most of Run 30's word errors are pairs of words set so
-close that they're read as one (`hotonde` for `hoton de`).
+| Model | page001 | page002 | page003 | page004 (handwritten) |
+|---|---|---|---|---|
+| Run 30 | 97.6% / 87.3% | 93.0% / 73.6% | 90.1% / 76.3% | 48.3% / 3.4% |
+| Run 28 | 88.2% / 51.9% | 86.0% / 50.6% | 88.0% / 55.3% | 42.2% / 1.0% |
+| Run 26 | 82.0% / 44.3% | 77.0% / 34.5% | 80.7% / 44.7% | 37.8% / 2.4% |
+
+On the printed pages, most of Run 30's word errors are pairs of words set
+so close that they're read as one (`hotonde` for `hoton de`). The
+handwritten letter's columns are found, but the models, trained on
+printed fonts and photographed print, read its hand poorly.
