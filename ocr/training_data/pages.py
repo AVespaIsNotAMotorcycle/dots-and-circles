@@ -12,6 +12,10 @@ A page has one of three layouts:
 - "mixed": Manchu columns, with short runs of Chinese characters among the
   words, as for glosses and names.
 
+Pages that aren't alternating may also have small Chinese glosses set in
+narrow columns between Manchu ones, as bilingual books print them. Each is
+a column of its own, all "other".
+
 Each Manchu word and each Chinese character is one item. An item's box is
 the bounding box of its ink, [left, top, right, bottom] with right and
 bottom exclusive (as PIL's crop takes it), so neighbouring columns' items
@@ -62,6 +66,15 @@ CHINESE_SIZE_RANGE = (0.8, 1.2)    # a Chinese character's em size
 # characters instead of a word, and how long the run can be
 CHINESE_RUN_CHANCE = 0.15
 CHINESE_RUN_LENGTH = (1, 4)
+# Glosses: the chance a page has them, the chance of a gloss column before
+# each Manchu column, their characters' size, how many are in a run, the
+# blank between runs (in units), and the gap either side of the column
+GLOSS_CHANCE = 0.35
+GLOSS_COLUMN_CHANCE = 0.6
+GLOSS_SIZE_RANGE = (0.6, 0.95)
+GLOSS_RUN_LENGTH = (1, 6)
+GLOSS_SPACE_RANGE = (0.5, 6.0)
+GLOSS_GAP_RANGE = (0.15, 0.45)
 RULES_CHANCE = 0.4                 # a frame and lines between columns
 RULE_WIDTH_RANGE = (0.02, 0.06)
 # For photo=True
@@ -71,6 +84,7 @@ MAX_BLUR = 0.03
 # Common Chinese characters lie in the CJK Unified Ideographs block. Which
 # characters they are doesn't matter here, only that they look Chinese.
 CJK_RANGE = (0x4E00, 0x9FA5)
+COMMON_CHINESE_SHARE = 0.5
 INK_THRESHOLD = 128
 # The hyphen-like mark the lexicon writes suffixes with (᠊)
 NIRUGU = "\u180a"
@@ -156,11 +170,35 @@ def ink_columns(image):
     ink = np.nonzero((np.asarray(image) < INK_THRESHOLD).any(axis=0))[0]
     return (int(ink[0]), int(ink[-1]) + 1) if len(ink) else None
 
+_common_chinese = None
+
+
+def common_chinese():
+    '''
+    The Chinese characters in the Wiktionary dump, once for each time they
+    occur there, so drawing from it favours common characters. Common
+    characters are often simple (几, 上, 十), and simple ones look more
+    like Manchu than the complex ones that fill most of the Unicode block.
+    '''
+    global _common_chinese
+    if _common_chinese is None:
+        path = os.path.join(directory, "kaikki.org-dictionary-Manchu.jsonl")
+        with open(path, "r", encoding="utf-8") as file:
+            text = file.read()
+        _common_chinese = sorted(
+            character for character in text
+            if CJK_RANGE[0] <= ord(character) <= CJK_RANGE[1])
+    return _common_chinese
+
 def chinese_character(rng, font):
-    # A random character the font has a glyph for
+    # A random character the font has a glyph for: a common one
+    # COMMON_CHINESE_SHARE of the time, otherwise any in the block
     blank = font.getmask("\U0010FFFD").getbbox()
     while True:
-        character = chr(rng.randint(*CJK_RANGE))
+        if rng.random() < COMMON_CHINESE_SHARE and common_chinese():
+            character = rng.choice(common_chinese())
+        else:
+            character = chr(rng.randint(*CJK_RANGE))
         box = font.getmask(character).getbbox()
         if box and box != blank:
             return character
@@ -194,7 +232,33 @@ def fill_column(rng, kind, length, render_word, render_character,
         used += height
     return items
 
-def generate_page(seed, layout=None, photo=False, rules=None, words=None):
+def fill_gloss(rng, length, unit, render_gloss, chinese_gap):
+    '''
+    A column of small Chinese glosses, set between two Manchu columns: runs
+    of characters with blank stretches between, as (offset, items, True),
+    where offset is the blank above the first run and items are as
+    fill_column gives them.
+    '''
+    items = []
+    offset = round(unit * rng.uniform(0, GLOSS_SPACE_RANGE[1] / 2))
+    used = offset
+    while True:
+        run = [render_gloss() for _ in range(rng.randint(*GLOSS_RUN_LENGTH))]
+        space = round(unit * rng.uniform(*GLOSS_SPACE_RANGE))
+        gaps = [chinese_gap() for _ in run[:-1]] + [space]
+        height = sum(image.height for _, image in run) + sum(gaps[:-1])
+        if used + height > length:
+            break
+        items.extend(("other", text, image, gap)
+                     for (text, image), gap in zip(run, gaps))
+        used += height + space
+    if not items:
+        text, image = render_gloss()
+        items = [("other", text, image, 0)]
+    return offset, items, True
+
+def generate_page(seed, layout=None, photo=False, rules=None, words=None,
+                  glosses=None):
     '''
     Returns (image, items) for a seed: a greyscale PIL page, and its items
     in reading order. Each item is a dict with:
@@ -210,7 +274,9 @@ def generate_page(seed, layout=None, photo=False, rules=None, words=None):
     (by default, chosen by the seed). photo=True skews, blurs and shades the
     page like a photograph. rules says whether to draw a frame and lines
     between columns (by default, chosen by the seed). words are the Manchu
-    words to use (by default, unseen_words()).
+    words to use (by default, unseen_words()). glosses says whether to set
+    small Chinese glosses between some Manchu columns (by default, chosen
+    by the seed, never on alternating pages).
     '''
     if not fonts:
         raise RuntimeError("No Manchu fonts in training_data/fonts/.")
@@ -250,20 +316,35 @@ def generate_page(seed, layout=None, photo=False, rules=None, words=None):
     column_count = rng.randint(*COLUMN_COUNT_RANGE)
     length = scaled(COLUMN_LENGTH_RANGE)
     chinese_first = rng.random() < 0.5
+    glossed = glosses if glosses is not None else (
+        layout != "alternating" and rng.random() < GLOSS_CHANCE)
+    gloss_font = load_chinese_font(
+        rng.choice(chinese_fonts),
+        max(8, round(unit * rng.uniform(*GLOSS_SIZE_RANGE))))
+    def render_gloss():
+        character = chinese_character(rng, gloss_font)
+        return character, render_chinese(character, gloss_font)
+
+    # Each column is (offset from the top, items, whether it's a gloss)
     columns = []
     for index in range(column_count):
         if layout == "alternating":
             kind = "chinese" if (index % 2 == 0) == chinese_first else "manchu"
         else:
             kind = layout if layout == "mixed" else "manchu"
-        columns.append(fill_column(rng, kind, length, render_word,
-                                   render_character, word_gap, chinese_gap))
+        if (glossed and index > 0 and kind != "chinese"
+                and rng.random() < GLOSS_COLUMN_CHANCE):
+            columns.append(fill_gloss(rng, length, unit, render_gloss,
+                                      chinese_gap))
+        columns.append((0, fill_column(rng, kind, length, render_word,
+                                       render_character, word_gap,
+                                       chinese_gap), False))
 
     # Each column's ink spans the same width around the stem for every
     # word, so its width is the widest word's ink. Chinese characters are
     # centred on that span.
     spans = []
-    for items in columns:
+    for _, items, _ in columns:
         manchu = [ink_columns(image) for kind, _, image, _ in items
                   if kind == "manchu" and ink_columns(image)]
         if manchu:
@@ -274,7 +355,9 @@ def generate_page(seed, layout=None, photo=False, rules=None, words=None):
             spans.append((0, width))
 
     margin = scaled(MARGIN_RANGE)
-    gaps = [scaled(COLUMN_GAP_RANGE) for _ in columns[1:]]
+    gaps = [scaled(GLOSS_GAP_RANGE if left[2] or right[2]
+                   else COLUMN_GAP_RANGE)
+            for left, right in zip(columns, columns[1:])]
     width = (2 * margin + sum(b - a for a, b in spans) + sum(gaps))
     height = 2 * margin + length
     page = Image.new("L", (width, height), 255)
@@ -284,9 +367,10 @@ def generate_page(seed, layout=None, photo=False, rules=None, words=None):
     items = []
     lefts = []
     x = margin
-    for column, (column_items, (start, end)) in enumerate(zip(columns, spans)):
+    for column, ((offset, column_items, _), (start, end)) in enumerate(
+            zip(columns, spans)):
         lefts.append(x)
-        y = margin
+        y = margin + offset
         for position, (kind, text, image, gap) in enumerate(column_items):
             if kind == "manchu":
                 left = x - start
