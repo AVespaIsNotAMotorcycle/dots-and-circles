@@ -2,6 +2,8 @@
   "allowed_origin": "*",
   "photos": "photos",
   "synthetic": "synthetic",
+  "default_model": "Run 30",
+  "box_classifier": "weights/box_classifier.npz",
   "models": [
     {
       "name": "Run 26",

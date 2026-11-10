@@ -67,12 +67,59 @@ repository root. Locally, from the repository root:
   unreadable image or a label that isn't Abkai gets a 400. Both come back
   as `{"error": "..."}`.
 
+- `POST /upload/multiple`: reads a page of print: columns of words written
+  top to bottom, read left to right, with Chinese characters among them or
+  in columns of their own. Send the image as for `/upload/single` (any
+  `label` is ignored). `?model=` picks the model by its `name` in
+  `config.json`, `default_model` by default; an unknown name gets a 400.
+
+  ```json
+  {
+    "model": "Run 30",
+    "image": "data:image/png;base64,...",
+    "angle": -0.8,
+    "manchu": "ᠠᠪᡴᠠ □ ᠨᠠ\nᠪᡝ",
+    "abkai": "abka □ na\nbe",
+    "boxes": [{
+      "x": 120, "y": 40, "w": 46, "h": 210,
+      "line": 0, "position": 0, "kind": "manchu",
+      "manchu-probability": 0.999,
+      "prediction-manchu": "ᠠᠪᡴᠠ", "prediction-abkai": "abka",
+      "confidence": 0.97
+    }]
+  }
+  ```
+
+  The page is found by `ocr/layout.py` (deskewed, ruled lines removed,
+  split into columns and words), each box is classed as Manchu or other
+  text by the small classifier in `ocr/box_classifier.py`, and Manchu boxes
+  are read by the model (see `ocr/page_reader.py`). `image` is the
+  page, deskewed by `angle` degrees anticlockwise, with Manchu boxes
+  outlined in green, washed with translucent white and labelled with their
+  reading in Abkai, and other boxes outlined in red. Box coordinates are in
+  that image. `boxes` are in reading order. `manchu` and `abkai` have a line
+  per column with Manchu in it, words separated by spaces and `□` for each
+  other box; columns with no Manchu (such as a column of Chinese) are left
+  out, and their boxes' `line` is `null`. `position` counts from the top of
+  the box's column, `manchu-probability` is the classifier's, and
+  `confidence` the mean probability of the classes the model read. Other
+  boxes' predictions and confidence are `null`.
+
+  Pillow's built-in font draws the Abkai, and has no ʻ, so the image shows
+  ‘ in its place; the text has ʻ.
+
 ## config.json
 
 - `allowed_origin`: sent as `Access-Control-Allow-Origin`.
 - `photos`: the folder of photos, with their `manifest.json`.
 - `synthetic`: the folder of synthetic words, with their `manifest.json`.
   Optional: without it, `?source=synthetic` gets a 400.
+- `default_model`: the `name` of the model `/upload/multiple` reads with
+  unless asked for another. The last model by default.
+- `box_classifier`: the weights of the Manchu/other classifier for
+  `/upload/multiple`, relative to this folder. Train them with
+  `python -m ocr.train_box_classifier`. Optional: without it,
+  `/upload/multiple` gets a 404.
 - `models`: one entry per model, in the order they're returned:
   - `name`, `model`: the short and long names sent to the frontend.
   - `class`: a CTC model class in `ocr/`, e.g. `ModelD`.

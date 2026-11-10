@@ -8,6 +8,7 @@ from PIL import Image
 
 flask = pytest.importorskip("flask")
 
+from ocr.box_classifier import make_classifier
 from ocr.modelD import ModelD
 from ocr.training_data import WIDTH
 from ocr.train import CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM, alphabet
@@ -39,10 +40,13 @@ def client(tmp_path):
         # Labelled in the dataset's romanization, which spells ᠴ c, not q
         [{"label": "acambi", "manchu": "ᠠᠴᠠᠮᠪᡳ", "font": "SomeFont", "seed": 7,
           "path": "000.png"}]))
+    # And an untrained box classifier, for /upload/multiple
+    make_classifier().save_weights(str(tmp_path / "classifier.npz"))
     (tmp_path / "config.json").write_text(json.dumps({
         "allowed_origin": "*",
         "photos": "photos",
         "synthetic": "synthetic",
+        "box_classifier": "classifier.npz",
         "models": [{"name": "Test", "model": "Untrained ModelD",
                     "class": "ModelD", "weights": "model.npz",
                     "params": params}],
@@ -264,3 +268,75 @@ def test_upload_label_marks_are_normalized(client):
         "label": "k'amduri"}).get_json()
     assert body["label"] == "k\u2018amduri"
     assert body["manchu"] == "ᠺᠠᠮᡩᡠᡵᡳ"
+
+
+def page_image(format="PNG"):
+    # Three columns of dark bars on white, like words in print
+    image = Image.new("L", (300, 400), 255)
+    for left in (40, 130, 220):
+        for top in (30, 160, 290):
+            image.paste(0, (left, top, left + 40, top + 90))
+    buffer = io.BytesIO()
+    image.save(buffer, format=format)
+    return buffer.getvalue()
+
+def test_upload_multiple(client):
+    response = client.post("/upload/multiple", data={
+        "image": (io.BytesIO(page_image()), "page.png")})
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["model"] == "Test"
+    assert body["image"].startswith("data:image/png;base64,")
+    drawn = Image.open(io.BytesIO(base64.b64decode(
+        body["image"].partition(",")[2])))
+    assert drawn.mode == "RGB"
+    # The untrained classifier may call bars other text, and split them
+    # into square characters
+    assert len(body["boxes"]) >= 9
+    for box in body["boxes"]:
+        assert box["kind"] in ("manchu", "other")
+        assert {"x", "y", "w", "h", "line", "position",
+                "manchu-probability", "prediction-manchu",
+                "prediction-abkai", "confidence"} <= set(box)
+        if box["kind"] == "manchu":
+            assert box["prediction-abkai"] == manchu_to_abkai(
+                box["prediction-manchu"])
+        else:
+            assert box["prediction-manchu"] is None
+    # Reading order: columns left to right, top to bottom in each
+    order = [(box["x"], box["y"]) for box in body["boxes"]]
+    assert [x for x, _ in order] == sorted(x for x, _ in order)
+    # One line per column with Manchu in it, a word or □ per box
+    lines = body["manchu"].split("\n") if body["manchu"] else []
+    assert len(lines) == len({box["line"] for box in body["boxes"]
+                              if box["line"] is not None})
+    assert len(body["abkai"].split("\n") if body["abkai"] else []) == \
+        len(lines)
+
+def test_upload_multiple_json_and_model(client):
+    encoded = base64.b64encode(page_image("JPEG")).decode("ascii")
+    response = client.post("/upload/multiple?model=Test",
+                           json={"image": f"data:image/jpeg;base64,{encoded}"})
+    assert response.status_code == 200
+    assert response.get_json()["model"] == "Test"
+
+def test_upload_multiple_unknown_model(client):
+    response = client.post("/upload/multiple?model=Nope", data={
+        "image": (io.BytesIO(page_image()), "page.png")})
+    assert response.status_code == 400
+    assert "Nope" in response.get_json()["error"]
+
+def test_upload_multiple_blank_page(client):
+    buffer = io.BytesIO()
+    Image.new("L", (200, 300), 240).save(buffer, format="PNG")
+    response = client.post("/upload/multiple", data={
+        "image": (io.BytesIO(buffer.getvalue()), "blank.png")})
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["boxes"] == [] and body["manchu"] == "" and \
+        body["abkai"] == ""
+
+def test_upload_multiple_bad_image(client):
+    response = client.post("/upload/multiple", data={
+        "image": (io.BytesIO(b"not an image"), "page.png")})
+    assert response.status_code == 400

@@ -22,6 +22,8 @@ import numpy as np
 from flask import Flask, jsonify, request
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from ocr.box_classifier import load_classifier
+from ocr.page_reader import draw_page, page_text, read_page
 from ocr.photos import (abkai_to_manchu, load_photo, manchu_to_abkai,
                         manchu_to_roman, spell_in_manchu)
 from ocr.preprocess import prepare
@@ -173,11 +175,49 @@ def open_upload(data):
     image.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
     return image
 
+def page_response(entry, page):
+    '''
+    The JSON for POST /upload/multiple: the page drawn with its boxes, its
+    text in Manchu and Abkai (a line per column with Manchu in it), and
+    each box. A box's "line" is its line of the text, or None if its column
+    has no Manchu and so no line.
+    '''
+    lines = {}
+    for word in page.words:
+        if word["kind"] == "manchu":
+            lines.setdefault(word["column"], None)
+    lines = {column: line for line, column in enumerate(sorted(lines))}
+    boxes = []
+    for word in page.words:
+        left, top, right, bottom = word["box"]
+        manchu = word["kind"] == "manchu"
+        boxes.append({
+            "x": left, "y": top, "w": right - left, "h": bottom - top,
+            "line": lines.get(word["column"]),
+            "position": word["position"],
+            "kind": word["kind"],
+            "manchu-probability": word["manchu"],
+            "prediction-manchu": word["text"] if manchu else None,
+            "prediction-abkai": word["abkai"] if manchu else None,
+            "confidence": word["confidence"] if manchu else None,
+        })
+    return {"model": entry["name"],
+            "image": image_data_url(draw_page(page)),
+            "angle": page.angle,
+            "manchu": page_text(page),
+            "abkai": page_text(page, abkai=True),
+            "boxes": boxes}
+
 def create_app(config_path=CONFIG_PATH):
     with open(config_path, "r", encoding="utf-8") as file:
         config = json.load(file)
     root = os.path.dirname(os.path.abspath(config_path))
     models = [(entry, load_model(entry, root)) for entry in config["models"]]
+    # /upload/multiple reads with one model, by default default_model
+    default_model = config.get("default_model", config["models"][-1]["name"])
+    # Optional: without it, /upload/multiple gets a 404
+    classifier = (load_classifier(os.path.join(root, config["box_classifier"]))
+                  if "box_classifier" in config else None)
     # The images GET /random picks from, by source: a folder and its
     # manifest.json for each. "synthetic" is optional in config.json.
     sources = {}
@@ -271,5 +311,29 @@ def create_app(config_path=CONFIG_PATH):
                         "preprocessed-image": image_data_url(
                             prepare(original)),
                         "results": read_all(original, roman)})
+
+    @app.post("/upload/multiple")
+    def upload_multiple():
+        '''
+        Reads a page of words: an image sent as for /upload/single, read
+        with the model named by ?model= (default_model in config.json by
+        default). See page_response.
+        '''
+        if classifier is None:
+            raise RequestError("This server doesn't read pages.", 404)
+        name = request.args.get("model") or default_model
+        chosen = [(entry, model) for entry, model in models
+                  if entry["name"] == name]
+        if not chosen:
+            raise RequestError(f"Unknown model {name!r}: use one of "
+                               f"{', '.join(e['name'] for e, _ in models)}.")
+        entry, model = chosen[0]
+        data, _ = read_upload()
+        original = open_upload(data)
+        preprocess = entry.get("preprocess", {})
+        page = read_page(original, model, classifier,
+                         preprocess.get("crop", True),
+                         preprocess.get("whiten", True))
+        return jsonify(page_response(entry, page))
 
     return app

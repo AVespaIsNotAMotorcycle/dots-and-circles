@@ -8,7 +8,10 @@ README.md for the architecture.
 - `nn/`, `loss/`, `optim/`, `utils/`: the numpy library (layers, CTCLoss,
   Adam/SGD, softmax), each with its own `tests/`.
 - `ocr/`: models (`modelA`–`modelD`), `train.py`, `evaluate_non_synthetic.py`,
-  `photos.py`, `preprocess.py`.
+  `photos.py`, `preprocess.py`. Reading whole pages: `layout.py` (columns
+  and words, classical), `box_classifier.py` (Manchu or other, a small MLP;
+  `train_box_classifier.py`), `page_reader.py`, and `evaluate_pages.py`
+  (scores them on synthetic pages).
 - `ocr/training_data/`: lexicon, word rendering (`__init__.py`) and print
   augmentation (`augment.py`). `fonts/` is gitignored for licensing reasons:
   never commit font files, and check it holds `.ttf` files before training.
