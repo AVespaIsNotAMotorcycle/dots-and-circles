@@ -10,17 +10,31 @@ true boxes are known:
   missed.
 - kinds (with a classifier): the share of matched boxes given the right
   kind, Manchu or other.
+- reading (with --model, which needs the classifier too): over matched
+  Manchu boxes, the share read exactly and the mean character accuracy, in
+  the dataset's romanization as in the run reports. And for whole pages,
+  the character accuracy of the page's text (a line per column with
+  Manchu, see training_data.pages.page_lines) against the true text, which
+  counts every error of layout, classing and reading; and the seconds per
+  page.
+
+--model reads server/config.json for the model's class, weights and
+preprocessing, and by default uses its box classifier.
 
 Pages are seeded from --start, so the same arguments score the same pages.
 '''
 
 import argparse
-
-import numpy as np
+import json
+import os
+import time
 
 from ocr.box_classifier import label_words, load_classifier
 from ocr.layout import find_words
-from ocr.training_data.pages import generate_page
+from ocr.page_reader import page_text, read_page
+from ocr.photos import manchu_to_roman
+from ocr.train import character_accuracy, edit_distance
+from ocr.training_data.pages import generate_page, page_lines
 
 MATCH_IOU = 0.5
 
@@ -72,11 +86,19 @@ def unmatched_kinds(found, true, pairing):
             counts["missed"] += 1
     return counts
 
-def score_page(seed, photo, layout=None, classifier=None):
+def score_page(seed, photo, layout=None, classifier=None, reader=None):
+    '''
+    Scores one page. reader is (model, crop, whiten) to read it too.
+    '''
     image, items = generate_page(seed, layout=layout, photo=photo)
-    page = find_words(image)
-    if classifier is not None:
-        label_words(page, classifier)
+    start = time.perf_counter()
+    if reader is not None:
+        page = read_page(image, *reader[:1], classifier, *reader[1:])
+    else:
+        page = find_words(image)
+        if classifier is not None:
+            label_words(page, classifier)
+    seconds = time.perf_counter() - start
     found = [page.to_input(word["box"]) for word in page.words]
     true = [item["box"] for item in items]
     pairing = match(found, true)
@@ -91,6 +113,21 @@ def score_page(seed, photo, layout=None, classifier=None):
             result[f"{kind} matched"] = len(pairs)
             result[f"{kind} right"] = sum(page.words[i]["kind"] == kind
                                           for i, _ in pairs)
+    if reader is not None:
+        read = [(manchu_to_roman(page.words[i]["text"]),
+                 manchu_to_roman(items[j]["text"]))
+                for i, j in pairing.items()
+                if items[j]["kind"] == "manchu"
+                and page.words[i]["kind"] == "manchu"]
+        result["read"] = len(read)
+        result["exact"] = sum(guess == word for guess, word in read)
+        result["character"] = sum(character_accuracy(guess, word)
+                                  for guess, word in read)
+        true_text = page_lines(items)
+        found_text = page_text(page)
+        result["text characters"] = len(true_text)
+        result["text errors"] = edit_distance(found_text, true_text)
+        result["seconds"] = seconds
     return result
 
 def main():
@@ -104,15 +141,23 @@ def main():
     parser.add_argument("--classifier",
                         help="a box classifier's weights, to score kinds "
                              "and split runs of Chinese characters")
+    parser.add_argument("--model",
+                        help="the name of a model in server/config.json, "
+                             "to read the pages with")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="print each page's scores")
     args = parser.parse_args()
+    reader = None
+    if args.model:
+        reader, classifier_path = load_reader(args.model)
+        args.classifier = args.classifier or classifier_path
     classifier = (load_classifier(args.classifier) if args.classifier
                   else None)
 
     totals = {}
     for seed in range(args.start, args.start + args.pages):
-        result = score_page(seed, args.photo, args.layout, classifier)
+        result = score_page(seed, args.photo, args.layout, classifier,
+                            reader)
         if args.verbose:
             print(seed, result)
         for key, value in result.items():
@@ -127,6 +172,33 @@ def main():
         print("Kinds right: " + ", ".join(
             f"{kind} {totals[f'{kind} right'] / max(1, totals[f'{kind} matched']):.1%}"
             f" of {totals[f'{kind} matched']}" for kind in ("manchu", "other")))
+    if reader is not None:
+        read = max(1, totals["read"])
+        print(f"Manchu words read: {totals['exact'] / read:.1%} exactly, "
+              f"{totals['character'] / read:.1%} character accuracy "
+              f"(of {totals['read']})")
+        print(f"Page text: {1 - totals['text errors'] / max(1, totals['text characters']):.1%} "
+              f"character accuracy; {totals['seconds'] / args.pages:.2f} s "
+              f"a page")
+
+def load_reader(name):
+    '''
+    A model from server/config.json, as (model, crop, whiten), and the
+    path of the config's box classifier.
+    '''
+    # Imported here: the server needs Flask, which scoring layouts doesn't
+    from server.app import CONFIG_PATH, load_model
+    with open(CONFIG_PATH, "r", encoding="utf-8") as file:
+        config = json.load(file)
+    root = os.path.dirname(CONFIG_PATH)
+    entries = [entry for entry in config["models"] if entry["name"] == name]
+    if not entries:
+        raise SystemExit(f"No model named {name!r} in {CONFIG_PATH}.")
+    entry = entries[0]
+    preprocess = entry.get("preprocess", {})
+    return ((load_model(entry, root), preprocess.get("crop", True),
+             preprocess.get("whiten", True)),
+            os.path.join(root, config["box_classifier"]))
 
 if __name__ == "__main__":
     main()

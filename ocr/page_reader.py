@@ -20,8 +20,10 @@ from ocr.training_data.pages import page_lines
 from utils.softmax import softmax
 
 # Words read at once. The models keep every layer's activations, so memory
-# grows with this.
-BATCH_SIZE = 16
+# grows with this: Run 30 needs about 12 MB a word. Batches of 4 read as
+# fast as bigger ones, in a quarter of the memory of 16, which matters with
+# two workers on a 512 MB dyno.
+BATCH_SIZE = 4
 # Drawing: outline colours, and the white laid over Manchu boxes (its
 # opacity, 0-255) so their Abkai shows over the print
 MANCHU_COLOUR = (0, 170, 0)
