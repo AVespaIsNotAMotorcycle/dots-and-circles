@@ -8,6 +8,8 @@ true boxes are known:
   Unmatched true boxes are counted as merged (inside a found box that
   covers another true box too), split (covered by several found boxes) or
   missed.
+- kinds (with a classifier): the share of matched boxes given the right
+  kind, Manchu or other.
 
 Pages are seeded from --start, so the same arguments score the same pages.
 '''
@@ -16,6 +18,7 @@ import argparse
 
 import numpy as np
 
+from ocr.box_classifier import label_words, load_classifier
 from ocr.layout import find_words
 from ocr.training_data.pages import generate_page
 
@@ -69,9 +72,11 @@ def unmatched_kinds(found, true, pairing):
             counts["missed"] += 1
     return counts
 
-def score_page(seed, photo, layout=None):
+def score_page(seed, photo, layout=None, classifier=None):
     image, items = generate_page(seed, layout=layout, photo=photo)
     page = find_words(image)
+    if classifier is not None:
+        label_words(page, classifier)
     found = [page.to_input(word["box"]) for word in page.words]
     true = [item["box"] for item in items]
     pairing = match(found, true)
@@ -79,6 +84,13 @@ def score_page(seed, photo, layout=None):
               "matched": len(pairing),
               "angle": page.angle}
     result.update(unmatched_kinds(found, true, pairing))
+    if classifier is not None:
+        for kind in ("manchu", "other"):
+            pairs = [(i, j) for i, j in pairing.items()
+                     if items[j]["kind"] == kind]
+            result[f"{kind} matched"] = len(pairs)
+            result[f"{kind} right"] = sum(page.words[i]["kind"] == kind
+                                          for i, _ in pairs)
     return result
 
 def main():
@@ -89,13 +101,18 @@ def main():
     parser.add_argument("--photo", action="store_true",
                         help="score photographed-looking pages")
     parser.add_argument("--layout", help="score only this layout")
+    parser.add_argument("--classifier",
+                        help="a box classifier's weights, to score kinds "
+                             "and split runs of Chinese characters")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="print each page's scores")
     args = parser.parse_args()
+    classifier = (load_classifier(args.classifier) if args.classifier
+                  else None)
 
     totals = {}
     for seed in range(args.start, args.start + args.pages):
-        result = score_page(seed, args.photo, args.layout)
+        result = score_page(seed, args.photo, args.layout, classifier)
         if args.verbose:
             print(seed, result)
         for key, value in result.items():
@@ -106,6 +123,10 @@ def main():
           f"recall {totals['matched'] / max(1, totals['true']):.1%}")
     print(f"Unmatched true boxes: {totals['merged']} merged, "
           f"{totals['split']} split, {totals['missed']} missed")
+    if classifier is not None:
+        print("Kinds right: " + ", ".join(
+            f"{kind} {totals[f'{kind} right'] / max(1, totals[f'{kind} matched']):.1%}"
+            f" of {totals[f'{kind} matched']}" for kind in ("manchu", "other")))
 
 if __name__ == "__main__":
     main()

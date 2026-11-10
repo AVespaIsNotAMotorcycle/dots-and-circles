@@ -46,7 +46,9 @@ RULE_CONTACT = 0.1
 RULE_GAP = 0.01
 RULE_EDGE = 0.5
 RULE_EDGE_ROWS = 2
-# Binarizing: ink pixels with fewer inked neighbours than this are noise
+# Binarizing: the radius of the blur against pixel noise, and ink pixels
+# with fewer inked neighbours than SPECK_NEIGHBOURS are noise
+NOISE_BLUR = 1
 SPECK_NEIGHBOURS = 2
 # Columns: the unit is measured on stretches of ink at least this share as
 # wide as the widest
@@ -54,8 +56,11 @@ UNIT_SHARE = 0.3
 # Columns: pixel columns with at most this share of the tallest column's
 # ink count as gutter
 GUTTER_INK = 0.01
-# A stretch of ink wider than this many units is two columns touching
+# A stretch of ink wider than this many units may be two columns touching,
+# and is split if its ink, per pixel column, falls to SPLIT_VALLEY of the
+# lower of the peaks either side
 SPLIT_WIDTH = 1.6
+SPLIT_VALLEY = 0.25
 # Stretches narrower than this many units are noise or stray marks, unless
 # they're close to a column
 MIN_COLUMN_WIDTH = 0.25
@@ -129,7 +134,10 @@ def binarize(image):
     paper = (small.filter(ImageFilter.MaxFilter(BACKGROUND_FILTER))
              .filter(ImageFilter.GaussianBlur(BACKGROUND_FILTER / 2))
              .resize(image.size, Image.BILINEAR))
-    pixels = np.asarray(image, dtype=np.float64)
+    # A slight blur first, so pixel noise on the paper doesn't cross the
+    # threshold
+    pixels = np.asarray(image.filter(ImageFilter.GaussianBlur(NOISE_BLUR)),
+                        dtype=np.float64)
     paper = np.maximum(np.asarray(paper, dtype=np.float64), 1)
     levels = np.clip(np.round(pixels / paper * 255), 0, 255).astype(int)
     return despeckle(levels < otsu(levels))
@@ -326,6 +334,12 @@ def split_span(profile, start, end, unit):
         return [(start, end)]
     cut = start + margin + int(np.argmin(middle))
     if not start < cut < end:
+        return [(start, end)]
+    # Touching columns meet in a valley well below both their peaks; one
+    # wide column (such as a Manchu one among narrower Chinese ones) has
+    # no such valley
+    if profile[cut] > SPLIT_VALLEY * min(profile[start:cut].max(),
+                                         profile[cut:end].max()):
         return [(start, end)]
     return (split_span(profile, start, cut, unit)
             + split_span(profile, cut, end, unit))

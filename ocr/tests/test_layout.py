@@ -88,3 +88,18 @@ def test_finds_the_words_of_a_manchu_page(photo):
 def test_blank_page():
     page = find_words(Image.new("L", (200, 300), 230))
     assert page.words == []
+
+def test_split_characters():
+    from ocr.box_classifier import split_characters
+    ink = np.zeros((400, 100), dtype=bool)
+    # Three 40-pixel characters: the first in two parts (like 二), the
+    # second touching the third
+    ink[10:20, 30:70] = True
+    ink[35:50, 30:70] = True
+    ink[60:100, 30:70] = True
+    ink[100:140, 32:68] = True
+    characters = split_characters(ink, [30, 10, 70, 140])
+    assert len(characters) == 3
+    assert characters[0][1] == 10 and characters[0][3] == 50
+    assert abs(characters[1][3] - 100) <= 3
+    assert characters[2][3] == 140
