@@ -23,6 +23,26 @@ Numbers show percentage of words guessed exactly correctly.
 Run 30 trained on rendered fonts plus 85% of the photographed words; the benchmark is the other 315 words (3,150 photos), which it never saw. It has never seen handwriting. Run 29 trained only on rendered fonts. CRNN v3 trained on these same photos (split by image, not by word), so it can't be scored on the benchmark. Both runs process ~90 img/s on one CPU core.
 Accuracy figures are from [this report](ocr/runs/run030/comparison_epoch018_benchmark_manchuai.md).
 
+## Reading whole pages
+
+`POST /upload/multiple` (see [the server README](server/README.md)) reads a
+page of print: it finds the columns and words with classical image
+processing (`ocr/layout.py`), tells Manchu from Chinese with a small MLP
+(`ocr/box_classifier.py`), and reads each Manchu word with Run 30.
+
+On 100 synthetic pages (`python -m ocr.evaluate_pages`) of words no model
+trained on, a third each of all-Manchu, alternating Manchu and Chinese
+columns, and Manchu with Chinese characters mixed in:
+
+| Pages | Boxes found (precision / recall) | Kind right (Manchu / Chinese) | Manchu words exact | Page text character accuracy |
+|---|---|---|---|---|
+| Clean | 99.7% / 99.4% | 100% / 99.7% | 97.0% | 99.3% |
+| Made to look photographed | 99.5% / 99.2% | 100% / 99.9% | 96.3% | 99.3% |
+
+With Run 28 the photographed-looking pages read 91.5% exactly, and with
+Run 26 79.3%. A page takes about a second on one CPU core. These are
+synthetic pages only: no real photographed pages have been scored yet.
+
 ## Architecture
 
 Best performance: Run 30
@@ -64,3 +84,5 @@ Fonts:
 - Poor performance on free variation selectors
 - Poor performance on non-preprocessed (whitened+cropped) images
 - Poor performance on long words
+- Page reading is untested on real photographed pages, and doesn't handle
+  curved pages, perspective, two-line small Chinese glosses or Mongolian
