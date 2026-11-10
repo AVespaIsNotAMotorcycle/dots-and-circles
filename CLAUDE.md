@@ -12,6 +12,9 @@ README.md for the architecture.
 - `ocr/training_data/`: lexicon, word rendering (`__init__.py`) and print
   augmentation (`augment.py`). `fonts/` is gitignored for licensing reasons:
   never commit font files, and check it holds `.ttf` files before training.
+  `pages.py` renders synthetic pages (Manchu columns, sometimes with Chinese)
+  with their true boxes, for the page reader; its Chinese fonts go in
+  `fonts/chinese/`.
 - `ocr/runs/runNNN/`: one folder per training run (log, graphs, reports).
   Weights (`*.npz`) are gitignored.
 - `server/`: the Flask server Heroku runs (`Procfile`, `requirements.txt`

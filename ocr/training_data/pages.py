@@ -1,0 +1,407 @@
+'''
+Renders synthetic pages of print, for developing and testing the page
+reader behind /upload/multiple: Manchu words in columns, read top to bottom
+and left to right, sometimes with Chinese characters, along with the true
+box, kind and reading order of everything on the page.
+
+A page has one of three layouts:
+
+- "manchu": only Manchu columns.
+- "alternating": Manchu and Chinese columns take turns, as in bilingual
+  books.
+- "mixed": Manchu columns, with short runs of Chinese characters among the
+  words, as for glosses and names.
+
+Each Manchu word and each Chinese character is one item. An item's box is
+the bounding box of its ink, [left, top, right, bottom] with right and
+bottom exclusive (as PIL's crop takes it), so neighbouring columns' items
+never share a box even when the columns are close.
+
+The Chinese fonts live in fonts/chinese/, which is gitignored like fonts/.
+For a .ttc font the traditional Chinese face is used, since that's what
+Qing prints use.
+
+Run as python -m ocr.training_data.pages SEED to save a page, the page with
+its boxes drawn on, and its items as JSON.
+'''
+
+import argparse
+import json
+import os
+import random
+
+import numpy as np
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
+
+from ocr.photos import manchu_to_abkai
+from ocr.training_data import HEIGHT, directory, fonts, lexicon
+
+CHINESE_FONTS_DIRECTORY = os.path.join(directory, "fonts", "chinese")
+chinese_fonts = sorted(
+    os.path.join(CHINESE_FONTS_DIRECTORY, name)
+    for name in os.listdir(CHINESE_FONTS_DIRECTORY)
+    if name.lower().endswith((".ttf", ".otf", ".ttc"))
+) if os.path.isdir(CHINESE_FONTS_DIRECTORY) else []
+
+LAYOUTS = ["manchu", "alternating", "mixed"]
+LAYOUT_WEIGHTS = [0.4, 0.3, 0.3]
+# What stands in for an item that isn't Manchu in a page's text
+OTHER = "□"
+
+# Lengths below are in units of the page's column width: the width of the
+# ink of a Manchu column, from its leftmost tooth to its rightmost.
+FONT_SIZE_RANGE = (48, 112)        # pixels, for the Manchu font
+COLUMN_COUNT_RANGE = (4, 14)
+COLUMN_LENGTH_RANGE = (8, 20)      # the height of the text area
+WORD_GAP_RANGE = (0.15, 0.5)
+CHINESE_GAP_RANGE = (0.05, 0.25)
+COLUMN_GAP_RANGE = (0.3, 1.0)
+MARGIN_RANGE = (0.5, 2.0)
+CHINESE_SIZE_RANGE = (0.8, 1.2)    # a Chinese character's em size
+# In a mixed layout, the chance that an item is a run of Chinese
+# characters instead of a word, and how long the run can be
+CHINESE_RUN_CHANCE = 0.15
+CHINESE_RUN_LENGTH = (1, 4)
+RULES_CHANCE = 0.4                 # a frame and lines between columns
+RULE_WIDTH_RANGE = (0.02, 0.06)
+# For photo=True
+MAX_SKEW = 2.0                     # degrees either way
+MAX_BLUR = 0.03
+
+# Common Chinese characters lie in the CJK Unified Ideographs block. Which
+# characters they are doesn't matter here, only that they look Chinese.
+CJK_RANGE = (0x4E00, 0x9FA5)
+INK_THRESHOLD = 128
+# The hyphen-like mark the lexicon writes suffixes with (᠊)
+NIRUGU = "\u180a"
+# Words are drawn this far from the edges of their canvas, as a share of the
+# font size, so marks that reach past the font's ascent or descent survive
+CANVAS_MARGIN = 0.25
+
+_unseen_words = None
+
+
+def unseen_words():
+    '''
+    Single words that train.py never trains on: the default for pages, so a
+    model can be scored on pages of unseen words. Many lexicon entries are
+    phrases, so this is every word of the test entries (as train.py splits
+    them) that isn't also a word of a training entry or a training photo.
+    Dictionary forms of suffixes, marked with NIRUGU, are left out, since
+    print never shows them on their own.
+    '''
+    global _unseen_words
+    if _unseen_words is None:
+        # Imported here: augment.py imports this package
+        from ocr.photos import manchu_to_roman
+        from ocr.split import group_key, load_photo_split, split_words
+        from ocr.training_data.augment import ROWS_PER_TOKEN, tokens_needed
+        kept = [entry for entry in lexicon
+                if tokens_needed(entry) <= HEIGHT // ROWS_PER_TOKEN]
+        train, valid, test = split_words(kept)
+        trained = {group_key(word) for index in train + valid
+                   for word in kept[index].split()}
+        train_photos = load_photo_split()["train"]
+        _unseen_words = sorted({
+            word for index in test for word in kept[index].split()
+            if group_key(word) not in trained
+            and manchu_to_roman(word) not in train_photos
+            and NIRUGU not in word})
+    return _unseen_words
+
+def load_chinese_font(path, size):
+    # The traditional Chinese face of a collection, or its first
+    if not path.lower().endswith(".ttc"):
+        return ImageFont.truetype(path, size)
+    index = 0
+    while True:
+        try:
+            font = ImageFont.truetype(path, size, index=index)
+        except OSError:
+            return ImageFont.truetype(path, size)
+        if font.getname()[0].endswith(" TC"):
+            return font
+        index += 1
+
+def render_manchu(word, font):
+    '''
+    Renders word top to bottom, cropped to its ink along the column but not
+    across it, so every word in a font comes out the same width with its
+    stem in the same place. Dark ink on white, as a greyscale PIL image.
+    '''
+    ascent, descent = font.getmetrics()
+    margin = round(CANVAS_MARGIN * font.size)
+    length = round(font.getlength(word))
+    canvas = Image.new("L", (length + 2 * margin,
+                             ascent + descent + 2 * margin), 255)
+    ImageDraw.Draw(canvas).text((margin, margin), word, font=font, fill=0)
+    ink = np.nonzero((np.asarray(canvas) < INK_THRESHOLD).any(axis=0))[0]
+    if len(ink):
+        canvas = canvas.crop((ink[0], 0, ink[-1] + 1, canvas.height))
+    # Fonts lay Manchu out horizontally, top of the letters up: turned
+    # clockwise, it reads top to bottom
+    return canvas.rotate(-90, expand=True)
+
+def render_chinese(character, font):
+    # One character, cropped to its ink
+    size = font.size
+    canvas = Image.new("L", (2 * size, 2 * size), 255)
+    ImageDraw.Draw(canvas).text((size // 2, size // 2), character, font=font,
+                                fill=0)
+    box = ImageChops.invert(canvas).getbbox()
+    return canvas.crop(box) if box else canvas.crop((0, 0, 1, 1))
+
+def ink_columns(image):
+    # The first and last (exclusive) pixel columns with ink, or None
+    ink = np.nonzero((np.asarray(image) < INK_THRESHOLD).any(axis=0))[0]
+    return (int(ink[0]), int(ink[-1]) + 1) if len(ink) else None
+
+def chinese_character(rng, font):
+    # A random character the font has a glyph for
+    blank = font.getmask("\U0010FFFD").getbbox()
+    while True:
+        character = chr(rng.randint(*CJK_RANGE))
+        box = font.getmask(character).getbbox()
+        if box and box != blank:
+            return character
+
+def fill_column(rng, kind, length, render_word, render_character,
+                word_gap, chinese_gap):
+    '''
+    Items for one column of the given kind ("manchu", "chinese" or "mixed"),
+    as (kind, text, image) tuples, stacked until the next one wouldn't fit
+    in length pixels. Returns them with the gap after each.
+    '''
+    items = []
+    used = 0
+    failures = 0
+    while failures < 3:
+        if kind == "chinese" or (kind == "mixed"
+                                 and rng.random() < CHINESE_RUN_CHANCE):
+            run = [render_character()
+                   for _ in range(1 if kind == "chinese"
+                                  else rng.randint(*CHINESE_RUN_LENGTH))]
+            gaps = [chinese_gap()] * (len(run) - 1) + [word_gap()]
+            new = [("other",) + item + (gap,)
+                   for item, gap in zip(run, gaps)]
+        else:
+            new = [("manchu",) + render_word() + (word_gap(),)]
+        height = sum(image.height + gap for _, _, image, gap in new)
+        if used + height - new[-1][3] > length:
+            failures += 1
+            continue
+        items.extend(new)
+        used += height
+    return items
+
+def generate_page(seed, layout=None, photo=False, rules=None, words=None):
+    '''
+    Returns (image, items) for a seed: a greyscale PIL page, and its items
+    in reading order. Each item is a dict with:
+
+    - "kind": "manchu" or "other"
+    - "text": the Manchu word or the Chinese character
+    - "box": [left, top, right, bottom] of its ink, right and bottom
+      exclusive
+    - "column": its column, counting from 0 at the left
+    - "position": its place in the column, counting from 0 at the top
+
+    The same arguments always give the same page. layout is one of LAYOUTS
+    (by default, chosen by the seed). photo=True skews, blurs and shades the
+    page like a photograph. rules says whether to draw a frame and lines
+    between columns (by default, chosen by the seed). words are the Manchu
+    words to use (by default, unseen_words()).
+    '''
+    if not fonts:
+        raise RuntimeError("No Manchu fonts in training_data/fonts/.")
+    if not chinese_fonts:
+        raise RuntimeError(
+            f"No Chinese fonts in {CHINESE_FONTS_DIRECTORY}.")
+    rng = random.Random(seed)
+    words = words if words is not None else unseen_words()
+    layout = layout or rng.choices(LAYOUTS, LAYOUT_WEIGHTS)[0]
+    rules = rng.random() < RULES_CHANCE if rules is None else rules
+
+    # One typeface per page, as a book has
+    font = ImageFont.truetype(rng.choice(fonts),
+                              rng.randint(*FONT_SIZE_RANGE))
+    sample = render_manchu("ᠠᠪᡴᠠ ᠨᠠ", font)
+    unit = max(1, ink_columns(sample)[1] - ink_columns(sample)[0])
+    chinese_font = load_chinese_font(
+        rng.choice(chinese_fonts),
+        max(8, round(unit * rng.uniform(*CHINESE_SIZE_RANGE))))
+
+    def scaled(bounds):
+        return max(1, round(unit * rng.uniform(*bounds)))
+    word_gap_base = rng.uniform(*WORD_GAP_RANGE)
+    chinese_gap_base = rng.uniform(*CHINESE_GAP_RANGE)
+    # Gaps vary a little around the page's own spacing
+    word_gap = lambda: max(1, round(unit * word_gap_base
+                                    * rng.uniform(0.7, 1.3)))
+    chinese_gap = lambda: max(1, round(unit * chinese_gap_base
+                                       * rng.uniform(0.7, 1.3)))
+    def render_word():
+        word = rng.choice(words)
+        return word, render_manchu(word, font)
+    def render_character():
+        character = chinese_character(rng, chinese_font)
+        return character, render_chinese(character, chinese_font)
+
+    column_count = rng.randint(*COLUMN_COUNT_RANGE)
+    length = scaled(COLUMN_LENGTH_RANGE)
+    chinese_first = rng.random() < 0.5
+    columns = []
+    for index in range(column_count):
+        if layout == "alternating":
+            kind = "chinese" if (index % 2 == 0) == chinese_first else "manchu"
+        else:
+            kind = layout if layout == "mixed" else "manchu"
+        columns.append(fill_column(rng, kind, length, render_word,
+                                   render_character, word_gap, chinese_gap))
+
+    # Each column's ink spans the same width around the stem for every
+    # word, so its width is the widest word's ink. Chinese characters are
+    # centred on that span.
+    spans = []
+    for items in columns:
+        manchu = [ink_columns(image) for kind, _, image, _ in items
+                  if kind == "manchu" and ink_columns(image)]
+        if manchu:
+            spans.append((min(a for a, _ in manchu),
+                          max(b for _, b in manchu)))
+        else:
+            width = max((image.width for _, _, image, _ in items), default=1)
+            spans.append((0, width))
+
+    margin = scaled(MARGIN_RANGE)
+    gaps = [scaled(COLUMN_GAP_RANGE) for _ in columns[1:]]
+    width = (2 * margin + sum(b - a for a, b in spans) + sum(gaps))
+    height = 2 * margin + length
+    page = Image.new("L", (width, height), 255)
+    # Each item's ink, by its index + 1, to find its box after any skew
+    owners = Image.new("I", (width, height), 0)
+
+    items = []
+    lefts = []
+    x = margin
+    for column, (column_items, (start, end)) in enumerate(zip(columns, spans)):
+        lefts.append(x)
+        y = margin
+        for position, (kind, text, image, gap) in enumerate(column_items):
+            if kind == "manchu":
+                left = x - start
+            else:
+                left = x + (end - start - image.width) // 2
+            # Masked by its own darkness, so its white leaves the page be
+            page.paste(image, (left, y), ImageChops.invert(image))
+            mask = Image.eval(image, lambda value: 255
+                              if value < INK_THRESHOLD else 0)
+            owners.paste(len(items) + 1, (left, y, left + image.width,
+                                          y + image.height), mask)
+            items.append({"kind": kind, "text": text, "column": column,
+                          "position": position})
+            y += image.height + gap
+        x += end - start + (gaps[column] if column < len(gaps) else 0)
+
+    if rules:
+        draw = ImageDraw.Draw(page)
+        rule = scaled(RULE_WIDTH_RANGE)
+        inset = margin // 2
+        draw.rectangle((inset, inset, width - 1 - inset, height - 1 - inset),
+                       outline=0, width=rule)
+        for column in range(1, len(columns)):
+            middle = (lefts[column - 1] + spans[column - 1][1]
+                      - spans[column - 1][0] + lefts[column]) // 2
+            draw.line((middle, inset, middle, height - 1 - inset), fill=0,
+                      width=rule)
+
+    if photo:
+        skew = rng.uniform(-MAX_SKEW, MAX_SKEW)
+        page = page.rotate(skew, resample=Image.BICUBIC, expand=True,
+                           fillcolor=255)
+        owners = owners.rotate(skew, resample=Image.NEAREST, expand=True,
+                               fillcolor=0)
+        blur = rng.uniform(0, MAX_BLUR) * unit
+        if blur > 0.3:
+            page = page.filter(ImageFilter.GaussianBlur(blur))
+        # Imported here: augment.py imports this package
+        from ocr.training_data.augment import print_and_photograph
+        page = print_and_photograph(page, np.random.default_rng(
+            rng.randrange(2**32)))
+
+    for item, box in zip(items, ink_boxes(owners, len(items))):
+        item["box"] = box
+    return page, items
+
+def ink_boxes(owners, count):
+    # The ink box of each of count items in an owners image, or None
+    ids = np.asarray(owners)
+    ys, xs = np.nonzero(ids)
+    found = ids[ys, xs] - 1
+    lefts = np.full(count, np.iinfo(np.int64).max)
+    tops = lefts.copy()
+    rights = np.full(count, -1)
+    bottoms = rights.copy()
+    np.minimum.at(lefts, found, xs)
+    np.minimum.at(tops, found, ys)
+    np.maximum.at(rights, found, xs + 1)
+    np.maximum.at(bottoms, found, ys + 1)
+    return [None if rights[index] < 0 else
+            [int(lefts[index]), int(tops[index]), int(rights[index]),
+             int(bottoms[index])] for index in range(count)]
+
+def page_lines(items, abkai=False):
+    '''
+    The page's text as /upload/multiple returns it: one line per column with
+    any Manchu, words separated by spaces, with OTHER for each item that
+    isn't Manchu. abkai=True writes the words in Abkai.
+    '''
+    columns = {}
+    for item in items:
+        columns.setdefault(item["column"], []).append(item)
+    lines = []
+    for column in sorted(columns):
+        column_items = sorted(columns[column], key=lambda item:
+                              item["position"])
+        if all(item["kind"] != "manchu" for item in column_items):
+            continue
+        lines.append(" ".join(
+            OTHER if item["kind"] != "manchu"
+            else manchu_to_abkai(item["text"]) if abkai else item["text"]
+            for item in column_items))
+    return "\n".join(lines)
+
+def draw_boxes(page, items):
+    # The page in colour with Manchu boxes green and others red
+    image = page.convert("RGB")
+    draw = ImageDraw.Draw(image)
+    for item in items:
+        if item["box"]:
+            left, top, right, bottom = item["box"]
+            draw.rectangle((left, top, right - 1, bottom - 1),
+                           outline=(0, 160, 0) if item["kind"] == "manchu"
+                           else (220, 0, 0), width=2)
+    return image
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Render a synthetic page and its boxes.")
+    parser.add_argument("seed", type=int)
+    parser.add_argument("--layout", choices=LAYOUTS)
+    parser.add_argument("--photo", action="store_true",
+                        help="make it look like a photograph")
+    parser.add_argument("-o", "--output", default=".",
+                        help="folder to save to (default: here)")
+    args = parser.parse_args()
+    page, items = generate_page(args.seed, args.layout, args.photo)
+    stem = os.path.join(args.output, f"page{args.seed}")
+    page.save(f"{stem}.png")
+    draw_boxes(page, items).save(f"{stem}_boxes.png")
+    with open(f"{stem}.json", "w", encoding="utf-8") as file:
+        json.dump({"items": items, "manchu": page_lines(items),
+                   "abkai": page_lines(items, abkai=True)}, file,
+                  ensure_ascii=False, indent=1)
+    print(f"Saved {stem}.png, {stem}_boxes.png and {stem}.json.")
+
+if __name__ == "__main__":
+    main()
