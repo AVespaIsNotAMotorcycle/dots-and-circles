@@ -139,7 +139,8 @@ def label_words(page, model):
         boxes = (split_characters(page.ink, box)
                  if kind == "other" and tall else [box])
         for part in boxes:
-            words.append({"box": part, "column": word["column"],
+            words.append({"box": [int(value) for value in part],
+                          "column": word["column"],
                           "kind": kind, "manchu": float(probability)})
     position = {}
     for word in words:

@@ -417,11 +417,13 @@ def find_words(image):
     words = []
     for column, (left, right) in enumerate(spans):
         boxes = find_words_in_column(ink, left, right, unit)
-        words.extend({"box": box, "column": column, "position": position}
+        # Plain ints, so boxes can go straight into JSON
+        words.extend({"box": [int(value) for value in box],
+                      "column": column, "position": position}
                      for position, box in enumerate(boxes))
     # Columns without words, of noise, don't count
     columns = sorted({word["column"] for word in words})
     renumber = {old: new for new, old in enumerate(columns)}
     for word in words:
         word["column"] = renumber[word["column"]]
-    return Page(grey, ink, angle, unit, words, image.size)
+    return Page(grey, ink, angle, float(unit), words, image.size)
