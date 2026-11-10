@@ -31,9 +31,7 @@ import time
 
 from ocr.box_classifier import label_words, load_classifier
 from ocr.layout import find_words
-from ocr.page_reader import page_text, read_page
 from ocr.photos import manchu_to_roman
-from ocr.train import character_accuracy, edit_distance
 from ocr.training_data.pages import generate_page, page_lines
 
 MATCH_IOU = 0.5
@@ -90,6 +88,11 @@ def score_page(seed, photo, layout=None, classifier=None, reader=None):
     '''
     Scores one page. reader is (model, crop, whiten) to read it too.
     '''
+    if reader is not None:
+        # Imported here: ocr.train needs matplotlib, which scoring layouts
+        # doesn't
+        from ocr.page_reader import page_text, read_page
+        from ocr.train import character_accuracy, edit_distance
     image, items = generate_page(seed, layout=layout, photo=photo)
     start = time.perf_counter()
     if reader is not None:
