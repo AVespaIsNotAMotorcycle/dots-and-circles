@@ -34,9 +34,10 @@ PUNCTUATION = ",.᠈᠉()"
 
 
 def clean(line):
-    # A line without punctuation or footnote marks ([1]), its words
-    # separated by single spaces
-    line = re.sub(r"\[\d+\]", " ", line)
+    # A line in lower case (some transcriptions capitalize titles, which
+    # Abkai doesn't), without punctuation or footnote marks ([1]), its
+    # words separated by single spaces
+    line = re.sub(r"\[\d+\]", " ", line.lower())
     for mark in PUNCTUATION:
         line = line.replace(mark, " ")
     return " ".join(line.split())

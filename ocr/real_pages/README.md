@@ -69,6 +69,15 @@ aren't transcribed; punctuation may be, and is ignored when scoring.
   `hvituri` (twice) in page005 are corrected to `hvsun` and `hvturi`, as
   the print has them.
 
+## page007
+
+- **Image:** the preface (*bithei sioi*) of *Han i araha ambasai mujilen
+  be targabure bithe*, from
+  [manc.hu](https://manc.hu/en/tools/reader/text/123759/00%20Bithei%20sioi),
+  which doesn't say where the scan comes from.
+- **Transcription:** from the same manc.hu text (© Fresco Sam-Sin, Léon
+  Rodenburg). It capitalizes the title's words; scoring is in lower case.
+
 `sources.json` gives each page's credit and link in short, for the
 server (`/random?source=page`) to show beside it.
 
@@ -76,14 +85,16 @@ server (`/random?source=page`) to show beside it.
 
 Characters / words, as of 2026-11-10:
 
-| Model | page001 | page002 | page003 | page004 (handwritten) | page005 | page006 |
-|---|---|---|---|---|---|---|
-| Run 30 | 97.9% / 88.6% | 93.8% / 75.9% | 95.7% / 92.1% | 47.4% / 3.9% | 90.5% / 78.9% | 98.6% / 92.1% |
-| Run 28 | 87.9% / 51.9% | 86.8% / 52.9% | 90.6% / 63.2% | 39.2% / 1.9% | 85.6% / 59.2% | 94.2% / 73.7% |
-| Run 26 | 82.0% / 44.3% | 77.7% / 36.8% | 85.8% / 57.9% | 35.9% / 2.9% | 80.7% / 47.9% | 88.5% / 63.2% |
+| Model | page001 | page002 | page003 | page004 (handwritten) | page005 | page006 | page007 |
+|---|---|---|---|---|---|---|---|
+| Run 30 | 97.9% / 88.6% | 93.8% / 75.9% | 99.1% / 97.4% | 47.4% / 3.9% | 90.5% / 78.9% | 98.6% / 92.1% | 78.4% / 26.3% |
+| Run 28 | 87.9% / 51.9% | 86.8% / 52.9% | 94.0% / 68.4% | 39.2% / 1.9% | 85.6% / 59.2% | 94.2% / 73.7% | 70.6% / 26.3% |
+| Run 26 | 82.0% / 44.3% | 77.7% / 36.8% | 89.3% / 63.2% | 35.9% / 2.9% | 80.7% / 47.9% | 88.5% / 63.2% | 21.6% / 10.5% |
 
 On the printed pages, most of Run 30's word errors are pairs of words set
-so close that they're read as one (`hotonde` for `hoton de`). The
+so close that they're read as one (`hotonde` for `hoton de`); page007 is
+the worst case, its words' tails running alongside the next word's start
+(`beyebeilibure` for `beye be ilibure`). The
 handwritten letter's columns are found, but the models, trained on
 printed fonts and photographed print, read its hand poorly. On page005
 the small two-column note is read, but as a line of its own. Of the 14

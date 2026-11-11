@@ -8,6 +8,7 @@ from ocr.evaluate_real_pages import clean, match_lines, score
 def test_clean_drops_punctuation():
     assert clean("genefi , jugvn asuru .") == "genefi jugvn asuru"
     assert clean("fonjime [1] , tiyan de [2]") == "fonjime tiyan de"
+    assert clean("han i Araha Mujilen") == "han i araha mujilen"
 
 def test_match_lines_by_closeness():
     found = ["boo horonggo", "junk □ □", "genefi jugvn"]
