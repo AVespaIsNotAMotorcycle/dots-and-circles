@@ -23,6 +23,9 @@ from flask import Flask, jsonify, request
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from ocr.box_classifier import load_classifier
+from ocr.evaluate_real_pages import pages as real_pages
+from ocr.evaluate_real_pages import read_transcription
+from ocr.evaluate_real_pages import score_page as score_real_page
 from ocr.page_reader import draw_page, page_text, read_page
 from ocr.photos import (abkai_to_manchu, load_photo, manchu_to_abkai,
                         manchu_to_roman, spell_in_manchu)
@@ -218,6 +221,16 @@ def create_app(config_path=CONFIG_PATH):
     # Optional: without it, /upload/multiple gets a 404
     classifier = (load_classifier(os.path.join(root, config["box_classifier"]))
                   if "box_classifier" in config else None)
+    # The real pages GET /random?source=page picks from, with their
+    # transcriptions: optional in config.json
+    pages_folder = (os.path.join(root, config["pages"]) if "pages" in config
+                    else None)
+    page_sources = {}
+    if pages_folder and os.path.exists(os.path.join(pages_folder,
+                                                    "sources.json")):
+        with open(os.path.join(pages_folder, "sources.json"), "r",
+                  encoding="utf-8") as file:
+            page_sources = json.load(file)
     # The images GET /random picks from, by source: a folder and its
     # manifest.json for each. "synthetic" is optional in config.json.
     sources = {}
@@ -266,14 +279,64 @@ def create_app(config_path=CONFIG_PATH):
         # Lets the frontend know the dyno is up before it asks for more
         return "", 200
 
+    def chosen_model():
+        # The (entry, model) ?model= names, default_model by default
+        name = request.args.get("model") or default_model
+        chosen = [(entry, model) for entry, model in models
+                  if entry["name"] == name]
+        if not chosen:
+            raise RequestError(f"Unknown model {name!r}: use one of "
+                               f"{', '.join(e['name'] for e, _ in models)}.")
+        return chosen[0]
+
+    def read_original(entry, model, original):
+        # read_page with the entry's preprocessing
+        preprocess = entry.get("preprocess", {})
+        return read_page(original, model, classifier,
+                         preprocess.get("crop", True),
+                         preprocess.get("whiten", True))
+
+    def random_page():
+        '''
+        /random?source=page: a real page with its transcription, read as
+        /upload/multiple reads an upload (see page_response). Adds the page's
+        name, the original image, the transcription, how the reading scores
+        against it, and the page's credit and link.
+        '''
+        entry, model = chosen_model()
+        name, image_path, transcription_path = random.choice(
+            real_pages(pages_folder))
+        transcription = read_transcription(transcription_path)
+        with Image.open(image_path) as image:
+            original = image.convert("RGB")
+        original.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
+        page = read_original(entry, model, original)
+        result = score_real_page(page, transcription)
+        response = page_response(entry, page)
+        source = page_sources.get(name, {})
+        response.update({
+            "source": "page", "name": name,
+            "original-image": data_url(image_path),
+            "transcription": "\n".join(transcription),
+            "score": {"characters": result["characters"],
+                      "words": result["words"]},
+            "credit": source.get("credit"), "link": source.get("link"),
+        })
+        return response
+
     @app.get("/random")
     def random_word():
-        # ?source=photo (the default) for a photographed word, or
-        # ?source=synthetic for a rendered one
+        # ?source=photo (the default) for a photographed word,
+        # ?source=synthetic for a rendered one, or ?source=page for a real
+        # page (see random_page)
         source = request.args.get("source") or "photo"
+        if source == "page" and pages_folder and classifier is not None:
+            return jsonify(random_page())
         if source not in sources:
+            available = list(sources) + (
+                ["page"] if pages_folder and classifier is not None else [])
             raise RequestError(f"Unknown source {source!r}: use one of "
-                               f"{', '.join(sources)}.")
+                               f"{', '.join(available)}.")
         folder, entries = sources[source]
         photo = random.choice(entries)
         path = os.path.join(folder, photo["path"])
@@ -321,19 +384,10 @@ def create_app(config_path=CONFIG_PATH):
         '''
         if classifier is None:
             raise RequestError("This server doesn't read pages.", 404)
-        name = request.args.get("model") or default_model
-        chosen = [(entry, model) for entry, model in models
-                  if entry["name"] == name]
-        if not chosen:
-            raise RequestError(f"Unknown model {name!r}: use one of "
-                               f"{', '.join(e['name'] for e, _ in models)}.")
-        entry, model = chosen[0]
+        entry, model = chosen_model()
         data, _ = read_upload()
         original = open_upload(data)
-        preprocess = entry.get("preprocess", {})
-        page = read_page(original, model, classifier,
-                         preprocess.get("crop", True),
-                         preprocess.get("whiten", True))
-        return jsonify(page_response(entry, page))
+        return jsonify(page_response(entry, read_original(entry, model,
+                                                          original)))
 
     return app

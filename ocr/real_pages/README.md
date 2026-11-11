@@ -25,8 +25,9 @@ aren't transcribed; punctuation may be, and is ignored when scoring.
 
 - **Image:** a crop of another page of the same book as page001, from the
   same story (考城隍), by way of [manc.hu](https://manc.hu/): Stabi Berlin,
-  <http://resolver.staatsbibliothek-berlin.de/SBB0000862300000000> (exact
-  page not yet identified). Public domain, as for page001.
+  <http://resolver.staatsbibliothek-berlin.de/SBB0000862300000000>, page
+  [PHYS_0043](https://digital.staatsbibliothek-berlin.de/werkansicht?PPN=PPN3308101262&PHYSID=PHYS_0043&DMDID=DMDLOG_0011).
+  Public domain, as for page001.
 - **Transcription:** from [manc.hu](https://manc.hu/) (© Fresco Sam-Sin,
   Léon Rodenburg).
 
@@ -34,10 +35,11 @@ aren't transcribed; punctuation may be, and is ignored when scoring.
 
 - **Image:** a crop of a Stabi Berlin scan, by way of
   [manc.hu](https://manc.hu/): a woodblock print of military regulations
-  (*qoohai fafun*, 軍令), opening with an edict of Yongzheng 9 (1731).
-  The exact item isn't yet recorded. As a Staatsbibliothek scan of a
-  public-domain original, it's public domain under its terms of use, as
-  for page001.
+  (*qoohai fafun*, 軍令), opening with an edict of Yongzheng 9 (1731):
+  Stabi Berlin, PPN3306131504, page
+  [PHYS_0003](https://digital.staatsbibliothek-berlin.de/werkansicht?PPN=PPN3306131504&PHYSID=PHYS_0003&DMDID=DMDLOG_0002).
+  As a Staatsbibliothek scan of a public-domain original, it's public
+  domain under its terms of use, as for page001.
 - **Transcription:** from [manc.hu](https://manc.hu/) (© Fresco Sam-Sin,
   Léon Rodenburg).
 
@@ -52,6 +54,9 @@ aren't transcribed; punctuation may be, and is ignored when scoring.
 - **Transcription:** from [manc.hu](https://manc.hu/), whose
   transliteration was shared with them by Guillaume Lescuyer. Its footnote
   marks ([1], [2]) are ignored when scoring.
+
+`sources.json` gives each page's credit and link in short, for the
+server (`/random?source=page`) to show beside it.
 
 ## Results
 

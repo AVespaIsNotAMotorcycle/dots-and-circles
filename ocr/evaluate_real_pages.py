@@ -69,17 +69,35 @@ def score(pairs):
         word_errors += edit_distance(found.split(), true.split())
     return characters, errors, words, word_errors
 
-def pages():
+def pages(folder=PAGES_DIRECTORY):
     # (name, image path, transcription path) for each transcribed page
     found = []
-    for name in sorted(os.listdir(PAGES_DIRECTORY)):
+    for name in sorted(os.listdir(folder)):
         stem, extension = os.path.splitext(name)
-        transcription = os.path.join(PAGES_DIRECTORY, stem + ".txt")
+        transcription = os.path.join(folder, stem + ".txt")
         if extension.lower() in IMAGE_EXTENSIONS and os.path.exists(
                 transcription):
-            found.append((stem, os.path.join(PAGES_DIRECTORY, name),
-                          transcription))
+            found.append((stem, os.path.join(folder, name), transcription))
     return found
+
+def read_transcription(path):
+    # A transcription's lines, as written, without blank ones
+    with open(path, "r", encoding="utf-8") as file:
+        return [line.rstrip("\n") for line in file if line.strip()]
+
+def score_page(page, transcription):
+    '''
+    How read_page's page compares with a transcription (its lines):
+    {"characters": accuracy, "words": accuracy, "extra lines": [...]}.
+    '''
+    true = [clean(line) for line in transcription if clean(line)]
+    found = [line for line in page_text(page, abkai=True).split("\n")
+             if line.strip()]
+    pairs, extra = match_lines(found, true)
+    characters, errors, words, word_errors = score(pairs)
+    return {"characters": 1 - errors / max(1, characters),
+            "words": 1 - word_errors / max(1, words),
+            "extra lines": extra, "pairs": pairs}
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
@@ -98,19 +116,15 @@ def main():
 
     totals = [0, 0, 0, 0]
     for name, image_path, transcription_path in pages():
-        with open(transcription_path, "r", encoding="utf-8") as file:
-            true = [clean(line) for line in file if clean(line)]
         with Image.open(image_path) as image:
             page = read_page(image.convert("RGB"), model, classifier, crop,
                              whiten)
-        found = [line for line in page_text(page, abkai=True).split("\n")
-                 if line.strip()]
-        pairs, extra = match_lines(found, true)
+        result = score_page(page, read_transcription(transcription_path))
+        pairs, extra = result["pairs"], result["extra lines"]
         counts = score(pairs)
         totals = [total + count for total, count in zip(totals, counts)]
-        print(f"{name}: {1 - counts[1] / counts[0]:.1%} characters, "
-              f"{1 - counts[3] / counts[2]:.1%} words, "
-              f"{len(extra)} extra lines")
+        print(f"{name}: {result['characters']:.1%} characters, "
+              f"{result['words']:.1%} words, {len(extra)} extra lines")
         if args.verbose:
             for true_line, found_line in pairs:
                 print(f"  found: {found_line}\n  true:  {true_line}")

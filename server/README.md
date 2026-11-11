@@ -52,6 +52,32 @@ repository root. Locally, from the repository root:
   the photo dataset's own romanization (`ocr.photos.manchu_to_roman`), as
   in the run reports: the character accuracy of the prediction against the
   label, `max(0, 1 - edit distance / len(label))`.
+- `GET /random?source=page`: reads a random real page, with its known
+  transcription, from the folder `pages` names in `config.json` (the
+  benchmark pages in `ocr/real_pages`). `?model=` picks the model, as for
+  `/upload/multiple`. It returns everything `/upload/multiple` does (with
+  `source` `"page"`), and:
+
+  ```json
+  {
+    "name": "page001",
+    "original-image": "data:image/png;base64,...",
+    "transcription": "genefi , jugvn asuru ...\ngemungge heqen i ...",
+    "score": {"characters": 0.976, "words": 0.873},
+    "credit": "Stabi Berlin (Public Domain Mark 1.0); transcription from manc.hu",
+    "link": "https://digital.staatsbibliothek-berlin.de/werkansicht?..."
+  }
+  ```
+
+  `original-image` is the page as saved, and `image` the page deskewed
+  and drawn with its boxes. `transcription` is the page's transcription
+  as written, a line per Manchu column, in Abkai with its punctuation.
+  `score` compares the reading with it as `ocr.evaluate_real_pages` does
+  (ignoring punctuation, each line matched to the closest line read).
+  `credit` and `link` come from the folder's `sources.json` (`null` for a
+  page it doesn't list); the Staatsbibliothek asks to be named as "Stabi
+  Berlin" with the link wherever its scans are shown. Without `pages` or
+  `box_classifier` in `config.json`, `?source=page` gets a 400.
 - `POST /upload/single`: reads an uploaded image of one word, written top to
   bottom, and returns the same JSON as `/random`. Send it either as
   `multipart/form-data` with the file in an `image` field, or as a JSON body
@@ -116,6 +142,9 @@ repository root. Locally, from the repository root:
   Optional: without it, `?source=synthetic` gets a 400.
 - `default_model`: the `name` of the model `/upload/multiple` reads with
   unless asked for another. The last model by default.
+- `pages`: the folder of real pages with transcriptions for
+  `/random?source=page`, relative to this folder (`../ocr/real_pages`).
+  Optional.
 - `box_classifier`: the weights of the Manchu/other classifier for
   `/upload/multiple`, relative to this folder. Train them with
   `python -m ocr.train_box_classifier`. Optional: without it,

@@ -40,13 +40,21 @@ def client(tmp_path):
         # Labelled in the dataset's romanization, which spells ᠴ c, not q
         [{"label": "acambi", "manchu": "ᠠᠴᠠᠮᠪᡳ", "font": "SomeFont", "seed": 7,
           "path": "000.png"}]))
-    # And an untrained box classifier, for /upload/multiple
+    # And an untrained box classifier, for /upload/multiple, and a real
+    # page with its transcription and source
     make_classifier().save_weights(str(tmp_path / "classifier.npz"))
+    (tmp_path / "pages").mkdir()
+    (tmp_path / "pages" / "page001.png").write_bytes(page_image())
+    (tmp_path / "pages" / "page001.txt").write_text(
+        "abka , na\nbe\n", encoding="utf-8")
+    (tmp_path / "pages" / "sources.json").write_text(json.dumps(
+        {"page001": {"credit": "Somewhere", "link": "https://example.org"}}))
     (tmp_path / "config.json").write_text(json.dumps({
         "allowed_origin": "*",
         "photos": "photos",
         "synthetic": "synthetic",
         "box_classifier": "classifier.npz",
+        "pages": "pages",
         "models": [{"name": "Test", "model": "Untrained ModelD",
                     "class": "ModelD", "weights": "model.npz",
                     "params": params}],
@@ -339,4 +347,40 @@ def test_upload_multiple_blank_page(client):
 def test_upload_multiple_bad_image(client):
     response = client.post("/upload/multiple", data={
         "image": (io.BytesIO(b"not an image"), "page.png")})
+    assert response.status_code == 400
+
+
+def test_random_page(client):
+    response = client.get("/random?source=page")
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["source"] == "page" and body["name"] == "page001"
+    assert body["model"] == "Test"
+    assert body["transcription"] == "abka , na\nbe"
+    assert body["credit"] == "Somewhere"
+    assert body["link"] == "https://example.org"
+    assert body["original-image"].startswith("data:image/png;base64,")
+    assert body["image"].startswith("data:image/png;base64,")
+    assert 0 <= body["score"]["words"] <= 1
+    assert body["score"]["characters"] <= 1
+    # Everything /upload/multiple gives, too
+    assert {"angle", "manchu", "abkai", "boxes"} <= set(body)
+
+def test_random_page_unknown_model(client):
+    response = client.get("/random?source=page&model=Nope")
+    assert response.status_code == 400
+
+def test_random_page_needs_pages(tmp_path):
+    config = {"allowed_origin": "*", "models": []}
+    np.random.seed(0)
+    params = {"depth": 1, "emb_dim": 8}
+    ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+           num_classes=NUM_CLASSES, blank=END, **params).save_weights(
+               str(tmp_path / "model.npz"))
+    config["models"] = [{"name": "Test", "model": "Untrained ModelD",
+                         "class": "ModelD", "weights": "model.npz",
+                         "params": params}]
+    (tmp_path / "config.json").write_text(json.dumps(config))
+    client = create_app(str(tmp_path / "config.json")).test_client()
+    response = client.get("/random?source=page")
     assert response.status_code == 400
