@@ -52,6 +52,11 @@ repository root. Locally, from the repository root:
   the photo dataset's own romanization (`ocr.photos.manchu_to_roman`), as
   in the run reports: the character accuracy of the prediction against the
   label, `max(0, 1 - edit distance / len(label))`.
+- `GET /pages`: the names of the real pages `/random?source=page&name=`
+  takes, in order: `{"pages": ["page001", "page002", ...]}`. Each is the
+  page's filename without its extension (`page001.png` and its
+  transcription `page001.txt`). Empty if the server doesn't read pages
+  (no `pages` or `box_classifier` in `config.json`).
 - `GET /random?source=page`: reads a random real page, with its known
   transcription, from the folder `pages` names in `config.json` (the
   benchmark pages in `ocr/real_pages`), or the one `?name=` names (e.g.

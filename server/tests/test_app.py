@@ -407,3 +407,27 @@ def test_random_page_unknown_name(client):
     assert response.status_code == 400
     error = response.get_json()["error"]
     assert "page999" in error and "page001" in error and "page002" in error
+
+def test_pages(client):
+    response = client.get("/pages")
+    assert response.status_code == 200
+    names = response.get_json()["pages"]
+    assert names == ["page001", "page002"]
+    # Each one can be asked for
+    for name in names:
+        assert client.get(f"/random?source=page&name={name}").status_code \
+            == 200
+
+def test_pages_without_pages(tmp_path):
+    np.random.seed(0)
+    params = {"depth": 1, "emb_dim": 8}
+    ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+           num_classes=NUM_CLASSES, blank=END, **params).save_weights(
+               str(tmp_path / "model.npz"))
+    (tmp_path / "config.json").write_text(json.dumps({
+        "allowed_origin": "*",
+        "models": [{"name": "Test", "model": "Untrained ModelD",
+                    "class": "ModelD", "weights": "model.npz",
+                    "params": params}]}))
+    client = create_app(str(tmp_path / "config.json")).test_client()
+    assert client.get("/pages").get_json() == {"pages": []}

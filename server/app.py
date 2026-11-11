@@ -336,6 +336,15 @@ def create_app(config_path=CONFIG_PATH):
         })
         return response
 
+    @app.get("/pages")
+    def list_pages():
+        # The names of the real pages /random?source=page&name= takes, in
+        # order; none if the server doesn't read pages
+        if not pages_folder or classifier is None:
+            return jsonify({"pages": []})
+        return jsonify({"pages": [name for name, _, _
+                                  in real_pages(pages_folder)]})
+
     @app.get("/random")
     def random_word():
         # ?source=photo (the default) for a photographed word,
