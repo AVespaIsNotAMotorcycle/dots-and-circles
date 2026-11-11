@@ -21,18 +21,37 @@ aren't transcribed; punctuation may be, and is ignored when scoring.
 - **Transcription:** from [manc.hu](https://manc.hu/) (© Fresco Sam-Sin,
   Léon Rodenburg).
 
-## page002 to page004
+## page002
 
-Sources not yet recorded:
+- **Image:** a crop of another page of the same book as page001, from the
+  same story (考城隍), by way of [manc.hu](https://manc.hu/): Stabi Berlin,
+  <http://resolver.staatsbibliothek-berlin.de/SBB0000862300000000> (exact
+  page not yet identified). Public domain, as for page001.
+- **Transcription:** from [manc.hu](https://manc.hu/) (© Fresco Sam-Sin,
+  Léon Rodenburg).
 
-- **page002:** apparently the same book as page001 (the story 考城隍).
-- **page003:** a woodblock print of military regulations (qoohai fafun),
-  opening with an edict of Yongzheng 9 (1731).
-- **page004:** a handwritten letter from the Daoguang emperor, dated
-  Daoguang 24 (1844).
+## page003
 
-Transcriptions supplied with the images; page004's footnote marks ([1],
-[2]) are ignored when scoring.
+- **Image:** a crop of a Stabi Berlin scan, by way of
+  [manc.hu](https://manc.hu/): a woodblock print of military regulations
+  (*qoohai fafun*, 軍令), opening with an edict of Yongzheng 9 (1731).
+  The exact item isn't yet recorded. As a Staatsbibliothek scan of a
+  public-domain original, it's public domain under its terms of use, as
+  for page001.
+- **Transcription:** from [manc.hu](https://manc.hu/) (© Fresco Sam-Sin,
+  Léon Rodenburg).
+
+## page004
+
+- **Image:** from [manc.hu](https://manc.hu/): a handwritten letter from
+  the Daoguang emperor to President John Tyler (*be lii hi tiyan*,
+  伯理璽天德), dated Daoguang 24 (1844). The letter itself is public
+  domain; where manc.hu's reproduction comes from isn't recorded. On the
+  letter, see CHU Shih-Chia, "Tao-Kuang to President Tyler", *Harvard
+  Journal of Asiatic Studies* 7, no. 3 (1943): 169–173.
+- **Transcription:** from [manc.hu](https://manc.hu/), whose
+  transliteration was shared with them by Guillaume Lescuyer. Its footnote
+  marks ([1], [2]) are ignored when scoring.
 
 ## Results
 
