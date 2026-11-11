@@ -44,12 +44,13 @@ followed by the genitive particle *i*, printed apart as a hook:
 With Run 28 the photographed-looking pages read 88.2% exactly, and with
 Run 26 77.0%. A page takes about a second on one CPU core.
 
-On six real pages so far, in [`ocr/real_pages`](ocr/real_pages) and
-scored by `python -m ocr.evaluate_real_pages`: five printed (one with six
-columns of small Chinese glosses) and one handwritten letter. On the
-printed pages the Manchu text reads at 90.5–98.6% character / 75.9–92.1%
-word accuracy, with every gloss left out; most word errors are pairs of
-words set so close that they're read as one (`hotonde` for `hoton de`).
+On seven real pages so far, in [`ocr/real_pages`](ocr/real_pages) and
+scored by `python -m ocr.evaluate_real_pages`: six printed (one with six
+columns of small Chinese glosses) and one handwritten letter. On five of
+the printed pages the Manchu text reads at 90.5–99.1% character /
+75.9–97.4% word accuracy, with every gloss left out; most word errors are
+pairs of words set so close that they're read as one (`hotonde` for
+`hoton de`). The sixth, set tightest, reads at 78.4%.
 The handwritten letter reads at 47.4% characters.
 
 ## Architecture

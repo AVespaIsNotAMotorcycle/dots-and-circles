@@ -165,3 +165,17 @@ def test_straighten_matches_the_read_page():
                                             fillcolor=(200, 190, 170)))
     assert straight.size == page.image.size
     assert straight.mode == "RGB"
+
+def test_side_parts():
+    from ocr.box_classifier import side_parts
+    ink = np.zeros((120, 100), dtype=bool)
+    ink[10:110, 20:24] = True          # a stem
+    ink[20:60, 12:20] = True           # with teeth, attached
+    ink[30:70, 60:90] = True           # a gloss beside it
+    parts = side_parts(ink, [12, 10, 90, 110], unit=40)
+    assert parts == [[12, 10, 24, 110], [60, 30, 90, 70]]
+    # A small mark beside a stem isn't a part
+    ink = np.zeros((120, 100), dtype=bool)
+    ink[10:110, 20:24] = True
+    ink[50:54, 40:44] = True
+    assert side_parts(ink, [20, 10, 44, 110], unit=40) is None

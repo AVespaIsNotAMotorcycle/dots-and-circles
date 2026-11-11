@@ -34,6 +34,12 @@ RUN_ASPECT = 1.4
 # A column at least this share (by height) other text is all other text,
 # and its boxes less than RUN_GAP units apart are joined before splitting
 # into characters
+# Boxes the classifier is unsure of (a Manchu probability between UNSURE
+# and 1 - UNSURE) are split into left and right parts parted by a blank band
+# at least SIDE_GAP units wide, each at least SIDE_HEIGHT units tall
+UNSURE = 0.05
+SIDE_GAP = 0.08
+SIDE_HEIGHT = 0.4
 OTHER_COLUMN = 0.5
 RUN_GAP = 0.5
 # A column at least SOME_OTHER other text, with no stroke as long as
@@ -147,12 +153,74 @@ def other_runs(words, unit):
             runs.append(box)
     return runs
 
+def side_parts(ink, box, unit):
+    '''
+    A box's ink as a left and a right part, if a blank band at least
+    SIDE_GAP units wide parts them and both are at least SIDE_HEIGHT units
+    tall; otherwise None. A Manchu word never falls apart like this (the
+    marks beside its stem are small, its tails attached), but a word with a
+    gloss set close beside it does.
+    '''
+    left, top, right, bottom = box
+    region = ink[top:bottom, left:right]
+    inked = region.any(axis=0)
+    gaps = [(start, end) for start, end in stretches(~inked)
+            if start > 0 and end < len(inked)
+            and end - start >= SIDE_GAP * unit]
+    if not gaps:
+        return None
+    start, end = max(gaps, key=lambda gap: gap[1] - gap[0])
+    parts = []
+    for first, last in ((0, start), (end, len(inked))):
+        rows = np.nonzero(region[:, first:last].any(axis=1))[0]
+        columns = np.nonzero(region[:, first:last].any(axis=0))[0]
+        if len(rows) == 0 or rows[-1] - rows[0] + 1 < SIDE_HEIGHT * unit:
+            return None
+        parts.append([left + first + int(columns[0]), top + int(rows[0]),
+                      left + first + int(columns[-1]) + 1,
+                      top + int(rows[-1]) + 1])
+    return parts
+
+def separate_side_by_side(page, model):
+    '''
+    The page's words, with each the classifier is unsure of (a Manchu
+    probability between UNSURE and 1 - UNSURE) split into its left and right
+    parts when side_parts finds them, each classified again. A part of
+    other text split from a Manchu one is a gloss set beside it, and goes
+    in a column of its own, just after its Manchu one's, so it's left out
+    of the Manchu line. Columns are renumbered.
+    '''
+    words = []
+    for word in page.words:
+        parts = (side_parts(page.ink, word["box"], page.unit)
+                 if UNSURE < word["manchu"] < 1 - UNSURE else None)
+        if not parts:
+            words.append(dict(word, column=float(word["column"])))
+            continue
+        probabilities = classify(model, page.ink, parts, page.unit)
+        kinds = ["manchu" if probability >= 0.5 else "other"
+                 for probability in probabilities]
+        for part, probability, kind in zip(parts, probabilities, kinds):
+            column = float(word["column"])
+            if kind == "other" and "manchu" in kinds:
+                column += 0.5
+            words.append(dict(word, box=part, manchu=float(probability),
+                              kind=kind, column=column))
+    order = {column: index for index, column in
+             enumerate(sorted({word["column"] for word in words}))}
+    for word in words:
+        word["column"] = order[word["column"]]
+    return words
+
 def label_words(page, model):
     '''
     Gives each word of a Page (from ocr.layout.find_words) a "kind",
     "manchu" or "other", and a "manchu" probability, splitting tall boxes of
     other text into characters and renumbering positions. Changes page in
     place and returns it.
+
+    A box the classifier is unsure of may hold a Manchu word with a gloss
+    set close beside it; see separate_side_by_side.
 
     A column mostly (by height) of other text, or of more than one box,
     partly other text and with no stroke as long as LONG_STROKE units (no
@@ -166,6 +234,7 @@ def label_words(page, model):
     for word, probability in zip(page.words, probabilities):
         word["manchu"] = float(probability)
         word["kind"] = "manchu" if probability >= 0.5 else "other"
+    page.words = separate_side_by_side(page, model)
     columns = {}
     for word in page.words:
         columns.setdefault(word["column"], []).append(word)
