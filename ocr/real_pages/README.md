@@ -65,9 +65,8 @@ aren't transcribed; punctuation may be, and is ignored when scoring.
 - **Transcriptions:** from the same manc.hu text (© Fresco Sam-Sin, Léon
   Rodenburg). page005's second line holds a note printed small in two
   narrow columns; the transcription gives it inline in parentheses, which
-  are ignored when scoring like other punctuation. page005's `hvituri`
-  (twice) and `hvisun` follow the print, which seems to spell *hūturi* and
-  *hūsun* this way; Run 30 reads them as the usual spellings.
+  are ignored when scoring like other punctuation. manc.hu's `hvisun` in
+  page005's first line is corrected to `hvsun`, as the print has it.
 
 `sources.json` gives each page's credit and link in short, for the
 server (`/random?source=page`) to show beside it.
@@ -78,9 +77,9 @@ Characters / words, as of 2026-11-10:
 
 | Model | page001 | page002 | page003 | page004 (handwritten) | page005 | page006 |
 |---|---|---|---|---|---|---|
-| Run 30 | 97.6% / 87.3% | 93.8% / 75.9% | 91.0% / 78.9% | 48.3% / 3.4% | 89.1% / 71.8% | 97.6% / 89.5% |
-| Run 28 | 88.2% / 51.9% | 86.8% / 52.9% | 88.8% / 57.9% | 42.2% / 1.0% | 84.7% / 53.5% | 93.3% / 71.1% |
-| Run 26 | 82.0% / 44.3% | 77.9% / 36.8% | 81.5% / 47.4% | 37.8% / 2.4% | 79.6% / 45.1% | 87.5% / 60.5% |
+| Run 30 | 97.6% / 87.3% | 93.8% / 75.9% | 91.0% / 78.9% | 48.3% / 3.4% | 89.3% / 73.2% | 97.6% / 89.5% |
+| Run 28 | 88.2% / 51.9% | 86.8% / 52.9% | 88.8% / 57.9% | 42.2% / 1.0% | 84.9% / 54.9% | 93.3% / 71.1% |
+| Run 26 | 82.0% / 44.3% | 77.9% / 36.8% | 81.5% / 47.4% | 37.8% / 2.4% | 79.8% / 45.1% | 87.5% / 60.5% |
 
 On the printed pages, most of Run 30's word errors are pairs of words set
 so close that they're read as one (`hotonde` for `hoton de`). The
