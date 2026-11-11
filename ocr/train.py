@@ -32,6 +32,8 @@ from ocr.modelD import ModelD
 from ocr.split import split_words
 from ocr.training_data import HEIGHT, WIDTH, fonts, generate, lexicon
 from ocr.training_data.augment import tokens_needed
+from ocr.training_data.compose import (Composite, generate_composite,
+                                       make_composites)
 
 FONT_COUNT = len(fonts)
 WORD_COUNT = len(lexicon)
@@ -75,7 +77,8 @@ SNAPSHOT_EVERY = 5
 # activations, so smaller batches use less memory.
 PHOTO_BATCH_SIZE = 16
 
-def generate_seeds(validation_set = False, training_photos = True):
+def generate_seeds(validation_set = False, training_photos = True,
+                   composites = True):
     '''
     Returns (train seeds, test seeds), or (train, validation, test) with
     validation_set. The lexicon is split by word (see ocr/split.py), and
@@ -84,7 +87,10 @@ def generate_seeds(validation_set = False, training_photos = True):
 
     With training_photos (and the photos here), train also gets every
     training photo, as a (path, label) pair in place of a seed (see
-    make_batch).
+    make_batch). With composites, train also gets phrases set close
+    together, the genitive i alone and punctuated words, made from its own
+    words (see training_data/compose.py), as Composites in place of seeds.
+    Test stays single lexicon entries, comparable with earlier runs.
     '''
     test_proportion = 0.15
     valid_proportion = 0.15 if validation_set else 0
@@ -107,6 +113,11 @@ def generate_seeds(validation_set = False, training_photos = True):
         for positions in word_sets)
     print(f"Words: {len(word_sets[0])} train, {len(word_sets[1])} "
           f"validation, {len(word_sets[2])} test.")
+    if composites:
+        extra = make_composites([kept[position] for position in word_sets[0]],
+                                len(train_set))
+        train_set += extra
+        print(f"Composites: {len(extra)}.")
     if training_photos:
         if photos.available():
             training = photos.set_images("train")
@@ -238,11 +249,14 @@ def make_batch(seeds, epoch=None):
     the images are augmented, differently for each epoch. A seed can also be
     a training photo as a (path, label) pair: it's prepared as photos are
     for testing, never augmented, and labelled with the label's Manchu
-    spelling (see photos.spell_in_manchu).
+    spelling (see photos.spell_in_manchu). Or it can be a Composite (see
+    training_data/compose.py).
     '''
     batch = []
     for seed in seeds:
-        if isinstance(seed, tuple):
+        if isinstance(seed, Composite):
+            image, word = generate_composite(seed, epoch)
+        elif isinstance(seed, tuple):
             path, label = seed
             image = photos.load_photo(path)
             word = photos.spell_in_manchu(label)
@@ -851,9 +865,9 @@ def run_models(run_directory, epochs, augment):
         #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64),
         # "C-8/128": lambda: ModelC(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
         #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=128),
-        "D-8/64": lambda: ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-                    num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64,
-                    drop_rate=0.1),
+        # "D-8/64": lambda: ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+        #             num_classes=NUM_CLASSES, depth=8, blank=END, emb_dim=64,
+        #             drop_rate=0.1),
         "D-12/64": lambda: ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
                     num_classes=NUM_CLASSES, depth=12, blank=END, emb_dim=64,
                     drop_rate=0.1),
@@ -1040,4 +1054,4 @@ def train_model(name, run, batches, photo_set, epochs,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=4, augment=True, resume="run030")
+    train(epochs=4, augment=True, start_from="run030")

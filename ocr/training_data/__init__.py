@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import re
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
@@ -10,6 +11,12 @@ WIDTH = 32
 HEIGHT = 256
 # Words are rendered at this size, then scaled down to WIDTH.
 RENDER_SIZE = 256
+# The genitive particle i as a word of its own (a space before it, and a
+# space or the end after), and the narrow no-break space that makes fonts
+# draw it as the hook print uses rather than the isolated form with a
+# crossbar. Only the drawing changes: labels keep the plain space.
+GENITIVE_WORD = re.compile(" (?=\u1873(?: |$))")
+SUFFIX_SPACE = "\u202f"
 
 directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -30,8 +37,10 @@ def render(word, font_path):
     '''
     Renders word at RENDER_SIZE in the font at font_path, cropped to the ink
     and reading top to bottom. Dark ink on white, as a greyscale PIL image.
+    A genitive i after a word is drawn as print has it (see GENITIVE_WORD).
     '''
     font = ImageFont.truetype(font_path, RENDER_SIZE)
+    word = GENITIVE_WORD.sub(SUFFIX_SPACE, word)
 
     # Fonts lay Manchu out horizontally, so render it that way first.
     left, top, right, bottom = font.getbbox(word)
