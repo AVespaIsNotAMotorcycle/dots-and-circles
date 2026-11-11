@@ -58,12 +58,16 @@ aren't transcribed; punctuation may be, and is ignored when scoring.
 ## page005 and page006
 
 - **Images:** two pages of the Fodo Mama prayers (*Fodo Mama court*), from
-  [manc.hu](https://manc.hu/en/tools/reader/text/36648/Fodo-Mama-court).
-  Where manc.hu's scans come from isn't yet recorded.
+  [manc.hu](https://manc.hu/en/tools/reader/text/36648/Fodo-Mama-court);
+  page005 is cropped to leave out the margin. manc.hu doesn't say where
+  its scans come from; probably Tatiana Pang, "The worship of Fodo-mama:
+  progenitor of the Manchus".
 - **Transcriptions:** from the same manc.hu text (© Fresco Sam-Sin, Léon
   Rodenburg). page005's second line holds a note printed small in two
   narrow columns; the transcription gives it inline in parentheses, which
-  are ignored when scoring like other punctuation.
+  are ignored when scoring like other punctuation. page005's `hvituri`
+  (twice) and `hvisun` follow the print, which seems to spell *hūturi* and
+  *hūsun* this way; Run 30 reads them as the usual spellings.
 
 `sources.json` gives each page's credit and link in short, for the
 server (`/random?source=page`) to show beside it.
@@ -74,9 +78,9 @@ Characters / words, as of 2026-11-10:
 
 | Model | page001 | page002 | page003 | page004 (handwritten) | page005 | page006 |
 |---|---|---|---|---|---|---|
-| Run 30 | 97.6% / 87.3% | 93.8% / 75.9% | 91.0% / 78.9% | 48.3% / 3.4% | 88.6% / 70.4% | 92.8% / 84.2% |
-| Run 28 | 88.2% / 51.9% | 86.8% / 52.9% | 88.8% / 57.9% | 42.2% / 1.0% | 85.2% / 57.7% | 88.5% / 65.8% |
-| Run 26 | 82.0% / 44.3% | 77.9% / 36.8% | 81.5% / 47.4% | 37.8% / 2.4% | 79.4% / 46.5% | 83.2% / 55.3% |
+| Run 30 | 97.6% / 87.3% | 93.8% / 75.9% | 91.0% / 78.9% | 48.3% / 3.4% | 89.1% / 71.8% | 97.6% / 89.5% |
+| Run 28 | 88.2% / 51.9% | 86.8% / 52.9% | 88.8% / 57.9% | 42.2% / 1.0% | 84.7% / 53.5% | 93.3% / 71.1% |
+| Run 26 | 82.0% / 44.3% | 77.9% / 36.8% | 81.5% / 47.4% | 37.8% / 2.4% | 79.6% / 45.1% | 87.5% / 60.5% |
 
 On the printed pages, most of Run 30's word errors are pairs of words set
 so close that they're read as one (`hotonde` for `hoton de`). The
