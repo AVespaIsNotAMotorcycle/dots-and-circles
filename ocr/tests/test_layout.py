@@ -75,7 +75,8 @@ def test_find_skew():
 @pytest.mark.parametrize("photo", [False, True])
 def test_finds_the_words_of_a_manchu_page(photo):
     from ocr.evaluate_pages import match
-    image, items = generate_page(0, layout="manchu", photo=photo)
+    image, items = generate_page(0, layout="manchu", photo=photo,
+                                 tight=False)
     page = find_words(image)
     found = [page.to_input(word["box"]) for word in page.words]
     pairing = match(found, [item["box"] for item in items])
