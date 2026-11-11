@@ -52,6 +52,41 @@ repository root. Locally, from the repository root:
   the photo dataset's own romanization (`ocr.photos.manchu_to_roman`), as
   in the run reports: the character accuracy of the prediction against the
   label, `max(0, 1 - edit distance / len(label))`.
+- `GET /lexigraphs`: every word of a source, a page at a time, with one
+  model's reading of each. `?source=photo` (the default) lists the
+  photographed words in `photos/`, and `?source=synthetic` the rendered
+  ones in `synthetic/`, both in the order of their `manifest.json`.
+  `?page=` counts from 1 (the default), and `?per_page=` is 50 by default
+  and at most 100; a page past the last has no `words`. `?model=` picks
+  the model, as for `/upload/multiple` (`default_model`, Run 30, by
+  default). An unknown source or model, or a bad page or `per_page`, gets
+  a 400.
+
+  ```json
+  {
+    "source": "photo",
+    "model": "Run 30",
+    "page": 1,
+    "per-page": 50,
+    "total": 300,
+    "pages": 6,
+    "words": [{
+      "index": 0,
+      "label": "abkai",
+      "manchu": "ᠠᠪᡴᠠᡳ",
+      "font": null,
+      "image": "data:image/png;base64,...",
+      "prediction-manchu": "ᠠᠪᡴᠠᡳ",
+      "prediction-abkai": "abkai",
+      "score": 1.0
+    }]
+  }
+  ```
+
+  The fields mean what they do in `/random`, and `index` is the word's
+  place in the whole list. Each worker reads a word the first time it's
+  asked for and keeps the reading, so a page is slow (about 0.6 s locally
+  for 50) only the first time.
 - `GET /pages`: the names of the real pages `/random?source=page&name=`
   takes, in order: `{"pages": ["page001", "page002", ...]}`. Each is the
   page's filename without its extension (`page001.png` and its

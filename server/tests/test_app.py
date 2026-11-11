@@ -431,3 +431,61 @@ def test_pages_without_pages(tmp_path):
                     "params": params}]}))
     client = create_app(str(tmp_path / "config.json")).test_client()
     assert client.get("/pages").get_json() == {"pages": []}
+
+
+def test_lexigraphs_photo_is_the_default(client):
+    for query in ("", "?source=", "?source=photo"):
+        response = client.get(f"/lexigraphs{query}")
+        assert response.status_code == 200
+        body = response.get_json()
+        assert body["source"] == "photo"
+        assert body["model"] == "Test"
+        assert (body["page"], body["per-page"]) == (1, 50)
+        assert (body["total"], body["pages"]) == (1, 1)
+        [word] = body["words"]
+        assert word["index"] == 0
+        assert word["label"] == "abka" and word["manchu"] == "ᠠᠪᡴᠠ"
+        assert word["font"] is None
+        assert word["image"].startswith("data:image/png;base64,")
+        assert set(word) == {"index", "label", "manchu", "font", "image",
+                             "prediction-manchu", "prediction-abkai",
+                             "score"}
+
+
+def test_lexigraphs_read_like_random(client):
+    # The same reading, and score, as /random gives the same word
+    [word] = client.get("/lexigraphs?source=synthetic").get_json()["words"]
+    [result] = client.get("/random?source=synthetic").get_json()["results"]
+    assert word["label"] == "aqambi" and word["font"] == "SomeFont"
+    for key in ("prediction-manchu", "prediction-abkai", "score"):
+        assert word[key] == result[key]
+
+
+def test_lexigraphs_pages(client, tmp_path):
+    # Three photos, two to a page
+    manifest = json.loads((tmp_path / "photos" / "manifest.json").read_text())
+    manifest = [dict(manifest[0], label=label) for label in ("a", "b", "c")]
+    (tmp_path / "photos" / "manifest.json").write_text(json.dumps(manifest))
+    client = create_app(str(tmp_path / "config.json")).test_client()
+    first = client.get("/lexigraphs?per_page=2").get_json()
+    second = client.get("/lexigraphs?per_page=2&page=2").get_json()
+    past = client.get("/lexigraphs?per_page=2&page=3").get_json()
+    assert (first["total"], first["pages"]) == (3, 2)
+    assert [w["index"] for w in first["words"]] == [0, 1]
+    assert [w["index"] for w in second["words"]] == [2]
+    assert past["words"] == []
+
+
+def test_lexigraphs_model(client):
+    assert client.get("/lexigraphs?model=Test").status_code == 200
+    response = client.get("/lexigraphs?model=Nope")
+    assert response.status_code == 400
+    assert "Test" in response.get_json()["error"]
+
+
+@pytest.mark.parametrize("query", ["source=drawing", "page=0", "page=x",
+                                   "per_page=0", "per_page=101"])
+def test_lexigraphs_bad_request(client, query):
+    response = client.get(f"/lexigraphs?{query}")
+    assert response.status_code == 400
+    assert response.get_json()["error"]

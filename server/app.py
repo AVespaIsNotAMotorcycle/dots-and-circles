@@ -46,6 +46,9 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 MAX_UPLOAD_SIDE = 2000
 # Uploads with more pixels than this are refused before they're decoded
 MAX_UPLOAD_PIXELS = 50_000_000
+# Words per page of GET /lexigraphs, by default and at most
+DEFAULT_PER_PAGE = 50
+MAX_PER_PAGE = 100
 
 class RequestError(Exception):
     '''
@@ -380,6 +383,62 @@ def create_app(config_path=CONFIG_PATH):
                         "image": data_url(path),
                         "preprocessed-image": image_data_url(preprocessed),
                         "results": results})
+
+    # Readings for /lexigraphs, by (model name, source, index in the
+    # manifest), so each word is read once per worker
+    readings = {}
+
+    @app.get("/lexigraphs")
+    def lexigraphs():
+        '''
+        Every word of a source (?source=photo, the default, or synthetic) in
+        manifest order, a page at a time (?page=, from 1, and ?per_page=,
+        up to MAX_PER_PAGE), each with one model's reading (?model=,
+        default_model by default).
+        '''
+        entry, model = chosen_model()
+        source = request.args.get("source") or "photo"
+        if source not in sources:
+            raise RequestError(f"Unknown source {source!r}: use one of "
+                               f"{', '.join(sources)}.")
+        try:
+            page = int(request.args.get("page", 1))
+            per_page = int(request.args.get("per_page", DEFAULT_PER_PAGE))
+        except ValueError:
+            raise RequestError("page and per_page must be whole numbers.")
+        if page < 1 or not 1 <= per_page <= MAX_PER_PAGE:
+            raise RequestError("page must be at least 1, and per_page from "
+                               f"1 to {MAX_PER_PAGE}.")
+        folder, entries = sources[source]
+        start = (page - 1) * per_page
+        words = []
+        for index in range(start, min(start + per_page, len(entries))):
+            photo = entries[index]
+            path = os.path.join(folder, photo["path"])
+            key = (entry["name"], source, index)
+            if key not in readings:
+                preprocess = entry.get("preprocess", {})
+                with Image.open(path) as original:
+                    image = prepare(original, preprocess.get("crop", True),
+                                    preprocess.get("whiten", True))
+                readings[key] = read_word(entry, model, image,
+                                          photo["label"])
+            reading = readings[key]
+            words.append({
+                "index": index,
+                "label": manchu_to_abkai(photo["manchu"]),
+                "manchu": photo["manchu"],
+                "font": photo.get("font"),
+                "image": data_url(path),
+                "prediction-manchu": reading["prediction-manchu"],
+                "prediction-abkai": reading["prediction-abkai"],
+                "score": reading["score"],
+            })
+        return jsonify({"source": source, "model": entry["name"],
+                        "page": page, "per-page": per_page,
+                        "total": len(entries),
+                        "pages": -(-len(entries) // per_page),
+                        "words": words})
 
     @app.post("/upload/single")
     def upload_single():
