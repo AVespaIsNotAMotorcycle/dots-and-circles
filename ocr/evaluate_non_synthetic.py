@@ -19,9 +19,8 @@ from PIL import Image, ImageDraw, ImageFont
 from ocr.modelD import ModelD
 from ocr.photos import (DATA_DIRECTORY, all_images, load_photo,
                         manchu_to_roman, sample_images, set_images)
-from ocr.train import (CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM,
-                       edit_distance, image_to_array, predict, read_words,
-                       token_count)
+from ocr.train import (CONTEXT_LENGTH, TOKEN_DIM, classes_in, edit_distance,
+                       image_to_array, predict, read_words, token_count)
 from ocr.training_data import fonts, render
 
 # Images per batch. The models keep every layer's activations from the
@@ -47,8 +46,10 @@ model = None
 
 def init_worker(weights, depth, emb_dim):
     global model
+    # Older models have fewer classes, with the blank last (see classes_in)
+    classes = classes_in(weights)
     model = ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
-                   num_classes=NUM_CLASSES, depth=depth, blank=END,
+                   num_classes=classes, depth=depth, blank=classes - 1,
                    emb_dim=emb_dim)
     model.load_weights(weights)
     model.set_training(False)

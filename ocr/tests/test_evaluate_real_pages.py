@@ -2,7 +2,8 @@ import pytest
 
 pytest.importorskip("matplotlib")  # ocr.train imports it
 
-from ocr.evaluate_real_pages import clean, match_lines, score
+from ocr.evaluate_real_pages import (clean, match_lines, punctuation_counts,
+                                     score)
 
 
 def test_clean_drops_punctuation():
@@ -24,3 +25,9 @@ def test_missing_lines_count_as_errors():
 
 def test_score_counts_word_errors():
     assert score([("hoton de", "hotonde")]) == (8, 1, 2, 2)
+
+def test_punctuation_counted_by_kind_anywhere_in_line():
+    assert punctuation_counts("be, tere. ombi,", "be tere, ombi") == (3, 1, 1)
+    # The Manchu marks count as their Latin ones
+    assert punctuation_counts("be, tere.", "be\u1808 tere\u1809") == (2, 2, 2)
+    assert punctuation_counts("abka", "abka.") == (0, 1, 0)

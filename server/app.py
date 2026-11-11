@@ -30,9 +30,9 @@ from ocr.page_reader import low_confidence, page_text, read_page
 from ocr.photos import (abkai_to_manchu, load_photo, manchu_to_abkai,
                         manchu_to_roman, spell_in_manchu)
 from ocr.preprocess import prepare
-from ocr.train import (CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM, alphabet,
-                       character_accuracy, ctc_decode, image_to_array,
-                       predict, token_count)
+from ocr.train import (CONTEXT_LENGTH, TOKEN_DIM, alphabet,
+                       character_accuracy, classes_in, ctc_decode,
+                       image_to_array, predict, token_count)
 from utils.softmax import softmax
 
 directory = os.path.dirname(os.path.abspath(__file__))
@@ -63,14 +63,18 @@ def load_model(entry, root):
     '''
     name = entry["class"]
     module = importlib.import_module(f"ocr.{name[0].lower()}{name[1:]}")
+    weights = os.path.join(root, entry["weights"])
+    # Older models were trained before punctuation joined the alphabet, so
+    # they have fewer classes, with the blank last (see classes_in)
+    classes = classes_in(weights)
     model = getattr(module, name)(token_dim=TOKEN_DIM,
                                   context_length=CONTEXT_LENGTH,
-                                  num_classes=NUM_CLASSES, blank=END,
+                                  num_classes=classes, blank=classes - 1,
                                   **entry.get("params", {}))
     if not getattr(model, "uses_ctc", False):
         raise ValueError(f"{entry['name']}: only CTC models can be served, "
                          "since the response includes the CTC string")
-    model.load_weights(os.path.join(root, entry["weights"]))
+    model.load_weights(weights)
     model.set_training(False)
     return model
 

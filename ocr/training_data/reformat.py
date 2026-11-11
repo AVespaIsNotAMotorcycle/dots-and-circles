@@ -23,7 +23,11 @@ for line in lines:
 print(f"{len(lexicon)} unique words in lexicon.")
 print(f"{len(alphabet)} unique letters in alphabet.")
 
-alphabet = sorted(list(alphabet))
+# Punctuation isn't in the dictionary's words, but the models write it. It
+# goes last, after the sorted letters, so adding it left every letter's
+# index (and so older models' outputs) as it was.
+PUNCTUATION = ["\u1808", "\u1809"]   # Manchu comma and full stop
+alphabet = sorted(alphabet - set(PUNCTUATION)) + PUNCTUATION
 with open("alphabet.json", "w", encoding="utf-8") as file:
     json.dump(alphabet, file, ensure_ascii=False, indent=4)
     file.write('\n')

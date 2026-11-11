@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 
 from nn.tests.test_gradients import check_gradients
@@ -50,3 +51,14 @@ class TestModelD:
             model = small_model()
             model.set_lengths(lengths)
             check_gradients(model, np.random.randn(2, 5, 6))
+
+
+def test_grown_output_layer_keeps_letters_and_moves_the_blank():
+    pytest.importorskip("matplotlib")  # ocr.train imports it
+    from ocr.train import NUM_CLASSES, grow_classes
+    old = np.arange(2 * (NUM_CLASSES - 2), dtype=float).reshape(2, -1)
+    grown = grow_classes(old, NUM_CLASSES - 2, bias=-5.0)
+    assert grown.shape == (2, NUM_CLASSES)
+    assert (grown[:, :NUM_CLASSES - 3] == old[:, :-1]).all()
+    assert (grown[:, -1] == old[:, -1]).all()
+    assert (grown[:, NUM_CLASSES - 3:-1] == -5.0).all()

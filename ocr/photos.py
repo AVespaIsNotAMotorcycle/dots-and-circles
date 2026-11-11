@@ -25,7 +25,7 @@ DATA_DIRECTORY = os.path.join(directory, "non_synthetic_data")
 # MANCHU_TO_ABKAI). Variation selectors and the other invisible marks have
 # no spelling, so they're dropped. The Mongolian letters (ᠢ, ᠤ, ᠭ, ᠳ) take
 # the spelling of their Manchu counterparts. ᡰ is very rare, and r' is a
-# best guess.
+# best guess. Punctuation is written as in Latin script.
 MANCHU_TO_ROMAN = {
     "ᠠ": "a", "ᡝ": "e", "ᡳ": "i", "ᠢ": "i", "ᠣ": "o", "ᡠ": "u", "ᠤ": "u",
     "ᡡ": "v", "ᠨ": "n", "ᠩ": "ng", "ᠪ": "b", "ᡦ": "p", "ᡤ": "g", "ᠭ": "g",
@@ -35,6 +35,8 @@ MANCHU_TO_ROMAN = {
     "ᡰ": "r'", "ᡱ": "c'", "ᡷ": "z", "ᡟ": "y", " ": " ",
     "᠋": "", "᠌": "", "᠍": "", "᠏": "", "᠇": "",
     "᠊": "",
+    # The Manchu comma and full stop
+    "\u1808": ",", "\u1809": ".",
 }
 
 def manchu_to_roman(word):

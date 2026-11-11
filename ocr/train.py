@@ -467,6 +467,20 @@ def weights_path(run_directory, name, epoch=None):
         file_name += f"_epoch{epoch:03}"
     return os.path.join(run_directory, f"weights_{file_name}.npz")
 
+def classes_in(path):
+    '''
+    How many classes the model whose weights are saved at path outputs: its
+    last layer's size. Models from before the punctuation was added to the
+    alphabet have NUM_CLASSES - 2; since it was added at the end, their
+    classes are the alphabet's first ones, with the blank last.
+    '''
+    with np.load(path) as weights:
+        last = max((key for key in weights.files
+                    if key.startswith("layers.") and key.endswith(".bias")
+                    and key.count(".") == 2),
+                   key=lambda key: int(key.split(".")[1].split("_")[0]))
+        return weights[last].shape[-1]
+
 def save_weights(model, path):
     '''
     Saves model's weights to path by way of a temporary file, so stopping
@@ -556,6 +570,65 @@ def load_optimizer(optimizer, model, path):
                       "v": unflatten_like(template, flat["v"]),
                       "t": t})
     return True
+
+def last_layer(keys):
+    # The key prefix of a model's output layer, e.g. "layers.14_Linear", in
+    # the flat keys of its weights (or "m." / "v." ones, with the prefix)
+    def index(key):
+        return int(key.split(".")[-2].split("_")[0])
+    biases = [key for key in keys if key.endswith("_Linear.bias")
+              and key.split(".")[-3] == "layers"]
+    return max(biases, key=index)[:-len(".bias")]
+
+def grow_classes(array, classes, bias=None):
+    '''
+    An output layer's array (weights, bias, or Adam's state for them) with
+    its last axis grown from its classes to NUM_CLASSES: the letters it had
+    keep their places, the blank moves to the end, and the new letters
+    (added to the end of the alphabet, before the blank) start at zero, or
+    with bias at that value.
+    '''
+    grown = np.zeros(array.shape[:-1] + (NUM_CLASSES,), dtype=array.dtype)
+    grown[..., :classes - 1] = array[..., :classes - 1]
+    grown[..., -1] = array[..., classes - 1]
+    if bias is not None:
+        grown[..., classes - 1:-1] = bias
+    return grown
+
+def grow_run(source, target):
+    '''
+    Starts the run folder target from the latest weights and optimizer
+    state of every model in the run folder source, with their output layers
+    grown to the alphabet as it is now (see grow_classes), and the same
+    progress, so training carries on counting epochs from where source
+    stopped. The new letters' biases start at the lowest of the old
+    letters', so the models don't write them until they've learned them.
+    '''
+    progress = read_progress(source)
+    if not progress:
+        raise ValueError(f"{source} has no finished epochs to start from")
+    os.makedirs(target, exist_ok=True)
+    for name in progress:
+        with np.load(weights_path(source, name)) as saved:
+            weights = dict(saved)
+        layer = last_layer(weights)
+        classes = weights[layer + ".bias"].shape[-1]
+        lowest = weights[layer + ".bias"][..., :classes - 1].min()
+        for key in (layer + ".weights", layer + ".bias"):
+            weights[key] = grow_classes(weights[key], classes,
+                                        lowest if key.endswith("bias")
+                                        else None)
+        np.savez(weights_path(target, name), **weights)
+        state_path = optimizer_path(source, name)
+        if os.path.exists(state_path):
+            with np.load(state_path) as saved:
+                state = dict(saved)
+            for part in ("m", "v"):
+                for key in (f"{part}.{layer}.weights", f"{part}.{layer}.bias"):
+                    state[key] = grow_classes(state[key], classes)
+            np.savez(optimizer_path(target, name), **state)
+        print(f"Model {name}: {classes} classes grown to {NUM_CLASSES}.")
+    write_progress(target, progress)
 
 def progress_path(run_directory):
     return os.path.join(run_directory, "progress.json")
@@ -694,7 +767,7 @@ def get_learn_rate(epoch, batch_number, step, initial_rate):
     if epoch >= 10: return initial_rate / 3
     return initial_rate
 
-def train(epochs = 3, augment = True, resume = None):
+def train(epochs = 3, augment = True, resume = None, start_from = None):
     '''
     Trains every model in run_models for epochs. With augment=True the
     images are augmented to look like photographed prints, afresh each
@@ -707,8 +780,18 @@ def train(epochs = 3, augment = True, resume = None):
     fresh. Adam's state is saved after each epoch and loaded too; a run
     with weights but no saved state (from before it was saved) resumes with
     a fresh Adam, which shows as a short loss spike.
+
+    start_from names an earlier run's folder to fine-tune in a new run: its
+    models' latest weights and optimizer state are copied into the new
+    folder, with their output layers grown if the alphabet has since grown
+    (see grow_run), and training carries on from there as if resumed.
     '''
-    if resume:
+    if start_from:
+        source = os.path.join(RUNS_DIRECTORY, start_from)
+        run_directory = new_run_directory()
+        print(f"Starting {run_directory} from {source}")
+        grow_run(source, run_directory)
+    elif resume:
         run_directory = os.path.join(RUNS_DIRECTORY, resume)
         if not os.path.isdir(run_directory):
             raise FileNotFoundError(f"No run to resume at {run_directory}")
