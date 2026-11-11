@@ -84,7 +84,8 @@ def unmatched_kinds(found, true, pairing):
             counts["missed"] += 1
     return counts
 
-def score_page(seed, photo, layout=None, classifier=None, reader=None):
+def score_page(seed, photo, layout=None, classifier=None, reader=None,
+               tight=None):
     '''
     Scores one page. reader is (model, crop, whiten) to read it too.
     '''
@@ -93,7 +94,8 @@ def score_page(seed, photo, layout=None, classifier=None, reader=None):
         # doesn't
         from ocr.page_reader import page_text, read_page
         from ocr.train import character_accuracy, edit_distance
-    image, items = generate_page(seed, layout=layout, photo=photo)
+    image, items = generate_page(seed, layout=layout, photo=photo,
+                                 tight=tight)
     start = time.perf_counter()
     if reader is not None:
         page = read_page(image, *reader[:1], classifier, *reader[1:])
@@ -141,6 +143,9 @@ def main():
     parser.add_argument("--photo", action="store_true",
                         help="score photographed-looking pages")
     parser.add_argument("--layout", help="score only this layout")
+    parser.add_argument("--tight", choices=["yes", "no"],
+                        help="score only pages set tight, or only pages "
+                             "that aren't")
     parser.add_argument("--classifier",
                         help="a box classifier's weights, to score kinds "
                              "and split runs of Chinese characters")
@@ -160,7 +165,8 @@ def main():
     totals = {}
     for seed in range(args.start, args.start + args.pages):
         result = score_page(seed, args.photo, args.layout, classifier,
-                            reader)
+                            reader, {"yes": True, "no": False, None: None}[
+                                args.tight])
         if args.verbose:
             print(seed, result)
         for key, value in result.items():

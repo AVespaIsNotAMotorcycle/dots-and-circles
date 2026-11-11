@@ -30,19 +30,22 @@ page of print: it finds the columns and words with classical image
 processing (`ocr/layout.py`), tells Manchu from Chinese with a small MLP
 (`ocr/box_classifier.py`), and reads each Manchu word with Run 30.
 
-On 100 synthetic pages (`python -m ocr.evaluate_pages`) of words no model
+On 60 synthetic pages (`python -m ocr.evaluate_pages`) of words no model
 trained on, a third each of all-Manchu, alternating Manchu and Chinese
 columns, and Manchu with Chinese characters mixed in, and about a third
 with small Chinese glosses between the Manchu columns. Some words are
-followed by the genitive particle *i*, printed apart as a hook:
+followed by the genitive particle *i*, printed apart as a hook, and about
+a third of pages are set tight, each word's tail running alongside the
+next word's start, as in much real print:
 
 | Pages | Boxes found (precision / recall) | Kind right (Manchu / Chinese) | Manchu words exact | Page text character accuracy |
 |---|---|---|---|---|
-| Clean | 98.9% / 99.1% | 99.6% / 99.9% | 98.1% | 98.1% |
-| Made to look photographed | 99.1% / 99.2% | 99.6% / 99.9% | 96.4% | 97.9% |
+| Clean | 93.7% / 84.5% | 99.6% / 100% | 90.3% | 92.6% |
+| Made to look photographed | 91.4% / 83.6% | 99.6% / 99.7% | 89.7% | 91.3% |
 
-With Run 28 the photographed-looking pages read 88.2% exactly, and with
-Run 26 77.0%. A page takes about a second on one CPU core.
+Pages that aren't set tight read at about 98% (page text), and tight
+ones at about 80%: words set that close often share a box, and the model
+reads them run together. A page takes about a second on one CPU core.
 
 On seven real pages so far, in [`ocr/real_pages`](ocr/real_pages) and
 scored by `python -m ocr.evaluate_real_pages`: six printed (one with six

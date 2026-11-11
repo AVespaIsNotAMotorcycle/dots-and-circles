@@ -40,7 +40,7 @@ def test_all_ink_is_boxed_without_rules():
     assert not ink.any()
 
 def test_reading_order():
-    page, items = generate_page(11, layout="mixed", rules=False)
+    page, items = generate_page(11, layout="mixed", rules=False, tight=False)
     assert [(item["column"], item["position"]) for item in items] == sorted(
         (item["column"], item["position"]) for item in items)
     columns = {}
@@ -100,3 +100,20 @@ def test_genitive_follows_consonants():
                 assert before["column"] == item["column"]
                 assert ends_in_consonant(before["text"])
     assert found
+
+def test_tight_pages_overlap_without_touching():
+    page, items = generate_page(5, layout="manchu", tight=True, rules=False)
+    columns = {}
+    for item in items:
+        columns.setdefault(item["column"], []).append(item["box"])
+    overlaps = 0
+    ink = np.asarray(page) < INK_THRESHOLD
+    for boxes in columns.values():
+        for above, below in zip(boxes, boxes[1:]):
+            # Each word's tail runs alongside the next one's start...
+            overlaps += above[3] > below[1]
+    assert overlaps
+    # ...and every box still holds its own ink
+    for item in items:
+        left, top, right, bottom = item["box"]
+        assert ink[top:bottom, left:right].any()

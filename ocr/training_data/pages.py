@@ -13,7 +13,9 @@ A page has one of three layouts:
   words, as for glosses and names.
 
 Words ending in a consonant are sometimes followed by the genitive i,
-printed apart as a hook, its own item.
+printed apart as a hook, its own item. About a third of pages are set
+tight: each word as close to the one before as its ink allows, its tail
+running alongside the next word's start, as in much real print.
 
 Pages that aren't alternating may also have small Chinese glosses set in
 narrow columns between Manchu ones, as bilingual books print them. Each is
@@ -70,6 +72,13 @@ CHINESE_SIZE_RANGE = (0.8, 1.2)    # a Chinese character's em size
 # characters instead of a word, and how long the run can be
 CHINESE_RUN_CHANCE = 0.15
 CHINESE_RUN_LENGTH = (1, 4)
+# Tight setting: the chance a page is set tight, the least clearance
+# between two words' ink, up to how much more at random, and the most two
+# words may overlap, all in units
+TIGHT_CHANCE = 0.35
+TIGHT_CLEARANCE = 0.06
+TIGHT_SLACK = 0.06
+TIGHT_LIMIT = 0.6
 # Glosses: the chance a page has them, the chance of a gloss column before
 # each Manchu column, their characters' size, how many are in a run, the
 # blank between runs (in units), and the gap either side of the column
@@ -220,14 +229,40 @@ def ends_in_consonant(word):
     letters = group_key(word)
     return bool(letters) and letters[-1] not in VOWELS
 
+def tightest_gap(above, below, clearance, limit):
+    '''
+    The most negative gap (overlap), down to -limit pixels, at which below
+    can follow above in a column without its ink coming within clearance
+    pixels of above's: in tightly set print, a word's tail runs alongside
+    the next word's start. Both are rendered words of one font, so they're
+    the same width with their stems aligned.
+    '''
+    ink_above = np.asarray(above) < INK_THRESHOLD
+    ink_below = np.asarray(below) < INK_THRESHOLD
+    # above's ink, grown by clearance pixels every way
+    padded = np.pad(ink_above, clearance)
+    grown = np.zeros_like(ink_above)
+    height, width_above = ink_above.shape
+    for dy in range(2 * clearance + 1):
+        for dx in range(2 * clearance + 1):
+            grown |= padded[dy:dy + height, dx:dx + width_above]
+    width = min(grown.shape[1], ink_below.shape[1])
+    for gap in range(-min(limit, above.height - 1, below.height - 1), 0):
+        overlap = -gap
+        if not (grown[-overlap:, :width] & ink_below[:overlap, :width]).any():
+            return gap
+    return 0
+
 def fill_column(rng, kind, length, render_word, render_character,
-                word_gap, chinese_gap, render_genitive=None):
+                word_gap, chinese_gap, render_genitive=None, tight=None):
     '''
     Items for one column of the given kind ("manchu", "chinese" or "mixed"),
     as (kind, text, image) tuples, stacked until the next one wouldn't fit
     in length pixels. Returns them with the gap after each. With
     render_genitive, a word ending in a consonant is followed by the
-    genitive i GENITIVE_CHANCE of the time.
+    genitive i GENITIVE_CHANCE of the time. With tight, a callable giving
+    the gap between two rendered words, Manchu following Manchu is set that
+    close instead.
     '''
     items = []
     used = 0
@@ -248,12 +283,25 @@ def fill_column(rng, kind, length, render_word, render_character,
                     and rng.random() < GENITIVE_CHANCE):
                 new.append(("manchu", GENITIVE, render_genitive(),
                             word_gap()))
+            if tight:
+                # Each word as close to the one before as its ink allows
+                for index in range(len(new) - 1):
+                    new[index] = new[index][:3] + (tight(new[index][2],
+                                                         new[index + 1][2]),)
+        # The gap after the item before, if this one is set tight against it
+        change = 0
+        if tight and new[0][0] == "manchu" and items \
+                and items[-1][0] == "manchu":
+            closer = tight(items[-1][2], new[0][2])
+            change = closer - items[-1][3]
         height = sum(image.height + gap for _, _, image, gap in new)
-        if used + height - new[-1][3] > length:
+        if used + change + height - new[-1][3] > length:
             failures += 1
             continue
+        if change:
+            items[-1] = items[-1][:3] + (items[-1][3] + change,)
         items.extend(new)
-        used += height
+        used += change + height
     return items
 
 def fill_gloss(rng, length, unit, render_gloss, chinese_gap):
@@ -282,7 +330,7 @@ def fill_gloss(rng, length, unit, render_gloss, chinese_gap):
     return offset, items, True
 
 def generate_page(seed, layout=None, photo=False, rules=None, words=None,
-                  glosses=None):
+                  glosses=None, tight=None):
     '''
     Returns (image, items) for a seed: a greyscale PIL page, and its items
     in reading order. Each item is a dict with:
@@ -300,7 +348,9 @@ def generate_page(seed, layout=None, photo=False, rules=None, words=None,
     between columns (by default, chosen by the seed). words are the Manchu
     words to use (by default, unseen_words()). glosses says whether to set
     small Chinese glosses between some Manchu columns (by default, chosen
-    by the seed, never on alternating pages).
+    by the seed, never on alternating pages). tight says whether to set
+    Manchu words as close as their ink allows, a word's tail running
+    alongside the next word's start (by default, chosen by the seed).
     '''
     if not fonts:
         raise RuntimeError("No Manchu fonts in training_data/fonts/.")
@@ -353,6 +403,14 @@ def generate_page(seed, layout=None, photo=False, rules=None, words=None,
         character = chinese_character(rng, gloss_font)
         return character, render_chinese(character, gloss_font)
 
+    tight = rng.random() < TIGHT_CHANCE if tight is None else tight
+    clearance = max(1, round(TIGHT_CLEARANCE * unit))
+    slack = max(0, round(TIGHT_SLACK * unit))
+    def set_tight(above, below):
+        return (tightest_gap(above, below, clearance,
+                             round(TIGHT_LIMIT * unit))
+                + rng.randint(0, slack))
+
     # Each column is (offset from the top, items, whether it's a gloss)
     columns = []
     for index in range(column_count):
@@ -366,7 +424,8 @@ def generate_page(seed, layout=None, photo=False, rules=None, words=None,
                                       chinese_gap))
         columns.append((0, fill_column(rng, kind, length, render_word,
                                        render_character, word_gap,
-                                       chinese_gap, render_genitive), False))
+                                       chinese_gap, render_genitive,
+                                       set_tight if tight else None), False))
 
     # Each column's ink spans the same width around the stem for every
     # word, so its width is the widest word's ink. Chinese characters are
