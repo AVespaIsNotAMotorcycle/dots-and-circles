@@ -303,13 +303,21 @@ def create_app(config_path=CONFIG_PATH):
     def random_page():
         '''
         /random?source=page: a real page with its transcription, read as
-        /upload/multiple reads an upload (see page_response). Adds the page's
+        /upload/multiple reads an upload (see page_response). A random one,
+        or the one ?name= names. Adds the page's
         name, the original image, the transcription, how the reading scores
         against it, and the page's credit and link.
         '''
         entry, model = chosen_model()
-        name, image_path, transcription_path = random.choice(
-            real_pages(pages_folder))
+        available = real_pages(pages_folder)
+        # ?name= asks for one page by name (e.g. page003)
+        name = request.args.get("name")
+        if name:
+            available = [page for page in available if page[0] == name]
+            if not available:
+                raise RequestError(f"Unknown page {name!r}: use one of "
+                                   f"{', '.join(n for n, _, _ in real_pages(pages_folder))}.")
+        name, image_path, transcription_path = random.choice(available)
         transcription = read_transcription(transcription_path)
         with Image.open(image_path) as image:
             original = image.convert("RGB")

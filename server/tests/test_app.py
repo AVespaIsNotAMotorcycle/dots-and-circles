@@ -47,6 +47,8 @@ def client(tmp_path):
     (tmp_path / "pages" / "page001.png").write_bytes(page_image())
     (tmp_path / "pages" / "page001.txt").write_text(
         "abka , na\nbe\n", encoding="utf-8")
+    (tmp_path / "pages" / "page002.png").write_bytes(page_image())
+    (tmp_path / "pages" / "page002.txt").write_text("be\n", encoding="utf-8")
     (tmp_path / "pages" / "sources.json").write_text(json.dumps(
         {"page001": {"credit": "Somewhere", "link": "https://example.org"}}))
     (tmp_path / "config.json").write_text(json.dumps({
@@ -357,7 +359,7 @@ def test_upload_multiple_bad_image(client):
 
 
 def test_random_page(client):
-    response = client.get("/random?source=page")
+    response = client.get("/random?source=page&name=page001")
     assert response.status_code == 200
     body = response.get_json()
     assert body["source"] == "page" and body["name"] == "page001"
@@ -390,3 +392,18 @@ def test_random_page_needs_pages(tmp_path):
     client = create_app(str(tmp_path / "config.json")).test_client()
     response = client.get("/random?source=page")
     assert response.status_code == 400
+
+def test_random_page_by_name(client):
+    for name, text in (("page001", "abka , na\nbe"), ("page002", "be")):
+        body = client.get(f"/random?source=page&name={name}").get_json()
+        assert body["name"] == name and body["transcription"] == text
+    # Without a name, either
+    names = {client.get("/random?source=page").get_json()["name"]
+             for _ in range(20)}
+    assert names <= {"page001", "page002"}
+
+def test_random_page_unknown_name(client):
+    response = client.get("/random?source=page&name=page999")
+    assert response.status_code == 400
+    error = response.get_json()["error"]
+    assert "page999" in error and "page001" in error and "page002" in error

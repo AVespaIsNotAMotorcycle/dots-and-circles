@@ -54,8 +54,9 @@ repository root. Locally, from the repository root:
   label, `max(0, 1 - edit distance / len(label))`.
 - `GET /random?source=page`: reads a random real page, with its known
   transcription, from the folder `pages` names in `config.json` (the
-  benchmark pages in `ocr/real_pages`). `?model=` picks the model, as for
-  `/upload/multiple`. It returns everything `/upload/multiple` does (with
+  benchmark pages in `ocr/real_pages`), or the one `?name=` names (e.g.
+  `?name=page003`; an unknown name gets a 400 listing them). `?model=`
+  picks the model, as for `/upload/multiple`. It returns everything `/upload/multiple` does (with
   `source` `"page"`), and:
 
   ```json
