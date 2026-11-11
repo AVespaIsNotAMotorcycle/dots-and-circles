@@ -78,9 +78,9 @@ Characters / words, as of 2026-11-10:
 
 | Model | page001 | page002 | page003 | page004 (handwritten) | page005 | page006 |
 |---|---|---|---|---|---|---|
-| Run 30 | 97.9% / 88.6% | 93.8% / 75.9% | 94.8% / 89.5% | 48.6% / 3.9% | 90.5% / 78.9% | 98.6% / 92.1% |
-| Run 28 | 87.9% / 51.9% | 86.8% / 52.9% | 90.6% / 63.2% | 42.4% / 1.9% | 85.6% / 59.2% | 94.2% / 73.7% |
-| Run 26 | 82.0% / 44.3% | 77.9% / 36.8% | 86.3% / 57.9% | 37.8% / 2.9% | 80.7% / 47.9% | 88.5% / 63.2% |
+| Run 30 | 97.9% / 88.6% | 93.8% / 75.9% | 95.7% / 92.1% | 47.4% / 3.9% | 90.5% / 78.9% | 98.6% / 92.1% |
+| Run 28 | 87.9% / 51.9% | 86.8% / 52.9% | 90.6% / 63.2% | 39.2% / 1.9% | 85.6% / 59.2% | 94.2% / 73.7% |
+| Run 26 | 82.0% / 44.3% | 77.7% / 36.8% | 85.8% / 57.9% | 35.9% / 2.9% | 80.7% / 47.9% | 88.5% / 63.2% |
 
 On the printed pages, most of Run 30's word errors are pairs of words set
 so close that they're read as one (`hotonde` for `hoton de`). The
@@ -89,3 +89,6 @@ printed fonts and photographed print, read its hand poorly. On page005
 the small two-column note is read, but as a line of its own. Of the 14
 genitive *i* on the printed pages, Run 30's reading has 9; most of the
 rest are joined onto the word before them (`hotoni` for `hoton i`).
+Readings with a confidence under 0.65 are left out of the text, which
+takes most junk (a page's edge read as Manchu) out of it; on the
+handwritten letter it also drops some uncertain words.

@@ -26,7 +26,7 @@ from ocr.box_classifier import load_classifier
 from ocr.evaluate_real_pages import pages as real_pages
 from ocr.evaluate_real_pages import read_transcription
 from ocr.evaluate_real_pages import score_page as score_real_page
-from ocr.page_reader import page_text, read_page
+from ocr.page_reader import low_confidence, page_text, read_page
 from ocr.photos import (abkai_to_manchu, load_photo, manchu_to_abkai,
                         manchu_to_roman, spell_in_manchu)
 from ocr.preprocess import prepare
@@ -184,12 +184,14 @@ def page_response(entry, page, original):
     read, its text in Manchu and Abkai (a line per column with Manchu in
     it), and each box: where it is in the straightened page, the image in
     it, and the model's reading. A box's "line" is its line of the text, or
-    None if its column has no Manchu and so no line. original is the image
-    as read, in colour.
+    None if its column has no Manchu (read with enough confidence) and so
+    no line. Manchu read with low confidence is left out of the text, and
+    its box marked "low-confidence". original is the image as read, in
+    colour.
     '''
     lines = {}
     for word in page.words:
-        if word["kind"] == "manchu":
+        if word["kind"] == "manchu" and not low_confidence(word):
             lines.setdefault(word["column"], None)
     lines = {column: line for line, column in enumerate(sorted(lines))}
     straight = page.straighten(original)
@@ -207,6 +209,7 @@ def page_response(entry, page, original):
             "prediction-manchu": word["text"] if manchu else None,
             "prediction-abkai": word["abkai"] if manchu else None,
             "confidence": word["confidence"] if manchu else None,
+            "low-confidence": low_confidence(word) if manchu else None,
         })
     return {"model": entry["name"],
             "image": image_data_url(straight),

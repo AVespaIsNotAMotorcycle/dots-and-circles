@@ -118,7 +118,7 @@ repository root. Locally, from the repository root:
       "line": 0, "position": 0, "kind": "manchu",
       "manchu-probability": 0.999,
       "prediction-manchu": "ᠠᠪᡴᠠ", "prediction-abkai": "abka",
-      "confidence": 0.97
+      "confidence": 0.97, "low-confidence": false
     }]
   }
   ```
@@ -135,9 +135,16 @@ repository root. Locally, from the repository root:
   per column with Manchu in it, words separated by spaces and `□` for each
   other box; columns with no Manchu (such as a column of Chinese) are left
   out, and their boxes' `line` is `null`. `position` counts from the top of
-  the box's column, `manchu-probability` is the classifier's, and
-  `confidence` the mean probability of the classes the model read. Other
-  boxes' predictions and confidence are `null`.
+  the box's column, and `manchu-probability` is the classifier's.
+  `confidence` is the mean probability of the letters the model read
+  (leaving out the blanks between them, which it's nearly always sure of,
+  even reading junk). A Manchu box under 0.65 (`MIN_CONFIDENCE` in
+  `ocr/page_reader.py`) is marked `low-confidence` and left out of
+  `manchu` and `abkai`; a column of nothing else leaves no line, and its
+  boxes' `line` is `null`. On the real pages every correct reading scored
+  at least 0.7, and most junk (a page's edge read as Manchu, say) at most
+  0.57. Other boxes' predictions, confidence and `low-confidence` are
+  `null`.
 
 ## config.json
 

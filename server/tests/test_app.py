@@ -311,7 +311,7 @@ def test_upload_multiple(client):
         assert crop.size == (box["w"], box["h"])
         assert box["x"] + box["w"] <= page.width
         assert box["y"] + box["h"] <= page.height
-        assert {"x", "y", "w", "h", "line", "position",
+        assert {"x", "y", "w", "h", "line", "position", "low-confidence",
                 "manchu-probability", "prediction-manchu",
                 "prediction-abkai", "confidence"} <= set(box)
         if box["kind"] == "manchu":

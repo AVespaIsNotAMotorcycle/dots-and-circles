@@ -27,6 +27,10 @@ from utils.softmax import softmax
 # fast as bigger ones, in a quarter of the memory of 16, which matters with
 # two workers on a 512 MB dyno.
 BATCH_SIZE = 4
+# Manchu read with a confidence (see read_crops) under this is left out of
+# the page's text. On the real pages, every correct reading scored at
+# least 0.7 and most junk at most 0.57.
+MIN_CONFIDENCE = 0.65
 # Drawing: outline colours, and the white laid over Manchu boxes (its
 # opacity, 0-255) so their Abkai shows over the print
 MANCHU_COLOUR = (0, 170, 0)
@@ -64,9 +68,11 @@ def decode_words(output, length, blank):
 def read_crops(model, crops, crop=True, whiten=True):
     '''
     Reads greyscale PIL word images with a CTC model. Returns (reading,
-    confidence, spaces) for each: the confidence is the mean, over the
-    image's tokens, of the probability of the class read there, and spaces
-    are where the model put spaces between words, as shares of the
+    confidence, spaces) for each. The confidence is the mean, over the
+    tokens where the model reads a letter, of that letter's probability (0
+    if it reads none): the blanks between letters are left out, as the
+    model is nearly always sure of them, even when what it reads is junk.
+    spaces are where the model put spaces between words, as shares of the
     prepared image's height.
     '''
     readings = []
@@ -81,7 +87,10 @@ def read_crops(model, crops, crop=True, whiten=True):
             text, spaces = decode_words(output, length, model.blank)
             # Images taller than HEIGHT are squeezed into it
             rows = min(image.height, HEIGHT)
-            readings.append((text, float(probabilities.max(axis=-1).mean()),
+            letters = probabilities.argmax(axis=-1) != model.blank
+            confidence = (float(probabilities.max(axis=-1)[letters].mean())
+                          if letters.any() else 0.0)
+            readings.append((text, confidence,
                              [((token + 0.5) * ROWS_PER_TOKEN) / rows
                               for token in spaces]))
     return readings
@@ -144,9 +153,20 @@ def read_page(image, model, classifier, crop=True, whiten=True):
     page.words = words
     return page
 
+def low_confidence(word):
+    # Whether a word of read_page's is Manchu read with a confidence under
+    # MIN_CONFIDENCE, too likely junk to put in the text
+    return (word["kind"] == "manchu"
+            and word.get("confidence", 1.0) < MIN_CONFIDENCE)
+
 def page_text(page, abkai=False):
-    # The page's text, as page_lines gives it, from read_page's words
-    return page_lines(page.words, abkai)
+    '''
+    The page's text, as page_lines gives it, from read_page's words,
+    leaving out Manchu read with low confidence (a column of nothing else,
+    such as a page's edge read as Manchu, leaves no line).
+    '''
+    return page_lines([word for word in page.words
+                       if not low_confidence(word)], abkai)
 
 def draw_text(image, text, box):
     '''

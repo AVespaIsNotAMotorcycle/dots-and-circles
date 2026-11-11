@@ -3,7 +3,8 @@ import pytest
 
 pytest.importorskip("matplotlib")  # ocr.train imports it
 
-from ocr.page_reader import decode_words, split_reading
+from ocr.page_reader import (MIN_CONFIDENCE, decode_words, low_confidence,
+                              page_text, split_reading)
 from ocr.train import alphabet
 
 
@@ -34,3 +35,20 @@ def test_split_reading_without_spaces():
     ink = np.ones((50, 20), dtype=bool)
     assert split_reading(ink, [0, 0, 20, 50], "ᠠᠪ", []) == [
         ([0, 0, 20, 50], "ᠠᠪ")]
+
+def test_low_confidence_words_are_left_out_of_the_text():
+    class Page:
+        words = [
+            {"kind": "manchu", "text": "ᠠᠪᡴᠠ", "column": 0, "position": 0,
+             "confidence": 0.95},
+            {"kind": "manchu", "text": "ᡴᡴᡴ", "column": 0, "position": 1,
+             "confidence": MIN_CONFIDENCE - 0.1},
+            # A column of nothing but junk leaves no line
+            {"kind": "manchu", "text": "ᡴᡴ", "column": 1, "position": 0,
+             "confidence": 0.3},
+            {"kind": "other", "text": "", "column": 1, "position": 1,
+             "manchu": 0.0},
+        ]
+    assert low_confidence(Page.words[1]) and not low_confidence(Page.words[0])
+    assert not low_confidence(Page.words[3])
+    assert page_text(Page()) == "ᠠᠪᡴᠠ"

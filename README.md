@@ -50,7 +50,7 @@ columns of small Chinese glosses) and one handwritten letter. On the
 printed pages the Manchu text reads at 90.5–98.6% character / 75.9–92.1%
 word accuracy, with every gloss left out; most word errors are pairs of
 words set so close that they're read as one (`hotonde` for `hoton de`).
-The handwritten letter reads at 48.6% characters.
+The handwritten letter reads at 47.4% characters.
 
 ## Architecture
 
