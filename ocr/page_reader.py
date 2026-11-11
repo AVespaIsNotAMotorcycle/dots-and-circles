@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from ocr.box_classifier import label_words
-from ocr.layout import find_words
+from ocr.layout import find_words, stem_breaks
 from ocr.photos import manchu_to_abkai
 from ocr.preprocess import prepare
 from ocr.train import (ROWS_PER_TOKEN, alphabet, image_to_array, predict,
@@ -31,6 +31,8 @@ BATCH_SIZE = 4
 # the page's text. On the real pages, every correct reading scored at
 # least 0.7 and most junk at most 0.57.
 MIN_CONFIDENCE = 0.65
+# How many times split_at_stem_breaks may split one box in turn
+MAX_SPLITS = 6
 # Drawing: outline colours, and the white laid over Manchu boxes (its
 # opacity, 0-255) so their Abkai shows over the print
 MANCHU_COLOUR = (0, 170, 0)
@@ -75,14 +77,21 @@ def read_crops(model, crops, crop=True, whiten=True):
     spaces are where the model put spaces between words, as shares of the
     prepared image's height.
     '''
-    readings = []
-    for start in range(0, len(crops), BATCH_SIZE):
-        images = [prepare(image, crop, whiten)
-                  for image in crops[start:start + BATCH_SIZE]]
-        entries = [(image_to_array(image), None, token_count(image))
-                   for image in images]
+    images = [prepare(image, crop, whiten) for image in crops]
+    lengths = [token_count(image) for image in images]
+    # Read in order of length, each batch cut to its longest image's tokens:
+    # the models attend to no padding token, so the readings are the same,
+    # but short words (most of them) cost far less
+    order = sorted(range(len(images)), key=lambda index: lengths[index])
+    readings = [None] * len(images)
+    for start in range(0, len(order), BATCH_SIZE):
+        batch = order[start:start + BATCH_SIZE]
+        longest = max(lengths[index] for index in batch)
+        entries = [(image_to_array(images[index])[:longest], None,
+                    lengths[index]) for index in batch]
         _, y = predict(model, entries)
-        for image, output, (_, _, length) in zip(images, y, entries):
+        for index, output, (_, _, length) in zip(batch, y, entries):
+            image = images[index]
             probabilities = softmax(output[:length])
             text, spaces = decode_words(output, length, model.blank)
             # Images taller than HEIGHT are squeezed into it
@@ -90,9 +99,9 @@ def read_crops(model, crops, crop=True, whiten=True):
             letters = probabilities.argmax(axis=-1) != model.blank
             confidence = (float(probabilities.max(axis=-1)[letters].mean())
                           if letters.any() else 0.0)
-            readings.append((text, confidence,
-                             [((token + 0.5) * ROWS_PER_TOKEN) / rows
-                              for token in spaces]))
+            readings[index] = (text, confidence,
+                               [((token + 0.5) * ROWS_PER_TOKEN) / rows
+                                for token in spaces])
     return readings
 
 def split_reading(ink, box, text, spaces):
@@ -121,6 +130,65 @@ def split_reading(ink, box, text, spaces):
                       word))
     return parts or [(box, text.strip())]
 
+def tight_box(ink, left, right, first, last):
+    # The box of the ink in columns left to right of rows first to last,
+    # or None if there's none
+    left, right, first, last = int(left), int(right), int(first), int(last)
+    region = ink[first:last, left:right]
+    rows = np.nonzero(region.any(axis=1))[0]
+    columns = np.nonzero(region.any(axis=0))[0]
+    if not len(rows):
+        return None
+    return [left + int(columns[0]), first + int(rows[0]),
+            left + int(columns[-1]) + 1, first + int(rows[-1]) + 1]
+
+def split_at_stem_breaks(model, page, box, reading, crop=True, whiten=True,
+                         depth=0, cache=None):
+    '''
+    Splits a box of Manchu, read as reading (text, confidence), into words
+    where it holds several set so tight that no row is blank between them.
+    Each candidate break (ocr.layout.stem_breaks) is tried by reading the
+    two parts; the break whose parts' lower confidence is highest is taken
+    if it's at least the whole's, and the parts are split again in turn.
+    A word cut inside reads as two pieces of nonsense, with less
+    confidence; two words read as words. Returns [(box, (text,
+    confidence))]. cache holds readings by box, as the halves of a split
+    are tried again inside each other.
+    '''
+    cache = {} if cache is None else cache
+    text, confidence = reading
+    if depth >= MAX_SPLITS:
+        return [(box, reading)]
+    left, top, right, bottom = box
+    pairs = []
+    for cut in stem_breaks(page.ink, box, page.unit):
+        above = tight_box(page.ink, left, right, top, top + cut)
+        below = tight_box(page.ink, left, right, top + cut, bottom)
+        if above and below:
+            pairs.append((above, below))
+    if not pairs:
+        return [(box, reading)]
+    unread = list({tuple(part) for pair in pairs for part in pair
+                   if tuple(part) not in cache})
+    for part, part_reading in zip(unread, read_crops(
+            model, [page.image.crop(part) for part in unread], crop, whiten)):
+        cache[part] = part_reading
+    best = None
+    for above, below in pairs:
+        first, second = cache[tuple(above)], cache[tuple(below)]
+        if not first[0] or not second[0]:
+            continue
+        score = min(first[1], second[1])
+        if score >= confidence and (best is None or score > best[0]):
+            best = (score, above, first, below, second)
+    if best is None:
+        return [(box, reading)]
+    _, above, first, below, second = best
+    return (split_at_stem_breaks(model, page, above, first[:2], crop, whiten,
+                                 depth + 1, cache)
+            + split_at_stem_breaks(model, page, below, second[:2], crop,
+                                   whiten, depth + 1, cache))
+
 def read_page(image, model, classifier, crop=True, whiten=True):
     '''
     Reads a page, given as a PIL image, with a CTC model and a box
@@ -129,7 +197,8 @@ def read_page(image, model, classifier, crop=True, whiten=True):
     "position", "kind" and "manchu" (the classifier's probability that it's
     Manchu), and for Manchu words "text" (the reading in Manchu),
     "abkai" and "confidence". A box the model reads as several words is
-    split into one box per word.
+    split into one box per word, and so is one holding several words set
+    too tight to part by gaps (see split_at_stem_breaks).
     '''
     page = label_words(find_words(image), classifier)
     manchu = [word for word in page.words if word["kind"] == "manchu"]
@@ -143,9 +212,15 @@ def read_page(image, model, classifier, crop=True, whiten=True):
             continue
         text, confidence, spaces = readings[id(word)]
         for box, part in split_reading(page.ink, word["box"], text, spaces):
-            words.append(dict(word, box=box, text=part,
-                              abkai=manchu_to_abkai(part),
-                              confidence=confidence))
+            # A single word as read may still be several set tight
+            pieces = ([(box, (part, confidence))] if not part or " " in part
+                      else split_at_stem_breaks(model, page, box,
+                                                (part, confidence), crop,
+                                                whiten))
+            for piece, (piece_text, piece_confidence) in pieces:
+                words.append(dict(word, box=piece, text=piece_text,
+                                  abkai=manchu_to_abkai(piece_text),
+                                  confidence=piece_confidence))
     position = {}
     for word in words:
         word["position"] = position.get(word["column"], 0)

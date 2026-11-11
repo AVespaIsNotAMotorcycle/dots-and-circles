@@ -40,21 +40,24 @@ next word's start, as in much real print:
 
 | Pages | Boxes found (precision / recall) | Kind right (Manchu / Chinese) | Manchu words exact | Page text character accuracy |
 |---|---|---|---|---|
-| Clean | 93.7% / 84.5% | 99.6% / 100% | 90.3% | 92.6% |
-| Made to look photographed | 91.4% / 83.6% | 99.6% / 99.7% | 89.7% | 91.3% |
+| Clean | 88.5% / 90.8% | 99.6% / 100% | 80.7% | 93.2% |
+| Made to look photographed | 86.6% / 89.1% | 99.6% / 99.6% | 81.3% | 91.7% |
 
-Pages that aren't set tight read at about 98% (page text), and tight
-ones at about 80%: words set that close often share a box, and the model
-reads them run together. A page takes about a second on one CPU core.
+Words set that tight often share a box, and the model reads them run
+together; the reader splits such a box where its stem breaks, if the
+model reads the parts more confidently than the whole. That brought page
+text from 92.6% / 91.3% to the figures above, at some cost to pages
+that aren't tight (their cursive fonts' stems break inside words too).
+A page takes about a second on one CPU core.
 
 On seven real pages so far, in [`ocr/real_pages`](ocr/real_pages) and
 scored by `python -m ocr.evaluate_real_pages`: six printed (one with six
 columns of small Chinese glosses) and one handwritten letter. On five of
 the printed pages the Manchu text reads at 90.5–99.1% character /
-75.9–97.4% word accuracy, with every gloss left out; most word errors are
+78.2–97.4% word accuracy, with every gloss left out; most word errors are
 pairs of words set so close that they're read as one (`hotonde` for
-`hoton de`). The sixth, set tightest, reads at 78.4%.
-The handwritten letter reads at 47.4% characters.
+`hoton de`). The sixth, set tightest, reads at 86.3%.
+The handwritten letter reads at 48.8% characters.
 
 ## Architecture
 

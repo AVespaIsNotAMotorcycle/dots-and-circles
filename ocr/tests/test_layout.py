@@ -180,3 +180,18 @@ def test_side_parts():
     ink[10:110, 20:24] = True
     ink[50:54, 40:44] = True
     assert side_parts(ink, [20, 10, 44, 110], unit=40) is None
+
+def test_stem_breaks():
+    from ocr.layout import stem_breaks
+    ink = np.zeros((200, 60), dtype=bool)
+    ink[0:95, 30:34] = True            # a word's stem
+    ink[85:94, 24:30] = True           # its tail, sweeping away
+    ink[90:100, 10:24] = True          # and running past its end
+    ink[98:200, 30:34] = True          # the next word, starting at once
+    # No blank row between them, but the stem breaks at rows 95-97
+    assert not (ink.any(axis=1) == False).any()
+    assert stem_breaks(ink, [0, 0, 60, 200], unit=40) == [96]
+    # A continuous stem doesn't break
+    ink = np.zeros((200, 60), dtype=bool)
+    ink[:, 30:34] = True
+    assert stem_breaks(ink, [0, 0, 60, 200], unit=40) == []

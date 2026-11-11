@@ -87,14 +87,16 @@ Characters / words, as of 2026-11-10:
 
 | Model | page001 | page002 | page003 | page004 (handwritten) | page005 | page006 | page007 |
 |---|---|---|---|---|---|---|---|
-| Run 30 | 97.9% / 88.6% | 93.8% / 75.9% | 99.1% / 97.4% | 47.4% / 3.9% | 90.5% / 78.9% | 98.6% / 92.1% | 78.4% / 26.3% |
-| Run 28 | 87.9% / 51.9% | 86.8% / 52.9% | 94.0% / 68.4% | 39.2% / 1.9% | 85.6% / 59.2% | 94.2% / 73.7% | 70.6% / 26.3% |
-| Run 26 | 82.0% / 44.3% | 77.7% / 36.8% | 89.3% / 63.2% | 35.9% / 2.9% | 80.7% / 47.9% | 88.5% / 63.2% | 21.6% / 10.5% |
+| Run 30 | 98.1% / 91.1% | 94.0% / 78.2% | 99.1% / 97.4% | 48.8% / 4.3% | 90.5% / 78.9% | 98.6% / 92.1% | 86.3% / 42.1% |
+| Run 28 | 88.9% / 60.8% | 86.6% / 55.2% | 94.0% / 68.4% | 40.9% / 1.9% | 85.6% / 59.2% | 94.2% / 73.7% | 78.4% / 36.8% |
+| Run 26 | 84.6% / 51.9% | 80.4% / 37.9% | 90.1% / 60.5% | 40.7% / 2.4% | 80.7% / 47.9% | 88.5% / 63.2% | 56.9% / 26.3% |
 
 On the printed pages, most of Run 30's word errors are pairs of words set
 so close that they're read as one (`hotonde` for `hoton de`); page007 is
 the worst case, its words' tails running alongside the next word's start
-(`beyebeilibure` for `beye be ilibure`). The
+(`beyebeilibure` for `beye be ilibure`). Splitting such boxes where the
+stem breaks, when the model reads the parts more confidently, took it
+from 78.4% to 86.3% characters. The
 handwritten letter's columns are found, but the models, trained on
 printed fonts and photographed print, read its hand poorly. On page005
 the small two-column note is read, but as a line of its own. Of the 14

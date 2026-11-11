@@ -52,3 +52,28 @@ def test_low_confidence_words_are_left_out_of_the_text():
     assert low_confidence(Page.words[1]) and not low_confidence(Page.words[0])
     assert not low_confidence(Page.words[3])
     assert page_text(Page()) == "ᠠᠪᡴᠠ"
+
+def test_split_at_stem_breaks(monkeypatch):
+    import ocr.page_reader as reader
+    from PIL import Image
+    ink = np.zeros((200, 60), dtype=bool)
+    ink[0:95, 30:34] = True
+    ink[98:200, 30:34] = True
+
+    class Page:
+        unit = 40.0
+        image = Image.new("L", (60, 200), 255)
+    Page.ink = ink
+
+    def read_crops(model, crops, crop=True, whiten=True):
+        # Parts read as words, confidently
+        return [("ᠠᠪᡴᠠ", 0.95, []) for _ in crops]
+    monkeypatch.setattr(reader, "read_crops", read_crops)
+    # Split when the parts read more confidently than the whole...
+    parts = reader.split_at_stem_breaks(None, Page(), [0, 0, 60, 200],
+                                        ("ᠠᠪᡴᠠᠠᠪᡴᠠ", 0.8))
+    assert [box for box, _ in parts] == [[30, 0, 34, 95], [30, 98, 34, 200]]
+    # ...not when they read less so
+    parts = reader.split_at_stem_breaks(None, Page(), [0, 0, 60, 200],
+                                        ("ᠠᠪᡴᠠᠠᠪᡴᠠ", 0.99))
+    assert parts == [([0, 0, 60, 200], ("ᠠᠪᡴᠠᠠᠪᡴᠠ", 0.99))]

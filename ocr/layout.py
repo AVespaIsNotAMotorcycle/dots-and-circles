@@ -99,6 +99,12 @@ END_FLAT_ASPECT = 2.4
 # Pieces shorter than this many units, with no ink on the stem, are
 # fragments too
 STEMLESS = 0.6
+# Candidate breaks between tightly set words: the stem is followed in
+# stretches of STEM_WINDOW units, a break is at least STEM_BREAK_ROWS rows
+# without ink on it, and each part at least MIN_PART units tall
+STEM_WINDOW = 1.0
+STEM_BREAK_ROWS = 2
+MIN_PART = 0.3
 # Measuring strokes, ink is widened by this many units either side
 STROKE_SWAY = 0.06
 # Rows of a column with at most TRACE_INK units of ink, none of it within
@@ -649,3 +655,32 @@ def longest_stroke(ink, box, unit):
         widened |= padded[:, shift:shift + region.shape[1]]
     _, starts, ends = runs(close_gaps(widened.T, 1))
     return int((ends - starts).max()) if len(starts) else 0
+
+def stem_breaks(ink, box, unit):
+    '''
+    Where a box of Manchu might hold two words: rows (counted from the
+    box's top) in the middle of each stretch of at least STEM_BREAK_ROWS
+    rows with no ink on the stem, at least MIN_PART units from either end.
+    In tightly set print a word's tail runs alongside the next word's
+    start, so no row is blank between them, but the stem breaks; it also
+    breaks inside some letters, so these are only candidates (see
+    ocr.page_reader.split_at_stem_breaks). The stem is followed down the
+    box, as the most inked pixel column in each stretch of STEM_WINDOW
+    units.
+    '''
+    left, top, right, bottom = box
+    region = ink[top:bottom, left:right]
+    height = bottom - top
+    window = max(1, round(STEM_WINDOW * unit))
+    band = max(1, round(STEM_BAND * unit))
+    on_stem = np.zeros(height, dtype=bool)
+    for start in range(0, height, window):
+        rows = region[start:start + window]
+        if not rows.any():
+            continue
+        stem = int(np.argmax(rows.sum(axis=0)))
+        on_stem[start:start + window] = rows[
+            :, max(0, stem - band):stem + band + 1].any(axis=1)
+    return [int(start + end) // 2 for start, end in stretches(~on_stem)
+            if end - start >= STEM_BREAK_ROWS
+            and start >= MIN_PART * unit and height - end >= MIN_PART * unit]
