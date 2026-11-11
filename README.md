@@ -33,23 +33,24 @@ processing (`ocr/layout.py`), tells Manchu from Chinese with a small MLP
 On 100 synthetic pages (`python -m ocr.evaluate_pages`) of words no model
 trained on, a third each of all-Manchu, alternating Manchu and Chinese
 columns, and Manchu with Chinese characters mixed in, and about a third
-with small Chinese glosses between the Manchu columns:
+with small Chinese glosses between the Manchu columns. Some words are
+followed by the genitive particle *i*, printed apart as a hook:
 
 | Pages | Boxes found (precision / recall) | Kind right (Manchu / Chinese) | Manchu words exact | Page text character accuracy |
 |---|---|---|---|---|
-| Clean | 98.6% / 99.0% | 99.5% / 100% | 98.0% | 98.2% |
-| Made to look photographed | 98.7% / 98.9% | 99.6% / 99.7% | 97.6% | 98.2% |
+| Clean | 98.9% / 99.1% | 99.6% / 99.9% | 98.1% | 98.1% |
+| Made to look photographed | 99.1% / 99.2% | 99.6% / 99.9% | 96.4% | 97.9% |
 
-With Run 28 the photographed-looking pages read 93.2% exactly, and with
-Run 26 80.6%. A page takes about a second on one CPU core.
+With Run 28 the photographed-looking pages read 88.2% exactly, and with
+Run 26 77.0%. A page takes about a second on one CPU core.
 
 On six real pages so far, in [`ocr/real_pages`](ocr/real_pages) and
 scored by `python -m ocr.evaluate_real_pages`: five printed (one with six
 columns of small Chinese glosses) and one handwritten letter. On the
-printed pages the Manchu text reads at 89.7–97.6% character / 76.1–89.5%
+printed pages the Manchu text reads at 90.5–98.6% character / 75.9–92.1%
 word accuracy, with every gloss left out; most word errors are pairs of
 words set so close that they're read as one (`hotonde` for `hoton de`).
-The handwritten letter reads at 48.3% characters.
+The handwritten letter reads at 48.6% characters.
 
 ## Architecture
 

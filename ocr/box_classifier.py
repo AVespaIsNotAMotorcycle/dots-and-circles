@@ -38,7 +38,7 @@ OTHER_COLUMN = 0.5
 RUN_GAP = 0.5
 # A column at least SOME_OTHER other text, with no stroke as long as
 # LONG_STROKE units, is all other text too
-SOME_OTHER = 0.2
+SOME_OTHER = 0.1
 LONG_STROKE = 1.5
 
 

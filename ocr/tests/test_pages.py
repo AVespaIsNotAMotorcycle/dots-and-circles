@@ -3,7 +3,8 @@ import pytest
 
 from ocr.photos import manchu_to_abkai
 from ocr.training_data import fonts
-from ocr.training_data.pages import (INK_THRESHOLD, OTHER, chinese_fonts,
+from ocr.training_data.pages import (GENITIVE, INK_THRESHOLD, OTHER,
+                                     chinese_fonts, ends_in_consonant,
                                      generate_page, page_lines, unseen_words)
 
 pytestmark = pytest.mark.skipif(
@@ -69,7 +70,7 @@ def test_words_are_single_unseen_words():
     words = set(unseen_words())
     _, items = generate_page(2, layout="mixed")
     for item in items:
-        if item["kind"] == "manchu":
+        if item["kind"] == "manchu" and item["text"] != GENITIVE:
             assert item["text"] in words
             assert " " not in item["text"]
 
@@ -87,3 +88,15 @@ def test_page_lines():
     assert page_lines(items, abkai=True) == (
         f"{manchu_to_abkai('ᠠᠪᡴᠠ')} {OTHER} {OTHER} "
         f"{manchu_to_abkai('ᠨᠠ')}\n{manchu_to_abkai('ᠪᠠ')}")
+
+def test_genitive_follows_consonants():
+    assert ends_in_consonant("ᡥᠣᡨᠣᠨ") and not ends_in_consonant("ᠠᠪᡴᠠ")
+    found = 0
+    for seed in range(10):
+        _, items = generate_page(seed, layout="manchu")
+        for before, item in zip(items, items[1:]):
+            if item["text"] == GENITIVE:
+                found += 1
+                assert before["column"] == item["column"]
+                assert ends_in_consonant(before["text"])
+    assert found

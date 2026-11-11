@@ -12,6 +12,9 @@ A page has one of three layouts:
 - "mixed": Manchu columns, with short runs of Chinese characters among the
   words, as for glosses and names.
 
+Words ending in a consonant are sometimes followed by the genitive i,
+printed apart as a hook, its own item.
+
 Pages that aren't alternating may also have small Chinese glosses set in
 narrow columns between Manchu ones, as bilingual books print them. Each is
 a column of its own, all "other".
@@ -38,6 +41,7 @@ import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 from ocr.photos import manchu_to_abkai
+from ocr.split import group_key
 from ocr.training_data import HEIGHT, directory, fonts, lexicon
 
 CHINESE_FONTS_DIRECTORY = os.path.join(directory, "fonts", "chinese")
@@ -88,6 +92,14 @@ COMMON_CHINESE_SHARE = 0.5
 INK_THRESHOLD = 128
 # The hyphen-like mark the lexicon writes suffixes with (᠊)
 NIRUGU = "\u180a"
+# The genitive particle i, printed apart from the word before it as a
+# hook, and the narrow no-break space that gives it that form. It follows
+# a word ending in a consonant GENITIVE_CHANCE of the time, which makes it
+# about 4-7% of words (4.5% on the real pages).
+GENITIVE = "\u1873"
+SUFFIX_SPACE = "\u202f"
+GENITIVE_CHANCE = 0.2
+VOWELS = set("\u1820\u185d\u1873\u1823\u1860\u1861")
 # Words are drawn this far from the edges of their canvas, as a share of the
 # font size, so marks that reach past the font's ascent or descent survive
 CANVAS_MARGIN = 0.25
@@ -203,12 +215,19 @@ def chinese_character(rng, font):
         if box and box != blank:
             return character
 
+def ends_in_consonant(word):
+    # Whether a word's last letter, past any invisible marks, is a consonant
+    letters = group_key(word)
+    return bool(letters) and letters[-1] not in VOWELS
+
 def fill_column(rng, kind, length, render_word, render_character,
-                word_gap, chinese_gap):
+                word_gap, chinese_gap, render_genitive=None):
     '''
     Items for one column of the given kind ("manchu", "chinese" or "mixed"),
     as (kind, text, image) tuples, stacked until the next one wouldn't fit
-    in length pixels. Returns them with the gap after each.
+    in length pixels. Returns them with the gap after each. With
+    render_genitive, a word ending in a consonant is followed by the
+    genitive i GENITIVE_CHANCE of the time.
     '''
     items = []
     used = 0
@@ -223,7 +242,12 @@ def fill_column(rng, kind, length, render_word, render_character,
             new = [("other",) + item + (gap,)
                    for item, gap in zip(run, gaps)]
         else:
-            new = [("manchu",) + render_word() + (word_gap(),)]
+            word, image = render_word()
+            new = [("manchu", word, image, word_gap())]
+            if (render_genitive and ends_in_consonant(word)
+                    and rng.random() < GENITIVE_CHANCE):
+                new.append(("manchu", GENITIVE, render_genitive(),
+                            word_gap()))
         height = sum(image.height + gap for _, _, image, gap in new)
         if used + height - new[-1][3] > length:
             failures += 1
@@ -312,6 +336,10 @@ def generate_page(seed, layout=None, photo=False, rules=None, words=None,
     def render_character():
         character = chinese_character(rng, chinese_font)
         return character, render_chinese(character, chinese_font)
+    # After U+202F the font draws the genitive i in its suffix form, the
+    # hook print uses, not the isolated form a lone i gets
+    genitive_image = render_manchu(SUFFIX_SPACE + GENITIVE, font)
+    render_genitive = lambda: genitive_image
 
     column_count = rng.randint(*COLUMN_COUNT_RANGE)
     length = scaled(COLUMN_LENGTH_RANGE)
@@ -338,7 +366,7 @@ def generate_page(seed, layout=None, photo=False, rules=None, words=None,
                                       chinese_gap))
         columns.append((0, fill_column(rng, kind, length, render_word,
                                        render_character, word_gap,
-                                       chinese_gap), False))
+                                       chinese_gap, render_genitive), False))
 
     # Each column's ink spans the same width around the stem for every
     # word, so its width is the widest word's ink. Chinese characters are

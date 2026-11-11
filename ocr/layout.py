@@ -92,6 +92,10 @@ WORD_GAP = 0.08
 # are dropped
 SLIVER = 0.15
 SLIVER_ASPECT = 3
+# At either end of a column, boxes under END_FLAT units tall and at least
+# END_FLAT_ASPECT times as wide are dropped too
+END_FLAT = 0.35
+END_FLAT_ASPECT = 2.4
 # Pieces shorter than this many units, with no ink on the stem, are
 # fragments too
 STEMLESS = 0.6
@@ -575,6 +579,15 @@ def find_words_in_column(ink, left, right, unit):
             continue
         boxes.append([left + int(ink_columns[0]), int(start),
                       left + int(ink_columns[-1]) + 1, int(end)])
+    # A flat piece at either end of a column is what's left of a frame
+    # line, which a column of text runs up to
+    def flat(box):
+        width, height = box[2] - box[0], box[3] - box[1]
+        return height < END_FLAT * unit and width >= END_FLAT_ASPECT * height
+    while boxes and flat(boxes[-1]):
+        boxes.pop()
+    while boxes and flat(boxes[0]):
+        boxes.pop(0)
     return boxes
 
 def find_words(image):
