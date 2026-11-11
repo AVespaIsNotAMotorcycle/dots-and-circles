@@ -30,7 +30,7 @@ directory = os.path.dirname(os.path.abspath(__file__))
 PAGES_DIRECTORY = os.path.join(directory, "real_pages")
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg")
 # Punctuation in transcriptions, which the reader doesn't give
-PUNCTUATION = ",.᠈᠉"
+PUNCTUATION = ",.᠈᠉()"
 
 
 def clean(line):

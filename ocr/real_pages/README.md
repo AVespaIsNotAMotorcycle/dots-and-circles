@@ -55,6 +55,16 @@ aren't transcribed; punctuation may be, and is ignored when scoring.
   transliteration was shared with them by Guillaume Lescuyer. Its footnote
   marks ([1], [2]) are ignored when scoring.
 
+## page005 and page006
+
+- **Images:** two pages of the Fodo Mama prayers (*Fodo Mama court*), from
+  [manc.hu](https://manc.hu/en/tools/reader/text/36648/Fodo-Mama-court).
+  Where manc.hu's scans come from isn't yet recorded.
+- **Transcriptions:** from the same manc.hu text (© Fresco Sam-Sin, Léon
+  Rodenburg). page005's second line holds a note printed small in two
+  narrow columns; the transcription gives it inline in parentheses, which
+  are ignored when scoring like other punctuation.
+
 `sources.json` gives each page's credit and link in short, for the
 server (`/random?source=page`) to show beside it.
 
@@ -62,13 +72,14 @@ server (`/random?source=page`) to show beside it.
 
 Characters / words, as of 2026-11-10:
 
-| Model | page001 | page002 | page003 | page004 (handwritten) |
-|---|---|---|---|---|
-| Run 30 | 97.6% / 87.3% | 93.0% / 73.6% | 90.1% / 76.3% | 48.3% / 3.4% |
-| Run 28 | 88.2% / 51.9% | 86.0% / 50.6% | 88.0% / 55.3% | 42.2% / 1.0% |
-| Run 26 | 82.0% / 44.3% | 77.0% / 34.5% | 80.7% / 44.7% | 37.8% / 2.4% |
+| Model | page001 | page002 | page003 | page004 (handwritten) | page005 | page006 |
+|---|---|---|---|---|---|---|
+| Run 30 | 97.6% / 87.3% | 93.8% / 75.9% | 91.0% / 78.9% | 48.3% / 3.4% | 88.6% / 70.4% | 92.8% / 84.2% |
+| Run 28 | 88.2% / 51.9% | 86.8% / 52.9% | 88.8% / 57.9% | 42.2% / 1.0% | 85.2% / 57.7% | 88.5% / 65.8% |
+| Run 26 | 82.0% / 44.3% | 77.9% / 36.8% | 81.5% / 47.4% | 37.8% / 2.4% | 79.4% / 46.5% | 83.2% / 55.3% |
 
 On the printed pages, most of Run 30's word errors are pairs of words set
 so close that they're read as one (`hotonde` for `hoton de`). The
 handwritten letter's columns are found, but the models, trained on
-printed fonts and photographed print, read its hand poorly.
+printed fonts and photographed print, read its hand poorly. On page005
+the small two-column note is read, but as a line of its own.

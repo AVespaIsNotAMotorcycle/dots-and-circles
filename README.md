@@ -43,10 +43,10 @@ with small Chinese glosses between the Manchu columns:
 With Run 28 the photographed-looking pages read 93.2% exactly, and with
 Run 26 80.6%. A page takes about a second on one CPU core.
 
-On four real pages so far, in [`ocr/real_pages`](ocr/real_pages) and
-scored by `python -m ocr.evaluate_real_pages`: three printed (one with six
+On six real pages so far, in [`ocr/real_pages`](ocr/real_pages) and
+scored by `python -m ocr.evaluate_real_pages`: five printed (one with six
 columns of small Chinese glosses) and one handwritten letter. On the
-printed pages the Manchu text reads at 90.1–97.6% character / 73.6–87.3%
+printed pages the Manchu text reads at 88.6–97.6% character / 70.4–87.3%
 word accuracy, with every gloss left out; most word errors are pairs of
 words set so close that they're read as one (`hotonde` for `hoton de`).
 The handwritten letter reads at 48.3% characters.

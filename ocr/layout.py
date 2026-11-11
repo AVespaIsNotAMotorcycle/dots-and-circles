@@ -88,6 +88,10 @@ MIN_COLUMN_WIDTH = 0.25
 # than FRAGMENT units join their nearer neighbour, as do pieces with less
 # than MIN_INK square units of ink
 WORD_GAP = 0.08
+# Boxes under SLIVER units tall and more than SLIVER_ASPECT times as wide
+# are dropped
+SLIVER = 0.15
+SLIVER_ASPECT = 3
 # Pieces shorter than this many units, with no ink on the stem, are
 # fragments too
 STEMLESS = 0.6
@@ -563,7 +567,12 @@ def find_words_in_column(ink, left, right, unit):
             continue
         rows = np.nonzero(column[start:end].any(axis=1))[0]
         start, end = start + int(rows[0]), start + int(rows[-1]) + 1
+        # Flat slivers (what's left of a broken frame line) aren't text:
+        # Manchu words are tall, and Chinese characters about square
         ink_columns = np.nonzero(column[start:end].any(axis=0))[0]
+        if (end - start < SLIVER * unit and ink_columns[-1] - ink_columns[0]
+                + 1 > SLIVER_ASPECT * (end - start)):
+            continue
         boxes.append([left + int(ink_columns[0]), int(start),
                       left + int(ink_columns[-1]) + 1, int(end)])
     return boxes
