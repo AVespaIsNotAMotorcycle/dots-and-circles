@@ -3,7 +3,8 @@ import pytest
 from PIL import Image, ImageDraw
 
 from ocr.layout import (close_gaps, despeckle, find_skew, find_words, otsu,
-                        remove_rules, unrotate_point)
+                        remove_rule_pieces, remove_rules, rule_pieces,
+                        unrotate_point)
 from ocr.training_data import fonts
 from ocr.training_data.pages import chinese_fonts, generate_page
 
@@ -57,6 +58,29 @@ def test_remove_rules_removes_lines():
     assert not cleaned[20:23, 100:140].any()
     assert not cleaned[100:280, 150:152].any()
     assert cleaned[50:250, 50:53].all()
+
+def test_rule_pieces_are_broken_lines_not_stems():
+    ink = comb()
+    # A line broken into pieces too short for remove_rules
+    for top in (20, 130, 220):
+        ink[top:top + 80, 150:152] = True
+    assert (remove_rules(ink)[20:100, 150:152]).all()
+    pieces = rule_pieces(ink, unit=20)
+    assert sorted(pieces) == [[150, 20, 152, 100], [150, 130, 152, 210],
+                              [150, 220, 152, 300]]
+
+def test_fold_strip_beyond_a_line_is_removed():
+    ink = comb()
+    columns = ink.any(axis=0).nonzero()[0]
+    right = int(columns[-1]) + 1
+    # A broken line just right of the comb, and a mark beyond it
+    ink[20:120, right + 5:right + 7] = True
+    ink[150:250, right + 5:right + 7] = True
+    ink[60:70, right + 12:right + 20] = True
+    unit = 20
+    assert remove_rule_pieces(ink, unit)
+    assert not ink[:, right + 4:].any()
+    assert ink[50:250, 50:53].all()
 
 def test_find_skew():
     # Columns of combs

@@ -11,7 +11,11 @@ learned parts:
    along their length, as a frame or the lines between columns are. A
    Manchu stem is as long and straight, but its teeth touch it.
 4. Columns: the stretches of pixel columns with ink, split where two
-   columns touch.
+   columns touch. Then pieces of vertical lines broken into lengths too
+   short for step 3, but long and thin for the page's unit, are removed
+   too, along with what's beyond one close to the ink's edge (a book's
+   fold strip, with its title and page number), and the columns found
+   again.
 5. Words: within each column, the stretches of rows with ink, joined across
    gaps too small to be between words.
 
@@ -113,6 +117,14 @@ TRACE_INK = 0.0
 STEM_BAND = 0.08
 FRAGMENT = 0.2
 MIN_INK = 0.03
+# Pieces of vertical lines: at least RULE_PIECE units long and at most
+# RULE_PIECE_WIDTH units wide, gaps of up to RULE_PIECE_GAP pixels along
+# them bridged, touched along at most RULE_CONTACT of their length. One
+# within FOLD_STRIP units of the ink's edge bounds the text.
+RULE_PIECE = 3.0
+RULE_PIECE_WIDTH = 0.25
+RULE_PIECE_GAP = 2
+FOLD_STRIP = 1.5
 
 
 class Page:
@@ -394,6 +406,74 @@ def frame_lines(ink):
             bounds[last] = edge
     return bounds
 
+def rule_pieces(ink, unit):
+    '''
+    Pieces of vertical lines in the ink: [left, top, right, bottom] of each
+    run of ink down the page at least RULE_PIECE units long, taken
+    together with overlapping runs beside it, that's at most
+    RULE_PIECE_WIDTH units wide and touched by other ink along at most
+    RULE_CONTACT of its length. A frame's inner line is often broken into
+    pieces too short for remove_rules. A Manchu stem is as thin, but
+    shorter, or touched by its teeth.
+    '''
+    # Runs along mask's rows: down the page, one row per pixel column
+    xs, starts, ends = runs(close_gaps(ink.T, RULE_PIECE_GAP))
+    long = ends - starts >= RULE_PIECE * unit
+    xs, starts, ends = xs[long], starts[long], ends[long]
+    # Runs in neighbouring pixel columns that overlap are one piece
+    parent = list(range(len(xs)))
+    def root(index):
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+    at = {}
+    for index, x in enumerate(xs):
+        at.setdefault(int(x), []).append(index)
+    for x, here in at.items():
+        for index in here:
+            for other in at.get(x - 1, []):
+                if starts[index] < ends[other] and starts[other] < ends[index]:
+                    parent[root(index)] = root(other)
+    groups = {}
+    for index in range(len(xs)):
+        groups.setdefault(root(index), []).append(index)
+    pieces = []
+    for members in groups.values():
+        left, right = int(xs[members].min()), int(xs[members].max()) + 1
+        top, bottom = int(starts[members].min()), int(ends[members].max())
+        if right - left > max(2, RULE_PIECE_WIDTH * unit):
+            continue
+        # Touching ink: one pixel column beyond either side, skipping a
+        # column of blur, as remove_rules tests
+        touches = np.zeros(bottom - top, dtype=bool)
+        for x in (left - 2, right + 1):
+            if 0 <= x < ink.shape[1]:
+                touches |= ink[top:bottom, x]
+        if touches.mean() <= RULE_CONTACT:
+            pieces.append([left, top, right, bottom])
+    return pieces
+
+def remove_rule_pieces(ink, unit):
+    '''
+    Removes rule_pieces from the ink, in place, with a pixel column of blur
+    either side. One within FOLD_STRIP units of the ink's left or right
+    edge bounds the text, so the ink beyond it goes too. Returns whether
+    there were any.
+    '''
+    pieces = rule_pieces(ink, unit)
+    if not pieces:
+        return False
+    columns = np.nonzero(ink.any(axis=0))[0]
+    first, last = int(columns[0]), int(columns[-1]) + 1
+    for left, top, right, bottom in pieces:
+        ink[top:bottom, max(0, left - 1):right + 1] = False
+        if last - right <= FOLD_STRIP * unit:
+            ink[:, max(0, left - 1):] = False
+        elif left - first <= FOLD_STRIP * unit:
+            ink[:, :right + 1] = False
+    return True
+
 def stretches(flags):
     # The (start, end) of each run of True in a 1D boolean array
     padded = np.concatenate(([False], flags, [False])).astype(np.int8)
@@ -622,6 +702,10 @@ def find_words(image):
     ink[:border] = ink[-border:] = False
     ink[:, :border] = ink[:, -border:] = False
     spans, unit, lines = find_columns(ink)
+    if remove_rule_pieces(ink, unit):
+        # The unit stays as first measured: without a fold strip's narrow
+        # column, it can come out different, and with it the words
+        spans, _, lines = find_columns(ink)
     for left, right in lines:
         ink[:, left:right] = False
     words = []
