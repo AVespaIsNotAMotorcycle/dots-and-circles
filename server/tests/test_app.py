@@ -295,14 +295,20 @@ def test_upload_multiple(client):
     body = response.get_json()
     assert body["model"] == "Test"
     assert body["image"].startswith("data:image/png;base64,")
-    drawn = Image.open(io.BytesIO(base64.b64decode(
+    page = Image.open(io.BytesIO(base64.b64decode(
         body["image"].partition(",")[2])))
-    assert drawn.mode == "RGB"
+    assert page.mode == "RGB"
     # The untrained classifier may call bars other text, and split them
     # into square characters
     assert len(body["boxes"]) >= 9
     for box in body["boxes"]:
         assert box["kind"] in ("manchu", "other")
+        # The image in the box, cut from the page
+        crop = Image.open(io.BytesIO(base64.b64decode(
+            box["image"].partition(",")[2])))
+        assert crop.size == (box["w"], box["h"])
+        assert box["x"] + box["w"] <= page.width
+        assert box["y"] + box["h"] <= page.height
         assert {"x", "y", "w", "h", "line", "position",
                 "manchu-probability", "prediction-manchu",
                 "prediction-abkai", "confidence"} <= set(box)

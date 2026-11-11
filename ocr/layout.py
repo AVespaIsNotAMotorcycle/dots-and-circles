@@ -123,6 +123,21 @@ class Page:
         self.words = words
         self.input_size = input_size
 
+    def straighten(self, image):
+        '''
+        The image as given (in colour, say) turned as the page was, so it
+        lines up with self.image and the words' boxes. The corners the turn
+        adds are filled with the image's paper colour.
+        '''
+        if not self.angle:
+            return image.copy()
+        pixels = np.asarray(image)
+        paper = tuple(int(value) for value in np.median(
+            pixels.reshape(-1, pixels.shape[-1]) if pixels.ndim == 3
+            else pixels.reshape(-1, 1), axis=0))
+        return image.rotate(self.angle, resample=Image.BICUBIC, expand=True,
+                            fillcolor=paper if len(paper) > 1 else paper[0])
+
     def to_input(self, box):
         '''
         The box of the image as given that holds box, a box of the

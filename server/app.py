@@ -26,7 +26,7 @@ from ocr.box_classifier import load_classifier
 from ocr.evaluate_real_pages import pages as real_pages
 from ocr.evaluate_real_pages import read_transcription
 from ocr.evaluate_real_pages import score_page as score_real_page
-from ocr.page_reader import draw_page, page_text, read_page
+from ocr.page_reader import page_text, read_page
 from ocr.photos import (abkai_to_manchu, load_photo, manchu_to_abkai,
                         manchu_to_roman, spell_in_manchu)
 from ocr.preprocess import prepare
@@ -178,24 +178,28 @@ def open_upload(data):
     image.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
     return image
 
-def page_response(entry, page):
+def page_response(entry, page, original):
     '''
-    The JSON for POST /upload/multiple: the page drawn with its boxes, its
-    text in Manchu and Abkai (a line per column with Manchu in it), and
-    each box. A box's "line" is its line of the text, or None if its column
-    has no Manchu and so no line.
+    The JSON for POST /upload/multiple: the page, straightened as it was
+    read, its text in Manchu and Abkai (a line per column with Manchu in
+    it), and each box: where it is in the straightened page, the image in
+    it, and the model's reading. A box's "line" is its line of the text, or
+    None if its column has no Manchu and so no line. original is the image
+    as read, in colour.
     '''
     lines = {}
     for word in page.words:
         if word["kind"] == "manchu":
             lines.setdefault(word["column"], None)
     lines = {column: line for line, column in enumerate(sorted(lines))}
+    straight = page.straighten(original)
     boxes = []
     for word in page.words:
         left, top, right, bottom = word["box"]
         manchu = word["kind"] == "manchu"
         boxes.append({
             "x": left, "y": top, "w": right - left, "h": bottom - top,
+            "image": image_data_url(straight.crop(word["box"])),
             "line": lines.get(word["column"]),
             "position": word["position"],
             "kind": word["kind"],
@@ -205,7 +209,7 @@ def page_response(entry, page):
             "confidence": word["confidence"] if manchu else None,
         })
     return {"model": entry["name"],
-            "image": image_data_url(draw_page(page)),
+            "image": image_data_url(straight),
             "angle": page.angle,
             "manchu": page_text(page),
             "abkai": page_text(page, abkai=True),
@@ -312,7 +316,7 @@ def create_app(config_path=CONFIG_PATH):
         original.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
         page = read_original(entry, model, original)
         result = score_real_page(page, transcription)
-        response = page_response(entry, page)
+        response = page_response(entry, page, original)
         source = page_sources.get(name, {})
         response.update({
             "source": "page", "name": name,
@@ -387,7 +391,7 @@ def create_app(config_path=CONFIG_PATH):
         entry, model = chosen_model()
         data, _ = read_upload()
         original = open_upload(data)
-        return jsonify(page_response(entry, read_original(entry, model,
-                                                          original)))
+        page = read_original(entry, model, original)
+        return jsonify(page_response(entry, page, original))
 
     return app

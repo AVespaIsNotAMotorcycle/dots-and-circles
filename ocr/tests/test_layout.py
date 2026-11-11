@@ -154,3 +154,14 @@ def test_frame_lines():
     top, bottom, left, right = frame_lines(ink)
     assert top == 24 and bottom == 376
     assert left == 14 and right == 286
+
+def test_straighten_matches_the_read_page():
+    image = Image.new("RGB", (300, 400), (200, 190, 170))
+    draw = ImageDraw.Draw(image)
+    for left in range(40, 260, 60):
+        draw.rectangle((left, 40, left + 8, 360), fill=(20, 20, 20))
+    page = find_words(image.rotate(3, expand=True, fillcolor=(200, 190, 170)))
+    straight = page.straighten(image.rotate(3, expand=True,
+                                            fillcolor=(200, 190, 170)))
+    assert straight.size == page.image.size
+    assert straight.mode == "RGB"

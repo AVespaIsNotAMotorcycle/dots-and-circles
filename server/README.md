@@ -70,7 +70,7 @@ repository root. Locally, from the repository root:
   ```
 
   `original-image` is the page as saved, and `image` the page deskewed
-  and drawn with its boxes. `transcription` is the page's transcription
+  as it was read (the boxes' coordinates are in it). `transcription` is the page's transcription
   as written, a line per Manchu column, in Abkai with its punctuation.
   `score` compares the reading with it as `ocr.evaluate_real_pages` does
   (ignoring punctuation, each line matched to the closest line read).
@@ -108,6 +108,7 @@ repository root. Locally, from the repository root:
     "abkai": "abka □ na\nbe",
     "boxes": [{
       "x": 120, "y": 40, "w": 46, "h": 210,
+      "image": "data:image/png;base64,...",
       "line": 0, "position": 0, "kind": "manchu",
       "manchu-probability": 0.999,
       "prediction-manchu": "ᠠᠪᡴᠠ", "prediction-abkai": "abka",
@@ -120,19 +121,17 @@ repository root. Locally, from the repository root:
   split into columns and words), each box is classed as Manchu or other
   text by the small classifier in `ocr/box_classifier.py`, and Manchu boxes
   are read by the model (see `ocr/page_reader.py`). `image` is the
-  page, deskewed by `angle` degrees anticlockwise, with Manchu boxes
-  outlined in green, washed with translucent white and labelled with their
-  reading in Abkai, and other boxes outlined in red. Box coordinates are in
-  that image. `boxes` are in reading order. `manchu` and `abkai` have a line
+  page in colour, deskewed by `angle` degrees anticlockwise as it was read,
+  with the corners that adds filled with the paper's colour. Nothing is
+  drawn on it: each box gives its top left corner (`x`, `y`) and size
+  (`w`, `h`) in that image, and its own `image`, the part of the page it
+  holds, as a PNG. `boxes` are in reading order. `manchu` and `abkai` have a line
   per column with Manchu in it, words separated by spaces and `□` for each
   other box; columns with no Manchu (such as a column of Chinese) are left
   out, and their boxes' `line` is `null`. `position` counts from the top of
   the box's column, `manchu-probability` is the classifier's, and
   `confidence` the mean probability of the classes the model read. Other
   boxes' predictions and confidence are `null`.
-
-  Pillow's built-in font draws the Abkai, and has no ʻ, so the image shows
-  ‘ in its place; the text has ʻ.
 
 ## config.json
 
