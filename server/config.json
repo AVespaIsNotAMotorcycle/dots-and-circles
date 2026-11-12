@@ -5,6 +5,7 @@
   "pages": "../ocr/real_pages",
   "default_model": "Run 31",
   "box_classifier": "weights/box_classifier.npz",
+  "dictionary": "../ocr/training_data/dictionary_words.json",
   "models": [
     {
       "name": "Run 26",

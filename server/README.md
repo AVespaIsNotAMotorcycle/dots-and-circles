@@ -153,7 +153,13 @@ repository root. Locally, from the repository root:
       "line": 0, "position": 0, "kind": "manchu",
       "manchu-probability": 0.999,
       "prediction-manchu": "ᠠᠪᡴᠠ", "prediction-abkai": "abka",
-      "confidence": 0.97, "low-confidence": false
+      "confidence": 0.97, "low-confidence": false,
+      "closest-words": [
+        {"manchu": "ᠠᠪᡴᠠ", "abkai": "abka", "distance": 0,
+         "sources": ["kaikki", "norman"]},
+        {"manchu": "ᠠᠪᠰᠠ", "abkai": "absa", "distance": 1,
+         "sources": ["norman"]}
+      ]
     }]
   }
   ```
@@ -180,6 +186,19 @@ repository root. Locally, from the repository root:
   at least 0.7, and most junk (a page's edge read as Manchu, say) at most
   0.57. Other boxes' predictions, confidence and `low-confidence` are
   `null`.
+
+  `closest-words` are the two dictionary entries closest to a Manchu
+  box's reading, closest first, to show beside it (the reading itself is
+  never changed: the models must read words in no dictionary). They come
+  from Wiktionary (`kaikki`) and Norman's dictionary (`norman`), words
+  and phrases but not affixes (see `dictionary` below). `distance` is the
+  edit distance in the photo dataset's romanization, as `score` uses,
+  ignoring the reading's punctuation, and a tie goes to the entry nearer
+  the reading's length. A box read as nothing has none (`[]`), and other
+  boxes, or every box without a `dictionary`, have `null`. The
+  dictionaries list headwords, so an inflected reading (`genefi`) is
+  usually a few edits from its verb (`genembi`). Matching takes about 1
+  ms a box.
 
 - `POST /upload/multiple/boxes`: reads a page again in boxes the user has
   edited (removed, moved, resized or added). Send back the `image` an
@@ -249,6 +268,11 @@ repository root. Locally, from the repository root:
   `/upload/multiple`, relative to this folder. Train them with
   `python -m ocr.train_box_classifier`. Optional: without it,
   `/upload/multiple` gets a 404.
+- `dictionary`: the entries page boxes' `closest-words` come from,
+  relative to this folder (`../ocr/training_data/dictionary_words.json`).
+  Rebuild it with `python -m ocr.training_data.list_dictionary_words`
+  after either dictionary changes. Optional: without it, `closest-words`
+  is `null`. Loading it takes about 13 MB a worker.
 - `models`: one entry per model, in the order they're returned:
   - `name`, `model`: the short and long names sent to the frontend.
   - `class`: a CTC model class in `ocr/`, e.g. `ModelD`.

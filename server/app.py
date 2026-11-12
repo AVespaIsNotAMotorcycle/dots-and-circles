@@ -24,6 +24,7 @@ from flask import Flask, jsonify, request
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from ocr.box_classifier import load_classifier
+from ocr.dictionary import Dictionary
 from ocr.evaluate_real_pages import pages as real_pages
 from ocr.evaluate_real_pages import read_transcription
 from ocr.evaluate_real_pages import score_page as score_real_page
@@ -56,6 +57,8 @@ MAX_STRAIGHT_SIDE = math.ceil(MAX_UPLOAD_SIDE * math.sqrt(2))
 # reading it takes back for one
 MAX_BOXES = 2000
 MAX_READING_LENGTH = 500
+# Dictionary entries given for each Manchu box of a page
+CLOSEST_WORDS = 2
 # Words per page of GET /lexigraphs, by default and at most
 DEFAULT_PER_PAGE = 50
 MAX_PER_PAGE = 100
@@ -266,7 +269,7 @@ def read_boxes_field(size):
                        "reading": reading})
     return result
 
-def page_response(entry, page, original):
+def page_response(entry, page, original, dictionary=None):
     '''
     The JSON for POST /upload/multiple: the page, straightened as it was
     read, its text in Manchu and Abkai (a line per column with Manchu in
@@ -275,7 +278,8 @@ def page_response(entry, page, original):
     None if its column has no Manchu (read with enough confidence) and so
     no line. Manchu read with low confidence is left out of the text, and
     its box marked "low-confidence". original is the image as read, in
-    colour.
+    colour. With a Dictionary, each Manchu box has its "closest-words"
+    (None without one, and for other boxes).
     '''
     lines = {}
     for word in page.words:
@@ -298,6 +302,8 @@ def page_response(entry, page, original):
             "prediction-abkai": word["abkai"] if manchu else None,
             "confidence": word["confidence"] if manchu else None,
             "low-confidence": low_confidence(word) if manchu else None,
+            "closest-words": closest_words(dictionary, word["text"])
+                             if manchu and dictionary is not None else None,
         })
     return {"model": entry["name"],
             "image": image_data_url(straight),
@@ -305,6 +311,13 @@ def page_response(entry, page, original):
             "manchu": page_text(page),
             "abkai": page_text(page, abkai=True),
             "boxes": boxes}
+
+def closest_words(dictionary, text):
+    # The CLOSEST_WORDS dictionary entries closest to a reading, for the
+    # frontend to show beside it
+    return [{key: match[key] for key in ("manchu", "abkai", "distance",
+                                          "sources")}
+            for match in dictionary.closest(text, CLOSEST_WORDS)]
 
 def create_app(config_path=CONFIG_PATH):
     with open(config_path, "r", encoding="utf-8") as file:
@@ -316,6 +329,9 @@ def create_app(config_path=CONFIG_PATH):
     # Optional: without it, /upload/multiple gets a 404
     classifier = (load_classifier(os.path.join(root, config["box_classifier"]))
                   if "box_classifier" in config else None)
+    # The entries each page box's closest words come from: optional
+    dictionary = (Dictionary.load(os.path.join(root, config["dictionary"]))
+                  if "dictionary" in config else None)
     # The real pages GET /random?source=page picks from, with their
     # transcriptions: optional in config.json
     pages_folder = (os.path.join(root, config["pages"]) if "pages" in config
@@ -416,7 +432,7 @@ def create_app(config_path=CONFIG_PATH):
         original.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
         page = read_original(entry, model, original)
         result = score_real_page(page, transcription)
-        response = page_response(entry, page, original)
+        response = page_response(entry, page, original, dictionary)
         source = page_sources.get(name, {})
         response.update({
             "source": "page", "name": name,
@@ -557,7 +573,7 @@ def create_app(config_path=CONFIG_PATH):
         data, _ = read_upload()
         original = open_upload(data)
         page = read_original(entry, model, original)
-        return jsonify(page_response(entry, page, original))
+        return jsonify(page_response(entry, page, original, dictionary))
 
     @app.post("/upload/multiple/boxes")
     def upload_multiple_boxes():
@@ -577,6 +593,6 @@ def create_app(config_path=CONFIG_PATH):
         page = read_boxes(original, boxes, model, classifier,
                           preprocess.get("crop", True),
                           preprocess.get("whiten", True))
-        return jsonify(page_response(entry, page, original))
+        return jsonify(page_response(entry, page, original, dictionary))
 
     return app

@@ -48,6 +48,11 @@ Run from the repo root:
 Changing the lexicon changes which word each training seed maps to, so runs
 before and after a lexicon change aren't directly comparable.
 
+The server's closest dictionary words come from a separate list,
+`dictionary_words.json`, with each entry's dictionaries. Rebuild it from
+the repo root with `python -m ocr.training_data.list_dictionary_words`
+when either dictionary changes.
+
 ## Photographed data
 
 `ocr/non_synthetic_data/` holds photographed print words, one folder per

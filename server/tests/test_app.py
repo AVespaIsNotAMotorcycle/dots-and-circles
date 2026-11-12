@@ -43,6 +43,9 @@ def client(tmp_path):
     # And an untrained box classifier, for /upload/multiple, and a real
     # page with its transcription and source
     make_classifier().save_weights(str(tmp_path / "classifier.npz"))
+    (tmp_path / "dictionary.json").write_text(json.dumps(
+        [["ᠠᠪᡴᠠ", ["kaikki", "norman"]], ["ᠨᠠ", ["kaikki"]],
+         ["ᠪᡝ", ["norman"]]], ensure_ascii=False), encoding="utf-8")
     (tmp_path / "pages").mkdir()
     (tmp_path / "pages" / "page001.png").write_bytes(page_image())
     (tmp_path / "pages" / "page001.txt").write_text(
@@ -56,6 +59,7 @@ def client(tmp_path):
         "photos": "photos",
         "synthetic": "synthetic",
         "box_classifier": "classifier.npz",
+        "dictionary": "dictionary.json",
         "pages": "pages",
         "models": [{"name": "Test", "model": "Untrained ModelD",
                     "class": "ModelD", "weights": "model.npz",
@@ -621,3 +625,27 @@ def test_upload_multiple_boxes_keeps_readings_sent_back(client):
     for box in sent:
         assert returned[key(box)]["prediction-manchu"] == \
             box["prediction-manchu"]
+
+def test_page_boxes_have_closest_words(client):
+    first = client.post("/upload/multiple", data={
+        "image": (io.BytesIO(page_image()), "page.png")}).get_json()
+    # A Manchu box sent back with a reading, to know what it'll match
+    box = dict(first["boxes"][0], kind="manchu",
+               **{"prediction-manchu": "ᠠᠪᡴᠠ", "confidence": 0.9})
+    other = dict(first["boxes"][1], kind="other")
+    body = client.post("/upload/multiple/boxes", json={
+        "image": first["image"], "boxes": [box, other]}).get_json()
+    by_kind = {box["kind"]: box for box in body["boxes"]}
+    assert by_kind["manchu"]["closest-words"] == [
+        {"manchu": "ᠠᠪᡴᠠ", "abkai": "abka", "distance": 0,
+         "sources": ["kaikki", "norman"]},
+        # ᠨᠠ and ᠪᡝ are both 3 edits away: be comes first in romanized order
+        {"manchu": "ᠪᡝ", "abkai": "be", "distance": 3,
+         "sources": ["norman"]}]
+    assert by_kind["other"]["closest-words"] is None
+    for box in first["boxes"]:
+        if box["kind"] == "manchu":
+            assert len(box["closest-words"]) == (
+                2 if box["prediction-manchu"].strip(" ᠈᠉") else 0)
+        else:
+            assert box["closest-words"] is None

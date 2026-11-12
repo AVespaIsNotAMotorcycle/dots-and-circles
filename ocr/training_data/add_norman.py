@@ -128,30 +128,40 @@ def headwords(text):
         found.extend(" ".join(phrase) for phrase in phrases)
     return found
 
-with open("Jerry_Norman_Dict.txt", "r", encoding="utf-8") as file:
-    norman = headwords(file.read())
-with open("lexicon.json", "r", encoding="utf-8") as file:
-    lexicon = json.load(file)
+def norman_words(path=os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "Jerry_Norman_Dict.txt")):
+    '''
+    Every headword in the dictionary, in Manchu script, in the order found
+    (with repeats).
+    '''
+    with open(path, "r", encoding="utf-8") as file:
+        norman = headwords(file.read())
+    return [" ".join(to_manchu(word) for word in phrase.split())
+            for phrase in norman]
 
-known = {manchu_to_roman(word) for word in lexicon}
-added = tall = 0
-for phrase in norman:
-    manchu = " ".join(to_manchu(word) for word in phrase.split())
-    roman = manchu_to_roman(manchu)
-    if roman in known:
-        continue
-    if too_tall(manchu):
-        tall += 1
-        continue
-    known.add(roman)
-    lexicon.append(manchu)
-    added += 1
+if __name__ == "__main__":
+    norman = norman_words("Jerry_Norman_Dict.txt")
+    with open("lexicon.json", "r", encoding="utf-8") as file:
+        lexicon = json.load(file)
 
-print(f"{len(norman)} headwords in the dictionary, {added} of them new. "
-      f"{tall} more were left out as too tall.")
-print(f"{len(lexicon)} words in lexicon.")
+    known = {manchu_to_roman(word) for word in lexicon}
+    added = tall = 0
+    for manchu in norman:
+        roman = manchu_to_roman(manchu)
+        if roman in known:
+            continue
+        if too_tall(manchu):
+            tall += 1
+            continue
+        known.add(roman)
+        lexicon.append(manchu)
+        added += 1
 
-lexicon = sorted(lexicon)
-with open("lexicon.json", "w", encoding="utf-8") as file:
-    json.dump(lexicon, file, ensure_ascii=False, indent=4)
-    file.write('\n')
+    print(f"{len(norman)} headwords in the dictionary, {added} of them new. "
+          f"{tall} more were left out as too tall.")
+    print(f"{len(lexicon)} words in lexicon.")
+
+    lexicon = sorted(lexicon)
+    with open("lexicon.json", "w", encoding="utf-8") as file:
+        json.dump(lexicon, file, ensure_ascii=False, indent=4)
+        file.write('\n')
