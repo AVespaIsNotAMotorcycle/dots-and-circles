@@ -189,7 +189,8 @@ def split_at_stem_breaks(model, page, box, reading, crop=True, whiten=True,
             + split_at_stem_breaks(model, page, below, second[:2], crop,
                                    whiten, depth + 1, cache))
 
-def read_page(image, model, classifier, crop=True, whiten=True):
+def read_page(image, model, classifier, crop=True, whiten=True,
+              stem_breaks=True):
     '''
     Reads a page, given as a PIL image, with a CTC model and a box
     classifier. crop and whiten are the model's preprocessing. Returns the
@@ -198,7 +199,10 @@ def read_page(image, model, classifier, crop=True, whiten=True):
     Manchu), and for Manchu words "text" (the reading in Manchu),
     "abkai" and "confidence". A box the model reads as several words is
     split into one box per word, and so is one holding several words set
-    too tight to part by gaps (see split_at_stem_breaks).
+    too tight to part by gaps (see split_at_stem_breaks), unless
+    stem_breaks is false. Models trained on tight phrases (Run 31 on)
+    write those spaces themselves, and the stem breaks only cut lone
+    letters off them (b i for bi).
     '''
     page = label_words(find_words(image), classifier)
     manchu = [word for word in page.words if word["kind"] == "manchu"]
@@ -213,7 +217,8 @@ def read_page(image, model, classifier, crop=True, whiten=True):
         text, confidence, spaces = readings[id(word)]
         for box, part in split_reading(page.ink, word["box"], text, spaces):
             # A single word as read may still be several set tight
-            pieces = ([(box, (part, confidence))] if not part or " " in part
+            pieces = ([(box, (part, confidence))]
+                      if not stem_breaks or not part or " " in part
                       else split_at_stem_breaks(model, page, box,
                                                 (part, confidence), crop,
                                                 whiten))

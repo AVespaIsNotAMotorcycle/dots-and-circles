@@ -3,7 +3,7 @@
   "photos": "photos",
   "synthetic": "synthetic",
   "pages": "../ocr/real_pages",
-  "default_model": "Run 30",
+  "default_model": "Run 31",
   "box_classifier": "weights/box_classifier.npz",
   "models": [
     {
@@ -29,6 +29,15 @@
       "weights": "weights/run030.npz",
       "params": {"depth": 12, "emb_dim": 64},
       "preprocess": {"crop": true, "whiten": true}
+    },
+    {
+      "name": "Run 31",
+      "model": "ModelD (12 transformers, 64-dim embeddings), Run 30 fine-tuned for 4 epochs at 1e-3 on tight 2-3-word phrases, the lone genitive i and punctuated words besides, with the Manchu comma and full stop added to its alphabet, 22 epochs",
+      "class": "ModelD",
+      "weights": "weights/run031.npz",
+      "params": {"depth": 12, "emb_dim": 64},
+      "preprocess": {"crop": true, "whiten": true},
+      "stem_breaks": false
     }
   ]
 }

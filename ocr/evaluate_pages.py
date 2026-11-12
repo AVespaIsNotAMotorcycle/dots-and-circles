@@ -87,7 +87,8 @@ def unmatched_kinds(found, true, pairing):
 def score_page(seed, photo, layout=None, classifier=None, reader=None,
                tight=None):
     '''
-    Scores one page. reader is (model, crop, whiten) to read it too.
+    Scores one page. reader is (model, crop, whiten, stem_breaks) to read
+    it too.
     '''
     if reader is not None:
         # Imported here: ocr.train needs matplotlib, which scoring layouts
@@ -192,21 +193,24 @@ def main():
 
 def load_reader(name):
     '''
-    A model from server/config.json, as (model, crop, whiten), and the
-    path of the config's box classifier.
+    A model from server/config.json, as (model, crop, whiten, stem_breaks),
+    and the path of the config's box classifier. With name None, the
+    config's default_model.
     '''
     # Imported here: the server needs Flask, which scoring layouts doesn't
     from server.app import CONFIG_PATH, load_model
     with open(CONFIG_PATH, "r", encoding="utf-8") as file:
         config = json.load(file)
     root = os.path.dirname(CONFIG_PATH)
+    name = name or config["default_model"]
     entries = [entry for entry in config["models"] if entry["name"] == name]
     if not entries:
         raise SystemExit(f"No model named {name!r} in {CONFIG_PATH}.")
     entry = entries[0]
     preprocess = entry.get("preprocess", {})
     return ((load_model(entry, root), preprocess.get("crop", True),
-             preprocess.get("whiten", True)),
+             preprocess.get("whiten", True),
+             entry.get("stem_breaks", True)),
             os.path.join(root, config["box_classifier"]))
 
 if __name__ == "__main__":

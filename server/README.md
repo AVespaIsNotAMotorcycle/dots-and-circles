@@ -58,14 +58,14 @@ repository root. Locally, from the repository root:
   ones in `synthetic/`, both in the order of their `manifest.json`.
   `?page=` counts from 1 (the default), and `?per_page=` is 50 by default
   and at most 100; a page past the last has no `words`. `?model=` picks
-  the model, as for `/upload/multiple` (`default_model`, Run 30, by
+  the model, as for `/upload/multiple` (`default_model`, Run 31, by
   default). An unknown source or model, or a bad page or `per_page`, gets
   a 400.
 
   ```json
   {
     "source": "photo",
-    "model": "Run 30",
+    "model": "Run 31",
     "page": 1,
     "per-page": 50,
     "total": 300,
@@ -142,7 +142,7 @@ repository root. Locally, from the repository root:
 
   ```json
   {
-    "model": "Run 30",
+    "model": "Run 31",
     "image": "data:image/png;base64,...",
     "angle": -0.8,
     "manchu": "ᠠᠪᡴᠠ □ ᠨᠠ\nᠪᡝ",
@@ -205,6 +205,12 @@ repository root. Locally, from the repository root:
     `depth` and `emb_dim`. They must match the weights.
   - `preprocess`: `crop` and `whiten` for `ocr.preprocess.prepare`, both
     true by default.
+  - `stem_breaks`: whether `/upload/multiple` splits boxes at stem breaks
+    when the model reads the parts more confidently (see
+    `ocr.page_reader.split_at_stem_breaks`). True by default. Models
+    trained on tight phrases (Run 31 on) write the spaces between close-set
+    words themselves, and the stem breaks only cut lone letters off words,
+    so they set it false.
 
 ## Photos
 

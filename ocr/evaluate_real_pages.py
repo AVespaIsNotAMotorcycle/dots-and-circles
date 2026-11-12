@@ -12,7 +12,7 @@ in two still counts, and found lines left over (other text read as Manchu,
 usually) are listed. Scores are character and word accuracy:
 1 - edit distance / length, over all lines.
 
-Run with python -m ocr.evaluate_real_pages [--model "Run 30"]
+Run with python -m ocr.evaluate_real_pages [--model "Run 31"]
 [--draw FOLDER]. The model is a name from server/config.json, read with
 its box classifier.
 '''
@@ -137,8 +137,9 @@ def score_page(page, transcription):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--model", default="Run 30",
-                        help="a model's name in server/config.json")
+    parser.add_argument("--model",
+                        help="a model's name in server/config.json (by "
+                             "default, its default_model)")
     parser.add_argument("--classifier",
                         help="box classifier weights (by default, the "
                              "config's)")
@@ -147,7 +148,8 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="print every line")
     args = parser.parse_args()
-    (model, crop, whiten), classifier_path = load_reader(args.model)
+    (model, crop, whiten, stem_breaks), classifier_path = load_reader(
+        args.model)
     classifier = load_classifier(args.classifier or classifier_path)
 
     totals = [0, 0, 0, 0]
@@ -155,7 +157,7 @@ def main():
     for name, image_path, transcription_path in pages():
         with Image.open(image_path) as image:
             page = read_page(image.convert("RGB"), model, classifier, crop,
-                             whiten)
+                             whiten, stem_breaks)
         result = score_page(page, read_transcription(transcription_path))
         pairs, extra = result["pairs"], result["extra lines"]
         counts = score(pairs)

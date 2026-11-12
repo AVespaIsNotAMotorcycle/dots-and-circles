@@ -28,7 +28,7 @@ Accuracy figures are from [this report](ocr/runs/run030/comparison_epoch018_benc
 `POST /upload/multiple` (see [the server README](server/README.md)) reads a
 page of print: it finds the columns and words with classical image
 processing (`ocr/layout.py`), tells Manchu from Chinese with a small MLP
-(`ocr/box_classifier.py`), and reads each Manchu word with Run 30.
+(`ocr/box_classifier.py`), and reads each Manchu word with Run 31.
 
 On 60 synthetic pages (`python -m ocr.evaluate_pages`) of words no model
 trained on, a third each of all-Manchu, alternating Manchu and Chinese
@@ -40,24 +40,26 @@ next word's start, as in much real print:
 
 | Pages | Boxes found (precision / recall) | Kind right (Manchu / Chinese) | Manchu words exact | Page text character accuracy |
 |---|---|---|---|---|
-| Clean | 88.5% / 90.8% | 99.6% / 100% | 80.7% | 93.2% |
-| Made to look photographed | 86.6% / 89.1% | 99.6% / 99.6% | 81.3% | 91.7% |
+| Clean | 96.9% / 97.8% | 99.5% / 100% | 90.0% | 95.6% |
+| Made to look photographed | 96.9% / 97.6% | 99.5% / 100% | 89.7% | 95.5% |
 
-Words set that tight often share a box, and the model reads them run
-together; the reader splits such a box where its stem breaks, if the
-model reads the parts more confidently than the whole. That brought page
-text from 92.6% / 91.3% to the figures above, at some cost to pages
-that aren't tight (their cursive fonts' stems break inside words too).
-A page takes about a second on one CPU core.
+Words set that tight often share a box. Run 31 was trained on tight
+phrases, so it writes the space between such words itself, and the
+reader splits the box there. Run 30 wasn't. For it, the reader splits
+such a box where its stem breaks, if the model reads the parts more
+confidently than the whole (92.4% page text on the clean pages). Run 31
+doesn't need that, and it only cut lone letters off its words, so its
+`config.json` entry turns it off (`stem_breaks`). A page takes about
+0.6 s on one CPU core.
 
 On seven real pages so far, in [`ocr/real_pages`](ocr/real_pages) and
 scored by `python -m ocr.evaluate_real_pages`: six printed (one with six
-columns of small Chinese glosses) and one handwritten letter. On five of
-the printed pages the Manchu text reads at 90.5–99.1% character /
-78.2–97.4% word accuracy, with every gloss left out; most word errors are
-pairs of words set so close that they're read as one (`hotonde` for
-`hoton de`). The sixth, set tightest, reads at 86.3%.
-The handwritten letter reads at 48.8% characters.
+columns of small Chinese glosses) and one handwritten letter. With Run
+31, on five of the printed pages the Manchu text reads at 90.7–99.0%
+character / 80.3–94.7% word accuracy, with every gloss left out. The
+sixth, set tightest, reads at 90.2% (Run 30: 86.3%). Together the
+printed pages read at 95.5% / 86.7% (Run 30: 94.9% / 83.1%). The
+handwritten letter reads at 43.4% characters (Run 30: 48.8%).
 
 ## Architecture
 

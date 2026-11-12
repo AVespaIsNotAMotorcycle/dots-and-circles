@@ -77,3 +77,26 @@ def test_split_at_stem_breaks(monkeypatch):
     parts = reader.split_at_stem_breaks(None, Page(), [0, 0, 60, 200],
                                         ("ᠠᠪᡴᠠᠠᠪᡴᠠ", 0.99))
     assert parts == [([0, 0, 60, 200], ("ᠠᠪᡴᠠᠠᠪᡴᠠ", 0.99))]
+
+def test_read_page_can_leave_out_stem_breaks(monkeypatch):
+    import ocr.page_reader as reader
+    from PIL import Image
+
+    class Page:
+        ink = np.ones((100, 20), dtype=bool)
+        image = Image.new("L", (20, 100), 255)
+        words = [{"kind": "manchu", "box": [0, 0, 20, 100], "column": 0}]
+
+    monkeypatch.setattr(reader, "find_words", lambda image: Page())
+    monkeypatch.setattr(reader, "label_words", lambda page, classifier: page)
+    monkeypatch.setattr(reader, "read_crops", lambda model, crops, crop=True,
+                        whiten=True: [("ᠪᡳ", 0.9, []) for _ in crops])
+    # A splitter that always cuts a lone letter off, as Run 31's did
+    def split_at_stem_breaks(model, page, box, reading, crop=True,
+                             whiten=True):
+        return [([0, 0, 20, 50], ("ᠪ", 1.0)), ([0, 50, 20, 100], ("ᡳ", 1.0))]
+    monkeypatch.setattr(reader, "split_at_stem_breaks", split_at_stem_breaks)
+    texts = lambda page: [word["text"] for word in page.words]
+    assert texts(reader.read_page(None, None, None)) == ["ᠪ", "ᡳ"]
+    assert texts(reader.read_page(None, None, None, stem_breaks=False)) == [
+        "ᠪᡳ"]

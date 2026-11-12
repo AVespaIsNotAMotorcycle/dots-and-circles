@@ -304,11 +304,12 @@ def create_app(config_path=CONFIG_PATH):
         return chosen[0]
 
     def read_original(entry, model, original):
-        # read_page with the entry's preprocessing
+        # read_page with the entry's preprocessing and stem-break setting
         preprocess = entry.get("preprocess", {})
         return read_page(original, model, classifier,
                          preprocess.get("crop", True),
-                         preprocess.get("whiten", True))
+                         preprocess.get("whiten", True),
+                         entry.get("stem_breaks", True))
 
     def random_page():
         '''
