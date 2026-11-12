@@ -100,3 +100,85 @@ def test_read_page_can_leave_out_stem_breaks(monkeypatch):
     assert texts(reader.read_page(None, None, None)) == ["ᠪ", "ᡳ"]
     assert texts(reader.read_page(None, None, None, stem_breaks=False)) == [
         "ᠪᡳ"]
+
+def test_group_columns():
+    from ocr.page_reader import group_columns
+    boxes = [
+        [100, 200, 140, 300],  # right column, lower
+        [10, 50, 50, 150],     # left column, upper
+        [102, 20, 138, 120],   # right column, upper
+        [12, 180, 48, 260],    # left column, lower
+        [55, 10, 65, 20],      # a narrow mark between them: its own column
+    ]
+    assert group_columns(boxes) == [(2, 1), (0, 0), (2, 0), (0, 1), (1, 0)]
+    assert group_columns([]) == []
+
+def test_read_boxes_keeps_boxes_and_given_kinds(monkeypatch):
+    import ocr.page_reader as reader
+    from PIL import Image
+
+    class Page:
+        ink = np.zeros((200, 100), dtype=bool)
+        image = Image.new("L", (100, 200), 255)
+        unit = 40.0
+        words = []
+
+    calls = {}
+    def find_words(image, deskew=True):
+        calls["deskew"] = deskew
+        return Page()
+    monkeypatch.setattr(reader, "find_words", find_words)
+    # The classifier calls every box other text
+    monkeypatch.setattr(reader, "classify", lambda model, ink, boxes, unit:
+                        np.zeros(len(boxes)))
+    # The model reads two words, unsure of them
+    monkeypatch.setattr(reader, "read_crops", lambda model, crops, crop=True,
+                        whiten=True: [("ᠠᠪᡴᠠ ᠨᠠ", 0.3, [0.5])
+                                      for _ in crops])
+    page = reader.read_boxes(None, [
+        {"box": [50, 10, 90, 190], "kind": "manchu"},
+        {"box": [5, 100, 45, 150], "kind": None},
+        {"box": [5, 10, 45, 90], "kind": "manchu"},
+    ], None, None)
+    assert calls["deskew"] is False
+    # In reading order, each box as given, not split at the spaces
+    assert [word["box"] for word in page.words] == [
+        [5, 10, 45, 90], [5, 100, 45, 150], [50, 10, 90, 190]]
+    assert [word["kind"] for word in page.words] == [
+        "manchu", "other", "manchu"]
+    assert page.words[0]["text"] == "ᠠᠪᡴᠠ ᠨᠠ"
+    # Marked Manchu by hand, so in the text despite low confidence
+    assert low_confidence(page.words[0])
+    assert page_text(page) == "ᠠᠪᡴᠠ ᠨᠠ □\nᠠᠪᡴᠠ ᠨᠠ"
+
+def test_read_boxes_reuses_readings(monkeypatch):
+    import ocr.page_reader as reader
+    from PIL import Image
+
+    class Page:
+        ink = np.zeros((200, 100), dtype=bool)
+        image = Image.new("L", (100, 200), 255)
+        unit = 40.0
+        words = []
+
+    monkeypatch.setattr(reader, "find_words", lambda image, deskew=True:
+                        Page())
+    monkeypatch.setattr(reader, "classify", lambda model, ink, boxes, unit:
+                        np.ones(len(boxes)))
+    read = []
+    def read_crops(model, crops, crop=True, whiten=True):
+        read.extend(crops)
+        return [("ᠨᠠ", 0.9, []) for _ in crops]
+    monkeypatch.setattr(reader, "read_crops", read_crops)
+    page = reader.read_boxes(None, [
+        # Sent back unchanged, with a low confidence: left out of the text
+        {"box": [5, 10, 45, 90], "kind": "manchu",
+         "reading": ("ᡴᡴ", 0.3)},
+        {"box": [5, 100, 45, 150], "kind": "manchu", "reading": ("ᠪᡝ", 0.8)},
+        # New
+        {"box": [5, 160, 45, 190], "kind": None},
+    ], None, None)
+    assert len(read) == 1
+    assert [word["text"] for word in page.words] == ["ᡴᡴ", "ᠪᡝ", "ᠨᠠ"]
+    assert page.words[1]["abkai"] == "be"
+    assert page_text(page) == "ᠪᡝ ᠨᠠ"

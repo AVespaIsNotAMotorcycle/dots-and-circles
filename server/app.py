@@ -15,6 +15,7 @@ import binascii
 import importlib
 import io
 import json
+import math
 import mimetypes
 import random
 
@@ -26,7 +27,8 @@ from ocr.box_classifier import load_classifier
 from ocr.evaluate_real_pages import pages as real_pages
 from ocr.evaluate_real_pages import read_transcription
 from ocr.evaluate_real_pages import score_page as score_real_page
-from ocr.page_reader import low_confidence, page_text, read_page
+from ocr.page_reader import (in_text, low_confidence, page_text, read_boxes,
+                             read_page)
 from ocr.photos import (abkai_to_manchu, load_photo, manchu_to_abkai,
                         manchu_to_roman, spell_in_manchu)
 from ocr.preprocess import prepare
@@ -46,6 +48,14 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 MAX_UPLOAD_SIDE = 2000
 # Uploads with more pixels than this are refused before they're decoded
 MAX_UPLOAD_PIXELS = 50_000_000
+# POST /upload/multiple/boxes takes back the straightened page
+# /upload/multiple returned, which turning can make up to √2 times longer
+# than MAX_UPLOAD_SIDE. It isn't shrunk, as that would move the boxes.
+MAX_STRAIGHT_SIDE = math.ceil(MAX_UPLOAD_SIDE * math.sqrt(2))
+# The most boxes POST /upload/multiple/boxes reads at once, and the longest
+# reading it takes back for one
+MAX_BOXES = 2000
+MAX_READING_LENGTH = 500
 # Words per page of GET /lexigraphs, by default and at most
 DEFAULT_PER_PAGE = 50
 MAX_PER_PAGE = 100
@@ -157,19 +167,24 @@ def read_upload():
     label = label.strip() if label else None
     return data, label or None
 
-def open_upload(data):
+def open_upload(data, shrink=True):
     '''
     Opens uploaded image bytes as an RGB PIL image: turned upright by its
     EXIF orientation (as phones save photos), transparency made white, and
-    shrunk to fit MAX_UPLOAD_SIDE.
+    shrunk to fit MAX_UPLOAD_SIDE. With shrink=False it's kept at its size,
+    and refused if it's longer than MAX_STRAIGHT_SIDE.
     '''
     try:
         image = Image.open(io.BytesIO(data))
         if image.width * image.height > MAX_UPLOAD_PIXELS:
             raise RequestError(f"The image is over {MAX_UPLOAD_PIXELS:,} "
                               "pixels.", 413)
-        # JPEGs can decode at a smaller scale straight away
-        image.draft("RGB", (MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE))
+        if not shrink and max(image.size) > MAX_STRAIGHT_SIDE:
+            raise RequestError(f"The image is over {MAX_STRAIGHT_SIDE} "
+                              "pixels on a side.", 413)
+        if shrink:
+            # JPEGs can decode at a smaller scale straight away
+            image.draft("RGB", (MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE))
         image = ImageOps.exif_transpose(image)
         if image.mode in ("RGBA", "LA", "PA") or (
                 image.mode == "P" and "transparency" in image.info):
@@ -182,8 +197,74 @@ def open_upload(data):
     except (UnidentifiedImageError, Image.DecompressionBombError, OSError,
             ValueError):
         raise RequestError("The upload isn't an image that can be read.")
-    image.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
+    if shrink:
+        image.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
     return image
+
+def read_boxes_field(size):
+    '''
+    The boxes of a POST /upload/multiple/boxes request, for read_boxes: a
+    JSON body's "boxes", or a form field "boxes" holding them as JSON. Each
+    is {"x", "y", "w", "h"} in pixels of the image, of the given (width,
+    height), an optional "kind", "manchu" or "other" (null or left out
+    for the classifier to decide), and optionally the "prediction-manchu"
+    and "confidence" an earlier response gave it, to keep rather than read
+    it again (both or neither; null counts as left out). Other keys are
+    ignored, so a box can be sent back as it came. Boxes reaching past the
+    image are cut to it.
+    '''
+    if "boxes" in request.form:
+        try:
+            boxes = json.loads(request.form["boxes"])
+        except ValueError:
+            raise RequestError("\"boxes\" isn't valid JSON.")
+    else:
+        body = request.get_json(silent=True)
+        boxes = body.get("boxes") if isinstance(body, dict) else None
+    if not isinstance(boxes, list):
+        raise RequestError("Send \"boxes\", a list of {\"x\", \"y\", "
+                          "\"w\", \"h\"} and optionally \"kind\".")
+    if len(boxes) > MAX_BOXES:
+        raise RequestError(f"Send at most {MAX_BOXES} boxes.")
+    width, height = size
+    result = []
+    for number, box in enumerate(boxes):
+        if not isinstance(box, dict):
+            raise RequestError(f"Box {number} isn't an object.")
+        values = [box.get(key) for key in ("x", "y", "w", "h")]
+        if not all(isinstance(value, (int, float))
+                   and not isinstance(value, bool) and math.isfinite(value)
+                   for value in values):
+            raise RequestError(f"Box {number} needs numbers \"x\", "
+                              "\"y\", \"w\" and \"h\".")
+        x, y, w, h = values
+        if w <= 0 or h <= 0:
+            raise RequestError(f"Box {number} must have a positive width "
+                              "and height.")
+        left, top = max(0, round(x)), max(0, round(y))
+        right, bottom = min(width, round(x + w)), min(height, round(y + h))
+        if right <= left or bottom <= top:
+            raise RequestError(f"Box {number} is outside the image.")
+        kind = box.get("kind")
+        if kind not in (None, "manchu", "other"):
+            raise RequestError(f"Box {number}'s \"kind\" must be "
+                              "\"manchu\", \"other\" or null.")
+        text, confidence = box.get("prediction-manchu"), box.get("confidence")
+        reading = None
+        if text is not None or confidence is not None:
+            if not (isinstance(text, str)
+                    and len(text) <= MAX_READING_LENGTH
+                    and isinstance(confidence, (int, float))
+                    and not isinstance(confidence, bool)
+                    and 0 <= confidence <= 1):
+                raise RequestError(
+                    f"Box {number} needs both \"prediction-manchu\" (a "
+                    f"string of at most {MAX_READING_LENGTH} characters) and "
+                    "\"confidence\" (from 0 to 1), or neither.")
+            reading = (text, confidence)
+        result.append({"box": [left, top, right, bottom], "kind": kind,
+                       "reading": reading})
+    return result
 
 def page_response(entry, page, original):
     '''
@@ -198,7 +279,7 @@ def page_response(entry, page, original):
     '''
     lines = {}
     for word in page.words:
-        if word["kind"] == "manchu" and not low_confidence(word):
+        if word["kind"] == "manchu" and in_text(word):
             lines.setdefault(word["column"], None)
     lines = {column: line for line, column in enumerate(sorted(lines))}
     straight = page.straighten(original)
@@ -476,6 +557,26 @@ def create_app(config_path=CONFIG_PATH):
         data, _ = read_upload()
         original = open_upload(data)
         page = read_original(entry, model, original)
+        return jsonify(page_response(entry, page, original))
+
+    @app.post("/upload/multiple/boxes")
+    def upload_multiple_boxes():
+        '''
+        Reads a page in boxes the user gave: the straightened page an
+        /upload/multiple response returned, with the boxes as edited (see
+        read_boxes_field). Returns the same JSON as /upload/multiple, with
+        the boxes in reading order.
+        '''
+        if classifier is None:
+            raise RequestError("This server doesn't read pages.", 404)
+        entry, model = chosen_model()
+        data, _ = read_upload()
+        original = open_upload(data, shrink=False)
+        boxes = read_boxes_field(original.size)
+        preprocess = entry.get("preprocess", {})
+        page = read_boxes(original, boxes, model, classifier,
+                          preprocess.get("crop", True),
+                          preprocess.get("whiten", True))
         return jsonify(page_response(entry, page, original))
 
     return app

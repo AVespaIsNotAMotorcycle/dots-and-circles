@@ -489,3 +489,135 @@ def test_lexigraphs_bad_request(client, query):
     response = client.get(f"/lexigraphs?{query}")
     assert response.status_code == 400
     assert response.get_json()["error"]
+
+def straight_page(client):
+    # The straightened page /upload/multiple returns, and its boxes
+    body = client.post("/upload/multiple", data={
+        "image": (io.BytesIO(page_image()), "page.png")}).get_json()
+    return body["image"], body["boxes"]
+
+def test_upload_multiple_boxes(client):
+    image, _ = straight_page(client)
+    boxes = [
+        # Out of reading order, one reaching past the image
+        {"x": 220, "y": 30, "w": 40, "h": 90, "kind": "manchu"},
+        {"x": 40, "y": 160, "w": 40, "h": 220, "kind": "other"},
+        {"x": 35, "y": 25, "w": 50, "h": 100},
+        {"x": 280, "y": 350, "w": 100, "h": 100, "kind": None},
+    ]
+    response = client.post("/upload/multiple/boxes?model=Test",
+                           json={"image": image, "boxes": boxes})
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["model"] == "Test" and body["angle"] == 0
+    page = Image.open(io.BytesIO(base64.b64decode(image.partition(",")[2])))
+    returned = Image.open(io.BytesIO(base64.b64decode(
+        body["image"].partition(",")[2])))
+    assert returned.size == page.size
+    # The boxes as sent, cut to the image, in reading order
+    assert [(box["x"], box["y"], box["w"], box["h"])
+            for box in body["boxes"]] == [
+        (35, 25, 50, 100), (40, 160, 40, 220), (220, 30, 40, 90),
+        (280, 350, page.width - 280, page.height - 350)]
+    assert [box["position"] for box in body["boxes"]] == [0, 1, 0, 0]
+    assert body["boxes"][1]["kind"] == "other"
+    assert body["boxes"][1]["prediction-manchu"] is None
+    # Marked Manchu by hand, so in the text however unsure the model is
+    marked = body["boxes"][2]
+    assert marked["kind"] == "manchu" and marked["line"] is not None
+    for box in body["boxes"]:
+        assert 0 <= box["manchu-probability"] <= 1
+
+def test_upload_multiple_boxes_form(client):
+    image, boxes = straight_page(client)
+    data = base64.b64decode(image.partition(",")[2])
+    response = client.post("/upload/multiple/boxes", data={
+        "image": (io.BytesIO(data), "page.png"),
+        "boxes": json.dumps([{key: box[key] for key in
+                              ("x", "y", "w", "h", "kind")}
+                             for box in boxes])})
+    assert response.status_code == 200
+    # Sending back the boxes found reads them in the same boxes
+    key = lambda box: (box["x"], box["y"], box["w"], box["h"], box["kind"])
+    assert sorted(map(key, response.get_json()["boxes"])) == \
+        sorted(map(key, boxes))
+
+def test_upload_multiple_boxes_none(client):
+    image, _ = straight_page(client)
+    response = client.post("/upload/multiple/boxes",
+                           json={"image": image, "boxes": []})
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["boxes"] == [] and body["manchu"] == ""
+
+@pytest.mark.parametrize("boxes", [
+    None, "nope", [1], [{"x": 0, "y": 0, "w": 10}],
+    [{"x": 0, "y": 0, "w": 0, "h": 10}],
+    [{"x": 0, "y": 0, "w": True, "h": 10}],
+    [{"x": 5000, "y": 0, "w": 10, "h": 10}],
+    [{"x": 0, "y": 0, "w": 10, "h": 10, "kind": "chinese"}],
+    # A reading needs both its text and confidence
+    [{"x": 0, "y": 0, "w": 10, "h": 10, "prediction-manchu": "ᠠ"}],
+    [{"x": 0, "y": 0, "w": 10, "h": 10, "confidence": 0.9}],
+    [{"x": 0, "y": 0, "w": 10, "h": 10, "prediction-manchu": "ᠠ",
+      "confidence": 2}],
+])
+def test_upload_multiple_boxes_bad_boxes(client, boxes):
+    image, _ = straight_page(client)
+    body = {"image": image}
+    if boxes is not None:
+        body["boxes"] = boxes
+    response = client.post("/upload/multiple/boxes", json=body)
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+def test_upload_multiple_boxes_too_many(client, monkeypatch):
+    import server.app as app
+    monkeypatch.setattr(app, "MAX_BOXES", 1)
+    image, _ = straight_page(client)
+    box = {"x": 0, "y": 0, "w": 10, "h": 10}
+    response = client.post("/upload/multiple/boxes",
+                           json={"image": image, "boxes": [box, box]})
+    assert response.status_code == 400
+
+def test_upload_multiple_boxes_is_not_shrunk(client):
+    # A page a little over MAX_UPLOAD_SIDE, as turning one can make it
+    from server.app import MAX_STRAIGHT_SIDE, MAX_UPLOAD_SIDE
+    buffer = io.BytesIO()
+    Image.new("L", (MAX_UPLOAD_SIDE + 50, 100), 255).save(buffer, "PNG")
+    box = {"x": MAX_UPLOAD_SIDE, "y": 0, "w": 50, "h": 100,
+           "kind": "other"}
+    response = client.post("/upload/multiple/boxes", data={
+        "image": (io.BytesIO(buffer.getvalue()), "page.png"),
+        "boxes": json.dumps([box])})
+    assert response.status_code == 200
+    assert response.get_json()["boxes"][0]["x"] == MAX_UPLOAD_SIDE
+    buffer = io.BytesIO()
+    Image.new("L", (MAX_STRAIGHT_SIDE + 1, 10), 255).save(buffer, "PNG")
+    response = client.post("/upload/multiple/boxes", data={
+        "image": (io.BytesIO(buffer.getvalue()), "page.png"),
+        "boxes": "[]"})
+    assert response.status_code == 413
+
+def test_upload_multiple_boxes_keeps_readings_sent_back(client):
+    first = client.post("/upload/multiple", data={
+        "image": (io.BytesIO(page_image()), "page.png")}).get_json()
+    # Every box sent back as it came, with a made-up reading for one
+    # Manchu box, as if the frontend kept it
+    sent = [dict(box) for box in first["boxes"]]
+    manchu = [box for box in sent if box["kind"] == "manchu"]
+    if not manchu:
+        sent[0].update(kind="manchu")
+        manchu = [sent[0]]
+    manchu[0].update({"prediction-manchu": "ᠠᠪᡴᠠ", "confidence": 0.9})
+    response = client.post("/upload/multiple/boxes",
+                           json={"image": first["image"], "boxes": sent})
+    assert response.status_code == 200
+    key = lambda box: (box["x"], box["y"], box["w"], box["h"])
+    returned = {key(box): box for box in response.get_json()["boxes"]}
+    kept = returned[key(manchu[0])]
+    assert kept["prediction-manchu"] == "ᠠᠪᡴᠠ"
+    assert kept["prediction-abkai"] == "abka" and kept["confidence"] == 0.9
+    for box in sent:
+        assert returned[key(box)]["prediction-manchu"] == \
+            box["prediction-manchu"]

@@ -5,14 +5,16 @@ at a time.
 
 read_page returns the Page, its words in reading order each with its
 "kind", and for Manchu words the model's reading and confidence.
-page_text gives the page's text, a line per column (see
-training_data.pages.page_lines), and draw_page the page with its boxes.
+read_boxes does the same for boxes given by hand, on a page already
+straightened, keeping them as they are. page_text gives the page's text,
+a line per column (see training_data.pages.page_lines), and draw_page the
+page with its boxes.
 '''
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from ocr.box_classifier import label_words
+from ocr.box_classifier import classify, label_words
 from ocr.layout import find_words, stem_breaks
 from ocr.photos import manchu_to_abkai
 from ocr.preprocess import prepare
@@ -33,6 +35,9 @@ BATCH_SIZE = 4
 MIN_CONFIDENCE = 0.65
 # How many times split_at_stem_breaks may split one box in turn
 MAX_SPLITS = 6
+# read_boxes: a box is in a column if at least this share of the narrower
+# of the two's width overlaps
+COLUMN_OVERLAP = 0.5
 # Drawing: outline colours, and the white laid over Manchu boxes (its
 # opacity, 0-255) so their Abkai shows over the print
 MANCHU_COLOUR = (0, 170, 0)
@@ -233,20 +238,114 @@ def read_page(image, model, classifier, crop=True, whiten=True,
     page.words = words
     return page
 
+def group_columns(boxes):
+    '''
+    The column (from 0 at the left) and position (from 0 at the top) of
+    each box: boxes overlapping by at least COLUMN_OVERLAP of the narrower
+    one's width share a column. Boxes are [left, top, right, bottom].
+    '''
+    columns = []
+    column_of = [None] * len(boxes)
+    order = sorted(range(len(boxes)),
+                   key=lambda index: boxes[index][0] + boxes[index][2])
+    for index in order:
+        left, _, right, _ = boxes[index]
+        best, best_overlap = None, 0.0
+        for number, (start, end) in enumerate(columns):
+            overlap = min(right, end) - max(left, start)
+            share = overlap / max(1, min(right - left, end - start))
+            if share >= COLUMN_OVERLAP and share > best_overlap:
+                best, best_overlap = number, share
+        if best is None:
+            columns.append([left, right])
+            best = len(columns) - 1
+        else:
+            columns[best] = [min(left, columns[best][0]),
+                             max(right, columns[best][1])]
+        column_of[index] = best
+    renumber = {old: new for new, old in enumerate(sorted(
+        range(len(columns)), key=lambda number: sum(columns[number])))}
+    places = [None] * len(boxes)
+    for column in range(len(columns)):
+        members = sorted((index for index in range(len(boxes))
+                          if renumber[column_of[index]] == column),
+                         key=lambda index: (boxes[index][1], boxes[index][0]))
+        for position, index in enumerate(members):
+            places[index] = (column, position)
+    return places
+
+def read_boxes(image, boxes, model, classifier, crop=True, whiten=True):
+    '''
+    Reads a page, given as a PIL image already straight (as a Page's
+    straighten gives it), in boxes given by hand rather than found: each a
+    dict with "box" ([left, top, right, bottom] in the image), "kind"
+    ("manchu", "other" or None for the classifier to decide) and
+    optionally "reading", (text, confidence) from an earlier reading of
+    the same box. A Manchu box with a reading isn't read again: the boxes
+    read_page splits at the model's spaces read differently alone, so this
+    keeps the boxes a user hasn't changed as they were (and saves reading
+    them). Returns a Page as read_page does, its words in reading order
+    (columns found by group_columns). The boxes are kept as given: a
+    Manchu box the model reads as several words keeps its spaces, and none
+    is split at stem breaks. Words given a kind and read here, rather than
+    given a reading, have "kind_given" true, and so stay in the text however
+    unsure the model is (see in_text).
+    '''
+    page = find_words(image, deskew=False)
+    if not page.words and boxes:
+        # Nothing found to measure the unit by: a word is about a unit wide
+        page.unit = float(np.median([box["box"][2] - box["box"][0]
+                                     for box in boxes]))
+    probabilities = (classify(classifier, page.ink,
+                              [box["box"] for box in boxes], page.unit)
+                     if boxes else [])
+    places = group_columns([box["box"] for box in boxes])
+    words = []
+    for box, probability, (column, position) in zip(boxes, probabilities,
+                                                    places):
+        kind = box.get("kind") or ("manchu" if probability >= 0.5
+                                   else "other")
+        word = {"box": [int(value) for value in box["box"]],
+                "column": column, "position": position,
+                "manchu": float(probability), "kind": kind}
+        reading = box.get("reading")
+        if kind == "manchu" and reading is not None:
+            text, confidence = reading
+            word.update(text=text, abkai=manchu_to_abkai(text),
+                        confidence=float(confidence), kind_given=False)
+        else:
+            word["kind_given"] = bool(box.get("kind"))
+        words.append(word)
+    manchu = [word for word in words
+              if word["kind"] == "manchu" and "text" not in word]
+    for word, (text, confidence, _) in zip(manchu, read_crops(
+            model, [page.image.crop(word["box"]) for word in manchu], crop,
+            whiten)):
+        word.update(text=text.strip(), abkai=manchu_to_abkai(text.strip()),
+                    confidence=confidence)
+    page.words = sorted(words, key=lambda word: (word["column"],
+                                                 word["position"]))
+    return page
+
 def low_confidence(word):
     # Whether a word of read_page's is Manchu read with a confidence under
     # MIN_CONFIDENCE, too likely junk to put in the text
     return (word["kind"] == "manchu"
             and word.get("confidence", 1.0) < MIN_CONFIDENCE)
 
+def in_text(word):
+    # Whether a word goes in the page's text: all but Manchu read with low
+    # confidence, unless it was marked Manchu by hand (see read_boxes)
+    return not low_confidence(word) or word.get("kind_given", False)
+
 def page_text(page, abkai=False):
     '''
     The page's text, as page_lines gives it, from read_page's words,
-    leaving out Manchu read with low confidence (a column of nothing else,
-    such as a page's edge read as Manchu, leaves no line).
+    leaving out Manchu read with low confidence unless it was marked Manchu
+    by hand (a column of nothing else, such as a page's edge read as
+    Manchu, leaves no line).
     '''
-    return page_lines([word for word in page.words
-                       if not low_confidence(word)], abkai)
+    return page_lines([word for word in page.words if in_text(word)], abkai)
 
 def draw_text(image, text, box):
     '''

@@ -181,6 +181,59 @@ repository root. Locally, from the repository root:
   0.57. Other boxes' predictions, confidence and `low-confidence` are
   `null`.
 
+- `POST /upload/multiple/boxes`: reads a page again in boxes the user has
+  edited (removed, moved, resized or added). Send back the `image` an
+  `/upload/multiple` (or `/random?source=page`) response gave, which is
+  the page already straightened, and the boxes in its coordinates:
+
+  ```json
+  {
+    "image": "data:image/png;base64,...",
+    "boxes": [
+      {"x": 120, "y": 40, "w": 46, "h": 210, "kind": "manchu",
+       "prediction-manchu": "ᠠᠪᡴᠠ", "confidence": 0.97},
+      {"x": 180, "y": 40, "w": 44, "h": 120, "kind": "manchu"},
+      {"x": 230, "y": 60, "w": 40, "h": 40}
+    ]
+  }
+  ```
+
+  It can also be sent as `multipart/form-data`, with the file in `image`
+  and the boxes as a JSON string in a `boxes` field. `?model=` works as
+  for `/upload/multiple`. The response is the same as `/upload/multiple`'s,
+  with `angle` 0: the image isn't turned or shrunk again, so the boxes stay
+  where they were sent (cut to the image if they reach past it), in
+  reading order. The server finds the columns itself: boxes overlapping by
+  at least half the narrower one's width share one, read left to right,
+  and each column is read top to bottom.
+
+  Each box needs `x`, `y`, `w` and `h`, and may have:
+
+  - `kind`: `"manchu"` or `"other"`. Left out or `null`, the classifier
+    decides.
+  - `prediction-manchu` and `confidence`, as the last response gave them:
+    the box isn't read again, and keeps that reading. Send a box back
+    unchanged with them, and leave them out for one the user drew, moved,
+    resized or changed the kind of. Boxes `/upload/multiple` made by
+    splitting one box at the spaces the model read come out differently
+    when each part is read alone, so this keeps the words the user didn't
+    touch from changing, and saves reading them again. `null` counts as
+    left out, and any other keys are ignored, so boxes can be sent back
+    just as they came.
+
+  A box isn't split, even if the model reads spaces in it: its
+  `prediction-manchu` then has the spaces. A box taller than a few words
+  is squeezed to fit what the model reads at once, so a box over a whole
+  column reads badly. A Manchu box read again with low confidence is
+  still marked `low-confidence`, but if it was sent with `kind`
+  `"manchu"` it stays in `manchu` and `abkai`: the user asked for it.
+  One sent back with its reading follows the usual rule.
+
+  An empty `boxes` gets a page with none. A page over 2829 pixels on a
+  side (2000 turned by 45°, more than `/upload/multiple` ever returns)
+  gets a 413, and more than 2000 boxes or a box that isn't valid gets a
+  400, as `{"error": "..."}`.
+
 ## config.json
 
 - `allowed_origin`: sent as `Access-Control-Allow-Origin`.

@@ -676,12 +676,14 @@ def find_words_in_column(ink, left, right, unit):
         boxes.pop(0)
     return boxes
 
-def find_words(image):
+def find_words(image, deskew=True):
     '''
     Finds the words on a page, given as a PIL image, and returns a Page.
+    deskew=False takes the page as already straight (an image a Page
+    straightened, say), so the boxes stay in its coordinates.
     '''
     grey = image.convert("L")
-    angle = find_skew(binarize(grey))
+    angle = find_skew(binarize(grey)) if deskew else 0.0
     if abs(angle) >= FINE_STEP / 2:
         # The corners rotation adds are filled with paper, as white would
         # make the paper beside them look dark
