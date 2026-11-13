@@ -139,6 +139,61 @@ def norman_words(path=os.path.join(os.path.dirname(os.path.abspath(__file__)),
     return [" ".join(to_manchu(word) for word in phrase.split())
             for phrase in norman]
 
+# A verb headword, maybe numbered as one of several ((1), (I)), with its
+# note: the forms that aren't regular, as in DOSIMBI (-ka) or
+# JIMBI (imperative: jio, -he, -dere)
+VERB_NOTE = re.compile(r"^([A-ZŠŪŽ']+MBI)(?: \((?:\d|I+)\))? \(([^)]*)\)",
+                       re.MULTILINE)
+# Perfective participle endings: -ha, -ka, -ngka and their e and o variants
+PERFECTIVE = re.compile(r"-(?:ng)?[hk][aeo]")
+# Labels before a form in a note, and the OCR's misspellings in notes
+LABELS = re.compile(r"^(?:imperative|(?:im)?perfect participle):? ")
+NOTE_TYPOS = {"-nggke": "-ngke"}
+
+def verb_notes(path=os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 "Jerry_Norman_Dict.txt")):
+    '''
+    Verb headword (lower-case Norman) -> its note, as {"perfective": its
+    perfective endings (["-ka"], Norman), "forms": [[form (Norman),
+    affixes]]}. An ending in a note is put on the stem (dosi-ka, je-ngke,
+    o-joro), its affixes being [ending], unless the stem already ends in
+    it (ILIMBAHAMBI (-baha) is ilimbaha); a whole word (imperative: jio)
+    is itself, with no affixes. Notes of numbered headwords (JEMBI (1) and
+    (2)) are merged. Notes saying nothing (for tūmbi) are left out.
+    '''
+    with open(path, "r", encoding="utf-8") as file:
+        text = file.read()
+    notes = {}
+    for headword, note in VERB_NOTE.findall(text):
+        verb = headword.lower()
+        stem = verb[:-len("mbi")]
+        perfective, forms = [], []
+        for part in note.split(","):
+            part = LABELS.sub("", part.strip())
+            for ending in part.split("/"):
+                ending = ending.strip()
+                if not ending or ending.isdigit() or " " in ending:
+                    continue
+                if not ending.startswith("-") and len(part.split("/")) > 1:
+                    ending = "-" + ending  # -ka/ha
+                ending = NOTE_TYPOS.get(ending, ending)
+                if PERFECTIVE.fullmatch(ending):
+                    perfective.append(ending)
+                if not ending.startswith("-"):
+                    forms.append([ending, []])
+                elif stem.endswith(ending[1:]):
+                    forms.append([stem, [ending]])
+                else:
+                    forms.append([stem + ending[1:], [ending]])
+        if not forms:
+            continue
+        entry = notes.setdefault(verb, {"perfective": [], "forms": []})
+        entry["perfective"] += [ending for ending in perfective
+                                if ending not in entry["perfective"]]
+        entry["forms"] += [form for form in forms
+                           if form not in entry["forms"]]
+    return notes
+
 if __name__ == "__main__":
     norman = norman_words("Jerry_Norman_Dict.txt")
     with open("lexicon.json", "r", encoding="utf-8") as file:

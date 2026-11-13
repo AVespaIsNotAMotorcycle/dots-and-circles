@@ -646,12 +646,15 @@ def test_page_boxes_have_closest_words(client):
     by_kind = {box["kind"]: box for box in body["boxes"]}
     assert by_kind["manchu"]["closest-words"] == [
         {"manchu": "ᠠᠪᡴᠠ", "abkai": "abka", "norman": "abka", "distance": 0,
-         "sources": ["kaikki", "norman"], "lemma": None, "affixes": None},
+         "sources": ["kaikki", "norman"], "lemma": None, "affixes": None,
+         "breaks": None},
         # A form of ᠠᠴᠠᠮᠪᡳ (acambi), closer than ᠨᠠ and ᠪᡝ (3 edits)
         {"manchu": "ᠠᠴᠠᡴᠠ", "abkai": "aqaka", "norman": "acaka", "distance": 2,
          "sources": ["norman"],
          "lemma": {"manchu": "ᠠᠴᠠᠮᠪᡳ", "abkai": "aqambi", "norman": "acambi"},
-         "affixes": ["-ka"]}]
+         "affixes": ["-ka"],
+         "breaks": [{"affix": "-ka", "expected": ["-ha"],
+                     "reason": "unmarked"}]}]
     assert by_kind["other"]["closest-words"] is None
     for box in first["boxes"]:
         if box["kind"] == "manchu":
@@ -671,7 +674,43 @@ def test_page_boxes_closest_verb_forms(client):
         "manchu": "ᠠᠴᠠᠪᡠᡥᠠ", "abkai": "aqabuha", "norman": "acabuha",
         "distance": 0, "sources": ["norman"],
         "lemma": {"manchu": "ᠠᠴᠠᠮᠪᡳ", "abkai": "aqambi", "norman": "acambi"},
-        "affixes": ["-bu-", "-ha"]}
+        "affixes": ["-bu-", "-ha"], "breaks": []}
+
+def test_page_boxes_have_flags(client):
+    first = client.post("/upload/multiple", data={
+        "image": (io.BytesIO(page_image()), "page.png")}).get_json()
+    template = dict(first["boxes"][0], kind="manchu")
+    readings = [("ᠠᠪᡴᠠ", 0.9), ("ᠠᠪᡴᡳ", 0.9), ("ᠠᠴᠠᡥᠣ", 0.9), ("ᠠᠪᡴᠠ", 0.5),
+                ("ᠠᠴᠠᡴᠠ", 0.9)]
+    # On the page's bars: three in the first column, two in the second
+    places = [(40, 30), (40, 160), (40, 290), (130, 30), (130, 160)]
+    boxes = [dict(template, x=x, y=y, w=40, h=90,
+                  **{"prediction-manchu": text, "confidence": confidence})
+             for (x, y), (text, confidence) in zip(places, readings)]
+    other = dict(first["boxes"][1], kind="other", x=220, y=30, w=40, h=90)
+    body = client.post("/upload/multiple/boxes", json={
+        "image": first["image"], "boxes": boxes + [other]}).get_json()
+    flags = {(box["prediction-manchu"], box["confidence"]): box["flags"]
+             for box in body["boxes"] if box["kind"] == "manchu"}
+    assert flags[("ᠠᠪᡴᠠ", 0.9)] == []
+    assert flags[("ᠠᠪᡴᡳ", 0.9)] == [{
+        "code": "not-in-dictionary",
+        "message": "Not in the dictionaries; the closest is abka, 1 edit "
+                   "away"}]
+    assert flags[("ᠠᠴᠠᡥᠣ", 0.9)] == [{
+        "code": "vowel-harmony",
+        "message": "Breaks vowel harmony as a form of acambi: -ho where -ha "
+                   "is expected"}]
+    # acambi is in Norman, with no note giving -ka
+    assert flags[("ᠠᠴᠠᡴᠠ", 0.9)] == [{
+        "code": "verb-ending",
+        "message": "-ka on acambi, which Norman's dictionary doesn't note "
+                   "as taking it; -ha is expected"}]
+    assert flags[("ᠠᠪᡴᠠ", 0.5)] == [{
+        "code": "low-confidence",
+        "message": "Read with low confidence (0.50, under 0.65)"}]
+    assert [box["flags"] for box in body["boxes"]
+            if box["kind"] == "other"] == [None]
 
 def test_page_text_in_norman(client):
     first = client.post("/upload/multiple", data={

@@ -78,9 +78,22 @@ def test_closest_reads_verb_forms():
     assert found[0] == {"manchu": "ᠠᡵᠠᡥᠠ", "abkai": "araha",
                         "roman": "araha", "distance": 0,
                         "sources": ["kaikki", "norman"],
-                        "lemma": "ᠠᡵᠠᠮᠪᡳ", "affixes": ["-ha"]}
+                        "lemma": "ᠠᡵᠠᠮᠪᡳ", "affixes": ["-ha"],
+                        "breaks": []}
     # Entries have no lemma
     assert found[1]["abkai"] == "adaha" and found[1]["lemma"] is None
+    assert found[1]["breaks"] is None
+
+def test_closest_flags_and_prefers_vowel_harmony():
+    dictionary = Dictionary(VERBS + [["ᡤᡝᠨᡝᠮᠪᡳ", ["norman"]]])
+    # araho is still read as itself, but breaks harmony
+    found = dictionary.closest("ᠠᡵᠠᡥᠣ")[0]
+    assert (found["roman"], found["distance"], found["breaks"]) == (
+        "araho", 0, [{"affix": "-ho", "expected": ["-ha"],
+                      "reason": "harmony"}])
+    # genehu is one edit from genehe, geneha and geneho: genehe keeps it
+    found = dictionary.closest("ᡤᡝᠨᡝᡥᡠ")[0]
+    assert (found["roman"], found["breaks"]) == ("genehe", [])
 
 def test_closest_reads_infixes_and_norman_suffixes():
     dictionary = Dictionary(VERBS)
@@ -107,6 +120,34 @@ def test_closest_verb_forms_prefer_entries_and_fewer_infixes():
     assert [(match["roman"], match["distance"]) for match in found] == [
         ("arahi", 1), ("araha", 1)]
     assert found[1]["lemma"] == "ᠠᡵᠠᠮᠪᡳ"
+
+def test_closest_uses_norman_notes():
+    dictionary = Dictionary([
+        ["ᠠᡵᠠᠮᠪᡳ", ["norman"]],
+        ["ᡳᠯᡳᠮᠪᡳ", ["norman"], {"perfective": ["-ha"], "forms": [
+            ["ᡳᠯᡳᡥᠠ", ["-ha"]]]}],
+        ["ᡳᠯᡳᠪᡠᠮᠪᡳ", ["norman"]],
+        ["ᠵᡝᠮᠪᡳ", ["norman"], {"perfective": ["-ngke"], "forms": [
+            ["ᠵᡝᠩᡴᡝ", ["-ngke"]], ["ᠵᡝᡶᡠ", []]]}],
+    ])
+    # Irregular forms are read as themselves, with their affixes
+    found = dictionary.closest("ᠵᡝᠩᡴᡝ")[0]
+    assert (found["roman"], found["distance"], found["lemma"],
+            found["affixes"], found["breaks"]) == (
+        "jengke", 0, "ᠵᡝᠮᠪᡳ", ["-ngke"], [])
+    found = dictionary.closest("ᠵᡝᡶᡠ")[0]
+    assert (found["lemma"], found["affixes"]) == ("ᠵᡝᠮᠪᡳ", [])
+    # A regular jeke is checked against the note
+    assert dictionary.closest("ᠵᡝᡴᡝ")[0]["breaks"] == [
+        {"affix": "-ke", "expected": ["-ngke"], "reason": "norman"}]
+    # iliha, against Porter's e for ili-, as Norman notes it; ilibuha
+    # takes ilimbi's a
+    assert dictionary.closest("ᡳᠯᡳᡥᠠ")[0]["breaks"] == []
+    found = dictionary.closest("ᡳᠯᡳᠪᡠᡥᠠ")[0]
+    assert (found["lemma"], found["breaks"]) == ("ᡳᠯᡳᠪᡠᠮᠪᡳ", [])
+    # araka: arambi has no note giving -ka
+    assert dictionary.closest("ᠠᡵᠠᡴᠠ")[0]["breaks"] == [
+        {"affix": "-ka", "expected": ["-ha"], "reason": "unmarked"}]
 
 def test_closest_verb_forms_agree_with_brute_force():
     # Endings of x, z and y and stems without them, so no form is spelled
@@ -147,6 +188,7 @@ def test_the_committed_dictionary_loads():
     assert found[0]["abkai"] == "abka" and found[0]["distance"] == 0
     assert set(found[0]["sources"]) <= {"kaikki", "norman"}
     found = Dictionary.load().closest("ᡤᡝᠨᡝᡶᡳ")[0]
+    assert found["breaks"] == []
     assert (found["abkai"], found["distance"], found["affixes"]) == (
         "genefi", 0, ["-fi"])
     assert found["lemma"] == "ᡤᡝᠨᡝᠮᠪᡳ"

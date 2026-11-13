@@ -51,7 +51,8 @@ Changing the lexicon changes which word each training seed maps to, so runs
 before and after a lexicon change aren't directly comparable.
 
 The server's closest dictionary words come from a separate list,
-`dictionary_words.json`, with each entry's dictionaries. Rebuild it from
+`dictionary_words.json`, with each entry's dictionaries and, for verbs,
+the irregular forms Norman notes (`add_norman.verb_notes`). Rebuild it from
 the repo root with `python -m ocr.training_data.list_dictionary_words`
 when either dictionary changes.
 

@@ -184,10 +184,13 @@ repository root. Locally, from the repository root:
       "confidence": 0.97, "low-confidence": false,
       "closest-words": [
         {"manchu": "ᠠᠪᡴᠠ", "abkai": "abka", "norman": "abka", "distance": 0,
-         "sources": ["kaikki", "norman"], "lemma": null, "affixes": null},
+         "sources": ["kaikki", "norman"], "lemma": null, "affixes": null,
+         "breaks": null},
         {"manchu": "ᠠᠪᠰᠠ", "abkai": "absa", "norman": "absa", "distance": 1,
-         "sources": ["norman"], "lemma": null, "affixes": null}
-      ]
+         "sources": ["norman"], "lemma": null, "affixes": null,
+         "breaks": null}
+      ],
+      "flags": []
     }]
   }
   ```
@@ -240,10 +243,53 @@ repository root. Locally, from the repository root:
   "genembi", "norman": "genembi"}`) and the affixes on its stem, in
   Norman's romanization, as `affixes` (`["-fi"]`); `sources` are the
   verb's. Entries have `null` for both, and a form spelled like an entry
-  is that entry. Vowel harmony isn't checked, so `araho` matches as well
-  as `araha`. Each verb gives at most one form, its closest, and on a tie
-  entries come first, then forms with fewer infixes. Matching takes about
-  5 ms a box (up to 20 ms for long readings).
+  is that entry. The irregular forms in notes in Norman's dictionary
+  (`JEMBI (2) (-ngke, -ndere, -mpi)`, `JIMBI (imperative: jio, ...)`)
+  match too, like entries, with their verb as `lemma` and the note's
+  ending as `affixes` (`["-ngke"]`, or `[]` for a whole word like `jio`).
+
+  A wrong ending doesn't stop a match (`araho` matches itself), but a
+  form's `breaks` lists its wrong affixes, each with the affixes expected
+  and why (`[{"affix": "-ho", "expected": ["-ha"], "reason":
+  "harmony"}]`; `[]` if none, `null` for entries). The rules
+  (`ending_breaks` in `ocr/affixes.py`):
+  - `harmony`: David C. Porter's rules for the perfective, for every
+    affix with a, e and o variants. After a stem of a, e or o alone, its
+    vowel (`araha`, `genehe`, `oho`); of e, i and u, e (`jihe`,
+    `tucike`); with i or u and a, o or ū, a (`donjiha`, `dosika`). Infixes
+    before the affix count (`gene-ne-he`). But `-re` follows any i, u or ū
+    (`alire`, `acabure`).
+  - `norman`: Norman notes the verb's perfective, and the affix isn't it
+    (`ILIMBI (-ha)`, so `ilihe`; `DOSIMBI (-ka)`, so `dosiha`), or has
+    another vowel on a suffix built on it (`ilihebi`). The note's vowel
+    carries through infixes with one spelling (`ili-bu-ha`), and over to
+    verbs derived by one (`ilibumbi`, so `ilibuha`).
+  - `unmarked`: `-ka`, `-ke` or `-ko` on a verb in Norman not noted as
+    taking it (`araka`). Verbs only in Wiktionary aren't checked for this.
+
+  Of the 689 photographed words read exactly as verb forms, 3 are
+  flagged: `burgiha` and `burubuha` (exceptions to Porter's rules that
+  Norman doesn't note) and `gosiholoro`. Each verb gives at most one form,
+  its closest, and on a tie entries and irregular forms come first, then
+  forms keeping harmony, then with fewer infixes. Matching takes about 5
+  ms a box (up to 20 ms for long readings).
+
+  `flags` say why a Manchu box's reading should be checked (`[]` if
+  there's no reason; `null` for other boxes), each a `code` and a
+  `message` for people:
+  - `low-confidence`: the box is `low-confidence` ("Read with low
+    confidence (0.50, under 0.65)").
+  - `not-in-dictionary`: the closest word isn't an exact match ("Not in
+    the dictionaries; the closest is acaka, a form of acambi, 2 edits
+    away").
+  - `vowel-harmony`: the exact match is a verb form with `harmony`
+    breaks ("Breaks vowel harmony as a form of arambi: -ho where -ha is
+    expected").
+  - `verb-ending`: one for each `norman` or `unmarked` break ("-ha on
+    dosimbi, where Norman's dictionary gives -ka"; "-ka on arambi, which
+    Norman's dictionary doesn't note as taking it; -ha is expected").
+
+  The last three need a `dictionary`.
 
 - `POST /upload/multiple/boxes`: reads a page again in boxes the user has
   edited (removed, moved, resized or added), in the coordinates of the

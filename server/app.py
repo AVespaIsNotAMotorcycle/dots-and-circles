@@ -32,8 +32,8 @@ from server.visitors import VisitorCounter
 from ocr.evaluate_real_pages import pages as real_pages
 from ocr.evaluate_real_pages import read_transcription
 from ocr.evaluate_real_pages import score_page as score_real_page
-from ocr.page_reader import (in_text, low_confidence, page_text, read_boxes,
-                             read_page)
+from ocr.page_reader import (MIN_CONFIDENCE, in_text, low_confidence,
+                             page_text, read_boxes, read_page)
 from ocr.photos import (abkai_to_manchu, load_photo, manchu_to_abkai,
                         manchu_to_norman, manchu_to_roman, spell_in_manchu)
 from ocr.preprocess import prepare
@@ -330,7 +330,9 @@ def page_response(entry, page, original, dictionary=None, crops=True):
     no line. Manchu read with low confidence is left out of the text, and
     its box marked "low-confidence". original is the image as read, in
     colour. With a Dictionary, each Manchu box has its "closest-words"
-    (None without one, and for other boxes). The page is a JPEG, and
+    (None without one, and for other boxes). Each Manchu box has "flags",
+    the reasons to check its reading (box_flags), and others None. The
+    page is a JPEG, and
     without crops, boxes' "image" is None.
     '''
     lines = {}
@@ -343,6 +345,8 @@ def page_response(entry, page, original, dictionary=None, crops=True):
     for word in page.words:
         left, top, right, bottom = word["box"]
         manchu = word["kind"] == "manchu"
+        closest = (closest_words(dictionary, word["text"])
+                   if manchu and dictionary is not None else None)
         boxes.append({
             "x": left, "y": top, "w": right - left, "h": bottom - top,
             "image": (image_data_url(straight.crop(word["box"])) if crops
@@ -357,8 +361,8 @@ def page_response(entry, page, original, dictionary=None, crops=True):
                                  if manchu else None,
             "confidence": word["confidence"] if manchu else None,
             "low-confidence": low_confidence(word) if manchu else None,
-            "closest-words": closest_words(dictionary, word["text"])
-                             if manchu and dictionary is not None else None,
+            "closest-words": closest,
+            "flags": box_flags(word, closest) if manchu else None,
         })
     return {"model": entry["name"],
             "image": jpeg_data_url(straight),
@@ -379,8 +383,56 @@ def closest_words(dictionary, text):
                  "manchu": match["lemma"],
                  "abkai": manchu_to_abkai(match["lemma"]),
                  "norman": manchu_to_norman(match["lemma"])},
-             "affixes": match["affixes"]}
+             "affixes": match["affixes"], "breaks": match["breaks"]}
             for match in dictionary.closest(text, CLOSEST_WORDS)]
+
+def box_flags(word, closest):
+    '''
+    Why a Manchu box's reading should be checked, each reason as a dict
+    with a "code" and a "message" for people: "low-confidence" (under
+    MIN_CONFIDENCE), "not-in-dictionary" (with closest, its closest words,
+    if the nearest isn't an exact match), "vowel-harmony" (if the exact
+    match is a verb form breaking vowel harmony) and "verb-ending" (if it
+    has an ending Norman's dictionary doesn't give its verb). Empty if
+    none.
+    '''
+    flags = []
+    if low_confidence(word):
+        flags.append({"code": "low-confidence", "message": (
+            f"Read with low confidence ({word['confidence']:.2f}, under "
+            f"{MIN_CONFIDENCE})")})
+    if closest:
+        nearest = closest[0]
+        if nearest["distance"] > 0:
+            form = (f", a form of {nearest['lemma']['norman']}"
+                    if nearest["lemma"] else "")
+            edits = "edit" if nearest["distance"] == 1 else "edits"
+            flags.append({"code": "not-in-dictionary", "message": (
+                f"Not in the dictionaries; the closest is "
+                f"{nearest['norman']}{form}, {nearest['distance']} {edits} "
+                f"away")})
+        elif nearest["breaks"]:
+            verb = nearest["lemma"]["norman"]
+            harmony = [wrong for wrong in nearest["breaks"]
+                       if wrong["reason"] == "harmony"]
+            if harmony:
+                flags.append({"code": "vowel-harmony", "message": (
+                    f"Breaks vowel harmony as a form of {verb}: " + "; ".join(
+                        f"{wrong['affix']} where "
+                        f"{' or '.join(wrong['expected'])} is expected"
+                        for wrong in harmony))})
+            for wrong in nearest["breaks"]:
+                expected = " or ".join(wrong["expected"])
+                if wrong["reason"] == "norman":
+                    flags.append({"code": "verb-ending", "message": (
+                        f"{wrong['affix']} on {verb}, where Norman's "
+                        f"dictionary gives {expected}")})
+                elif wrong["reason"] == "unmarked":
+                    flags.append({"code": "verb-ending", "message": (
+                        f"{wrong['affix']} on {verb}, which Norman's "
+                        f"dictionary doesn't note as taking it; {expected} "
+                        f"is expected")})
+    return flags
 
 def norman_text(text):
     # A page's text (page_text) in Norman's romanization, OTHER kept
