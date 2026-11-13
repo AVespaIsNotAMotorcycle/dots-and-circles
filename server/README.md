@@ -346,7 +346,37 @@ repository root. Locally, from the repository root:
     words themselves, and the stem breaks only cut lone letters off words,
     so they set it false.
 
-## Photos
+## Visitors
+
+The server counts each day's unique visitors without keeping anything
+about them (`server/visitors.py`), and prints the counts to the log:
+
+```
+visitors 2026-11-13: 5 (3 read something)
+```
+
+A line is printed whenever a count grows, so the day's latest is its
+total so far. See it with:
+
+```
+heroku logs -a dots-and-circles | grep visitors | tail -1
+```
+
+Heroku keeps only about the last 1,500 lines of log, so this reaches back
+a day or so at most.
+
+Only requests from the frontend's page count (their `Origin` is
+`allowed_origin`), so `curl`, scripts and local development don't; with
+`allowed_origin` `"*"`, nothing is counted. "Read something" means a
+successful `/random`, `/lexigraphs` or upload. A visitor is a hash of
+their IP (the one Heroku's router saw) and browser (`User-Agent`) with a
+random salt made each day. The salt and the day's hashes are kept only in
+a file in the dyno's `/tmp`, shared by the workers, and deleted the next
+day; no IP is written anywhere. Days are in UTC. A restart (Heroku's
+daily one, or a deploy) wipes `/tmp`, so visitors after it count again
+that day. People sharing an address and browser count as one, and one
+person on two devices as two.
+
 
 `photos/` holds one photo each of 300 random words from the photographed
 print dataset (`ocr/non_synthetic_data`, which isn't in the repository).

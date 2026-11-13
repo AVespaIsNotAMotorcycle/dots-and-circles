@@ -811,3 +811,50 @@ def test_cors_locally_allows_localhost_too(tmp_path, monkeypatch):
         assert allowed(client, origin) == origin
     for origin in OTHER_ORIGINS + [None]:
         assert allowed(client, origin) is None
+
+def test_only_frontend_requests_are_counted(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("DYNO", "web.1")
+    np.random.seed(0)
+    ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+           num_classes=NUM_CLASSES, blank=END, depth=1,
+           emb_dim=8).save_weights(str(tmp_path / "model.npz"))
+    (tmp_path / "photos" / "abka").mkdir(parents=True)
+    image = Image.new("L", (40, 120), 255)
+    image.paste(0, (15, 10, 25, 110))
+    image.save(tmp_path / "photos" / "abka" / "1.png")
+    (tmp_path / "photos" / "manifest.json").write_text(json.dumps(
+        [{"label": "abka", "manchu": "ᠠᠪᡴᠠ", "path": "abka/1.png"}]))
+    (tmp_path / "config.json").write_text(json.dumps({
+        "allowed_origin": "https://frontend.example", "photos": "photos",
+        "models": [{"name": "Test", "model": "Untrained ModelD",
+                    "class": "ModelD", "weights": "model.npz",
+                    "params": {"depth": 1, "emb_dim": 8}}],
+    }))
+    (tmp_path / "visitors").mkdir()
+    client = create_app(str(tmp_path / "config.json"),
+                        visitors_folder=str(tmp_path / "visitors")
+                        ).test_client()
+    frontend = {"Origin": "https://frontend.example", "User-Agent": "Firefox"}
+    # Not counted: no Origin (curl, scripts), another site, preflights
+    client.get("/awake")
+    client.get("/awake", headers={"Origin": "https://example.com"})
+    client.options("/random", headers=frontend)
+    assert "visitors" not in capsys.readouterr().out
+    # Counted: one visitor, through Heroku's router, then reading a word
+    forwarded = dict(frontend, **{"X-Forwarded-For": "6.6.6.6, 1.2.3.4"})
+    client.get("/awake", headers=forwarded)
+    assert capsys.readouterr().out.strip().endswith(": 1 (0 read something)")
+    client.get("/random", headers=forwarded)
+    assert capsys.readouterr().out.strip().endswith(": 1 (1 read something)")
+    # The same browser at another address is another visitor; the address
+    # the client claims (the first one) doesn't matter
+    client.get("/awake", headers=dict(frontend, **{
+        "X-Forwarded-For": "6.6.6.6, 5.6.7.8"}))
+    assert capsys.readouterr().out.strip().endswith(": 2 (1 read something)")
+    client.get("/awake", headers=dict(frontend, **{
+        "X-Forwarded-For": "7.7.7.7, 1.2.3.4"}))
+    assert "visitors" not in capsys.readouterr().out
+    # A failed read isn't reading something
+    client.get("/random?source=nope", headers=dict(frontend, **{
+        "X-Forwarded-For": "5.6.7.8"}))
+    assert "visitors" not in capsys.readouterr().out

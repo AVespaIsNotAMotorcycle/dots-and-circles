@@ -18,6 +18,7 @@ import json
 import math
 import mimetypes
 import random
+import tempfile
 from urllib.parse import urlsplit
 
 import numpy as np
@@ -27,6 +28,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from ocr.box_classifier import load_classifier
 from ocr.dictionary import Dictionary
 from ocr.layout import straighten
+from server.visitors import VisitorCounter
 from ocr.evaluate_real_pages import pages as real_pages
 from ocr.evaluate_real_pages import read_transcription
 from ocr.evaluate_real_pages import score_page as score_real_page
@@ -404,7 +406,7 @@ def cors_origin(origin, allowed, local):
         return origin
     return None
 
-def create_app(config_path=CONFIG_PATH):
+def create_app(config_path=CONFIG_PATH, visitors_folder=None):
     with open(config_path, "r", encoding="utf-8") as file:
         config = json.load(file)
     root = os.path.dirname(os.path.abspath(config_path))
@@ -458,6 +460,31 @@ def create_app(config_path=CONFIG_PATH):
         # A JSON upload from another origin is preflighted, and the browser
         # only sends it if Content-Type is allowed
         response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        return response
+
+    # Requests from the frontend are counted (see server/visitors.py); none
+    # are while any origin is allowed, as in testing
+    counter = (VisitorCounter(visitors_folder or tempfile.gettempdir())
+               if config["allowed_origin"] != "*" else None)
+    reading_views = {"random_word", "lexigraphs", "upload_single",
+                     "upload_multiple", "upload_multiple_boxes"}
+
+    @app.after_request
+    def count_visitor(response):
+        if (counter is None or request.method == "OPTIONS"
+                or request.headers.get("Origin") != config["allowed_origin"]):
+            return response
+        # Heroku's router adds the address it saw last; earlier ones can be
+        # made up by the client
+        forwarded = request.headers.get("X-Forwarded-For", "")
+        ip = forwarded.split(",")[-1].strip() or request.remote_addr
+        try:
+            counter.record(ip, request.headers.get("User-Agent", ""),
+                           request.endpoint in reading_views
+                           and response.status_code < 400)
+        except OSError as error:
+            # Counting must never break a request
+            print(f"visitor count failed: {error}", flush=True)
         return response
 
     @app.errorhandler(RequestError)
