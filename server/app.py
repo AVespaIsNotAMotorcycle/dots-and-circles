@@ -18,6 +18,7 @@ import json
 import math
 import mimetypes
 import random
+from urllib.parse import urlsplit
 
 import numpy as np
 from flask import Flask, jsonify, request
@@ -380,6 +381,29 @@ def norman_text(text):
                               for word in line.split(" "))
                      for line in text.split("\n"))
 
+def is_localhost(origin):
+    # Whether a request's Origin is a page served from this machine, on any
+    # port: localhost, 127.0.0.1 or ::1
+    try:
+        parts = urlsplit(origin)
+    except ValueError:
+        return False
+    return (parts.scheme in ("http", "https")
+            and parts.hostname in ("localhost", "127.0.0.1", "::1"))
+
+def cors_origin(origin, allowed, local):
+    '''
+    The Access-Control-Allow-Origin to answer a request from origin with,
+    or None to send none (so a browser keeps the response from the page):
+    "*" if allowed is "*", origin if it's allowed, and when the server runs
+    locally (local), any localhost origin too.
+    '''
+    if allowed == "*":
+        return "*"
+    if origin and (origin == allowed or (local and is_localhost(origin))):
+        return origin
+    return None
+
 def create_app(config_path=CONFIG_PATH):
     with open(config_path, "r", encoding="utf-8") as file:
         config = json.load(file)
@@ -414,6 +438,9 @@ def create_app(config_path=CONFIG_PATH):
                 sources[source] = (folder, json.load(file))
 
     app = Flask(__name__)
+    # Heroku sets DYNO on its dynos. Anywhere else the server is running
+    # locally, and answers pages on localhost too (see cors_origin).
+    local = "DYNO" not in os.environ
     # Room for a MAX_UPLOAD_BYTES image as base64, plus the rest of the body
     app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES * 4 // 3 + 2**16
     # Send Manchu as itself rather than as \u escapes
@@ -421,8 +448,13 @@ def create_app(config_path=CONFIG_PATH):
 
     @app.after_request
     def allow_origin(response):
-        response.headers["Access-Control-Allow-Origin"] = \
-            config["allowed_origin"]
+        allowed = cors_origin(request.headers.get("Origin"),
+                              config["allowed_origin"], local)
+        if allowed:
+            response.headers["Access-Control-Allow-Origin"] = allowed
+        if allowed != "*":
+            # The answer depends on the Origin, so caches must keep them apart
+            response.vary.add("Origin")
         # A JSON upload from another origin is preflighted, and the browser
         # only sends it if Content-Type is allowed
         response.headers["Access-Control-Allow-Headers"] = "Content-Type"

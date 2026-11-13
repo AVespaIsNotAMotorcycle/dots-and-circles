@@ -759,3 +759,55 @@ def test_upload_multiple_boxes_bad_angle(client, angle):
         "image": encoded, "angle": angle, "boxes": []}),
         content_type="application/json")
     assert response.status_code == 400
+
+
+def cors_client(tmp_path, monkeypatch, on_heroku):
+    # The fixture's server, allowing only the frontend's origin
+    if on_heroku:
+        monkeypatch.setenv("DYNO", "web.1")
+    else:
+        monkeypatch.delenv("DYNO", raising=False)
+    np.random.seed(0)
+    ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
+           num_classes=NUM_CLASSES, blank=END, depth=1,
+           emb_dim=8).save_weights(str(tmp_path / "model.npz"))
+    (tmp_path / "config.json").write_text(json.dumps({
+        "allowed_origin": "https://frontend.example",
+        "models": [{"name": "Test", "model": "Untrained ModelD",
+                    "class": "ModelD", "weights": "model.npz",
+                    "params": {"depth": 1, "emb_dim": 8}}],
+    }))
+    return create_app(str(tmp_path / "config.json")).test_client()
+
+def allowed(client, origin):
+    headers = {"Origin": origin} if origin else {}
+    response = client.get("/awake", headers=headers)
+    assert "Origin" in response.headers.get("Vary", "")
+    return response.headers.get("Access-Control-Allow-Origin")
+
+LOCAL_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:5173",
+                 "http://[::1]:8080", "https://localhost"]
+OTHER_ORIGINS = ["https://example.com", "http://localhost.example.com",
+                 "https://frontend.example.evil", "null"]
+
+def test_cors_on_heroku_allows_only_the_frontend(tmp_path, monkeypatch):
+    client = cors_client(tmp_path, monkeypatch, on_heroku=True)
+    assert allowed(client, "https://frontend.example") == \
+        "https://frontend.example"
+    for origin in LOCAL_ORIGINS + OTHER_ORIGINS + [None]:
+        assert allowed(client, origin) is None
+    # Preflights too
+    response = client.options("/upload/multiple", headers={
+        "Origin": "https://example.com",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Content-Type"})
+    assert "Access-Control-Allow-Origin" not in response.headers
+
+def test_cors_locally_allows_localhost_too(tmp_path, monkeypatch):
+    client = cors_client(tmp_path, monkeypatch, on_heroku=False)
+    assert allowed(client, "https://frontend.example") == \
+        "https://frontend.example"
+    for origin in LOCAL_ORIGINS:
+        assert allowed(client, origin) == origin
+    for origin in OTHER_ORIGINS + [None]:
+        assert allowed(client, origin) is None

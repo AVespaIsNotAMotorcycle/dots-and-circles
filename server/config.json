@@ -1,5 +1,5 @@
 {
-  "allowed_origin": "*",
+  "allowed_origin": "https://dots-and-circles.sasha-m-ebersole.com",
   "photos": "photos",
   "synthetic": "synthetic",
   "pages": "../ocr/real_pages",

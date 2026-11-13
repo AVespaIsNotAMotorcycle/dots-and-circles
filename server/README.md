@@ -304,7 +304,15 @@ repository root. Locally, from the repository root:
 
 ## config.json
 
-- `allowed_origin`: sent as `Access-Control-Allow-Origin`.
+- `allowed_origin`: the one origin whose pages may read the server's
+  responses (the frontend, `https://dots-and-circles.sasha-m-ebersole.com`),
+  or `"*"` for any. A request from it gets it back as
+  `Access-Control-Allow-Origin`, and one from anywhere else gets none, so
+  the browser keeps the response from the page. Run locally (anywhere
+  Heroku's `DYNO` variable isn't set), the server also answers pages on
+  `localhost`, `127.0.0.1` or `[::1]`, on any port, so a frontend in
+  development can use it. This only governs browsers: anything else
+  (`curl`, a script) can still call the server from anywhere.
 - `photos`: the folder of photos, with their `manifest.json`.
 - `synthetic`: the folder of synthetic words, with their `manifest.json`.
   Optional: without it, `?source=synthetic` gets a 400.
