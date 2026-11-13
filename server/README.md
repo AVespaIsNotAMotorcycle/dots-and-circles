@@ -193,7 +193,8 @@ repository root. Locally, from the repository root:
   from Wiktionary (`kaikki`) and Norman's dictionary (`norman`), words
   and phrases but not affixes (see `dictionary` below). `distance` is the
   edit distance in the photo dataset's romanization, as `score` uses,
-  ignoring the reading's punctuation, and a tie goes to the entry nearer
+  ignoring punctuation at the end of a word (`aljara,` counts as
+  `aljara`, but `al.jara` stays as it is), and a tie goes to the entry nearer
   the reading's length. A box read as nothing has none (`[]`), and other
   boxes, or every box without a `dictionary`, have `null`. The
   dictionaries list headwords, so an inflected reading (`genefi`) is

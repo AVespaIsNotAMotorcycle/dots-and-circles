@@ -30,11 +30,20 @@ def test_closest_ties_go_to_the_nearer_length():
     found = Dictionary(ENTRIES[1:]).closest("ᠠᠪᡴᠠ")
     assert [match["abkai"] for match in found] == ["absa", "abkai"]
 
-def test_closest_ignores_punctuation_and_matches_phrases():
+def test_closest_ignores_punctuation_ending_words_and_matches_phrases():
     dictionary = Dictionary(ENTRIES)
     assert dictionary.closest("ᠠᠪᡴᠠ᠈")[0]["distance"] == 0
-    assert dictionary.closest("ᠪᠠ  ᠨᠠ᠉")[0]["abkai"] == "ba na"
+    assert dictionary.closest("ᠠᠪᡴᠠ᠈᠉")[0]["distance"] == 0
+    assert dictionary.closest("ᠪᠠ᠈  ᠨᠠ᠉")[0]["abkai"] == "ba na"
     assert dictionary.closest("᠉") == [] and dictionary.closest("") == []
+
+def test_closest_keeps_punctuation_inside_words():
+    dictionary = Dictionary(ENTRIES)
+    # ab.ka is one edit from abka (deleting the .), not the two words ab ka
+    found = dictionary.closest("ᠠᠪ᠉ᡴᠠ")
+    assert (found[0]["abkai"], found[0]["distance"]) == ("abka", 1)
+    # So is punctuation starting a word
+    assert dictionary.closest("᠈ᠠᠪᡴᠠ")[0]["distance"] == 1
 
 def test_closest_with_letters_in_no_entry():
     # ᠺ is k' in the romanization, and no entry has '

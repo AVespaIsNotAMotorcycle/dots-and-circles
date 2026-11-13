@@ -5,8 +5,9 @@ dictionary). The entries are training_data/dictionary_words.json, from
 Wiktionary and Norman's dictionary.
 
 Closeness is the edit distance in the photo dataset's romanization
-(ocr.photos.manchu_to_roman), as the scores use, with the reading's
-punctuation left out.
+(ocr.photos.manchu_to_roman), as the scores use, with punctuation left
+off the end of each of the reading's words (aljara, is aljara). Inside a
+word it stays (al.jara), and costs an edit, as no entry has any.
 '''
 
 import json
@@ -19,7 +20,7 @@ from ocr.photos import manchu_to_abkai, manchu_to_roman
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                     "training_data", "dictionary_words.json")
 
-# Romanized Manchu comma and full stop, left out of readings
+# Romanized Manchu comma and full stop, left off the ends of words
 PUNCTUATION = ",."
 
 
@@ -77,10 +78,12 @@ class Dictionary:
         The count entries closest to reading (Manchu script), closest
         first, as dicts with "manchu", "abkai", "roman", "distance" and
         "sources". Ties go to the entry nearer the reading's length, then
-        in romanized order. Empty for a reading with no letters.
+        in romanized order. Punctuation ending a word is left off. Empty
+        for a reading with nothing else.
         '''
-        roman = " ".join(manchu_to_roman(reading).translate(
-            str.maketrans(PUNCTUATION, " " * len(PUNCTUATION))).split())
+        words = (word.rstrip(PUNCTUATION)
+                 for word in manchu_to_roman(reading).split())
+        roman = " ".join(word for word in words if word)
         if not roman:
             return []
         # Letters in no entry match nothing
