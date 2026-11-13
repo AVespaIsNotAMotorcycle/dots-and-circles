@@ -90,8 +90,6 @@ The training loop and training data generation was almost entirely Claude, since
 Training data:
 - [Tatu Ylonen: Wiktextract: Wiktionary as Machine-Readable Structured Data, Proceedings of the 13th Conference on Language Resources and Evaluation (LREC), pp. 1317-1325, Marseille, 20-25 June 2022.](https://kaikki.org/dictionary/Manchu/index.html)
 - [The Jerry Norman dictionary](https://github.com/purobaburi/manchu-resources/blob/main/Dictionaries/Jerry_Norman_Dict.txt)
-
-Test data:
 - [Haipeng SUN, Wenhao TAO, Xiaojun BI. A dataset of Manchu ancient book words for OCR[J]. China Scientific Data, 2026, 11(1): 1-11. DOI: 10.11922/11-6035.csd.2025.0069.zh.](https://www.scidb.cn/en/detail?dataSetId=b45491b63d694534a9323acf14846586)
 
 Fonts:
@@ -99,9 +97,7 @@ Fonts:
 - [Abkai Xanyan from abkai.net](https://abkai.net/zh/manchu/manchu-fonts/)
 
 ## Limitations
-- Poor performance on free variation selectors
-- Poor performance on non-preprocessed (whitened+cropped) images
-- Poor performance on long words
-- Page reading is tested on only one real page, and doesn't handle curved
-  pages, perspective, two-line small Chinese glosses or Mongolian; Manchu
-  punctuation is left out of the text
+- It's made for printed Manchu, and struggles with other styles, such as manuscripts.
+- It struggles with words set close together.
+- It sometimes takes decorations or other text (such as Chinese) for Manchu, or Manchu for other text.
+- It may flag words that are right as possible misreadings: its dictionaries are fairly small, and don't know every suffix.
