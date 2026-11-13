@@ -13,6 +13,8 @@ README.md for the architecture.
   `train_box_classifier.py`), `page_reader.py`, `evaluate_pages.py`
   (scores them on synthetic pages) and `evaluate_real_pages.py` (on the
   transcribed real pages in `ocr/real_pages/`; see its README for sources).
+- `ocr/dictionary.py`: the server's closest dictionary words, also matching
+  verb forms (stem, infixes, suffix) with the affixes in `ocr/affixes.py`.
 - `ocr/training_data/`: lexicon, word rendering (`__init__.py`) and print
   augmentation (`augment.py`). `fonts/` is gitignored for licensing reasons:
   never commit font files, and check it holds `.ttf` files before training.

@@ -66,7 +66,87 @@ def test_closest_agrees_with_brute_force():
         assert [match["distance"] for match in
                 dictionary.closest(query, count=3)] == expected
 
+VERBS = [
+    ["ᠠᡵᠠᠮᠪᡳ", ["kaikki", "norman"]],
+    ["ᠠᡵᠠᠪᡠᠮᠪᡳ", ["norman"]],
+    ["ᠠᡩᠠᡥᠠ", ["norman"]],
+]
+
+
+def test_closest_reads_verb_forms():
+    found = Dictionary(VERBS).closest("ᠠᡵᠠᡥᠠ")
+    assert found[0] == {"manchu": "ᠠᡵᠠᡥᠠ", "abkai": "araha",
+                        "roman": "araha", "distance": 0,
+                        "sources": ["kaikki", "norman"],
+                        "lemma": "ᠠᡵᠠᠮᠪᡳ", "affixes": ["-ha"]}
+    # Entries have no lemma
+    assert found[1]["abkai"] == "adaha" and found[1]["lemma"] is None
+
+def test_closest_reads_infixes_and_norman_suffixes():
+    dictionary = Dictionary(VERBS)
+    # Up to two infixes
+    found = dictionary.closest("ᠠᡵᠠᠨᠵᡳᠪᡠᡥᠠ")[0]
+    assert (found["lemma"], found["affixes"], found["distance"]) == (
+        "ᠠᡵᠠᠮᠪᡳ", ["-nji-", "-bu-", "-ha"], 0)
+    # -rahū is rahv in the dataset's romanization
+    found = dictionary.closest("ᠠᡵᠠᡵᠠᡥᡡ")[0]
+    assert (found["roman"], found["affixes"]) == ("ararahv", ["-rahū"])
+
+def test_closest_verb_forms_prefer_entries_and_fewer_infixes():
+    dictionary = Dictionary(VERBS)
+    # arabumbi is an entry: arabuha is its -ha, not arambi's -bu-ha
+    found = dictionary.closest("ᠠᡵᠠᠪᡠᡥᠠ")[0]
+    assert (found["lemma"], found["affixes"]) == ("ᠠᡵᠠᠪᡠᠮᠪᡳ", ["-ha"])
+    # And arabumbi is the entry, not arambi with -bu- and -mbi
+    found = dictionary.closest("ᠠᡵᠠᠪᡠᠮᠪᡳ")
+    assert found[0]["lemma"] is None and found[0]["distance"] == 0
+    assert all(match["roman"] != "arabumbi" for match in found[1:])
+    # Ties go to entries
+    # (arahu is one edit from arahi, and from araha, arahe and araho)
+    found = Dictionary(VERBS[:1] + [["ᠠᡵᠠᡥᡳ", ["norman"]]]).closest("ᠠᡵᠠᡥᡠ")
+    assert [(match["roman"], match["distance"]) for match in found] == [
+        ("arahi", 1), ("araha", 1)]
+    assert found[1]["lemma"] == "ᠠᡵᠠᠮᠪᡳ"
+
+def test_closest_verb_forms_agree_with_brute_force():
+    # Endings of x, z and y and stems without them, so no form is spelled
+    # like an entry or like another verb's form
+    random.seed(1)
+    letters = "ᠠᡝᡳᠣᡠᠨᡴᡤᠪᠰᡨᡩᠯᠮ"
+    endings = [("x", ["-x"]), ("zx", ["-z-", "-x"]), ("yzx", ["-y-", "-zx"]),
+               ("xxzz", ["-xxzz"]), ("zy", ["-zy"])]
+    words = sorted({"".join(random.choice(letters)
+                            for _ in range(random.randint(1, 7)))
+                    for _ in range(200)})
+    verbs = [word + "ᠮᠪᡳ" for word in words[::3]]
+    dictionary = Dictionary([[word, ["norman"]] for word in words + verbs],
+                            endings=endings)
+    romans = [manchu_to_roman(word) for word in words + verbs]
+    stems = [manchu_to_roman(verb)[:-3] for verb in verbs]
+    to_manchu = {"x": "ᡧ", "z": "ᡷ", "y": "ᠶ"}
+    for _ in range(80):
+        query = "".join(random.choice(letters + "ᡧᡷᠶ")
+                        for _ in range(random.randint(1, 10)))
+        roman = manchu_to_roman(query)
+        expected = sorted(
+            [edit_distance(roman, word) for word in romans]
+            + [min(edit_distance(roman, stem + ending)
+                   for ending, _ in endings) for stem in stems])[:3]
+        found = dictionary.closest(query, count=3)
+        assert [match["distance"] for match in found] == expected
+        for match in found:
+            assert edit_distance(roman, match["roman"]) == match["distance"]
+            if match["lemma"] is not None:
+                assert match["manchu"] == "".join(
+                    to_manchu.get(letter, letter) for letter in
+                    match["lemma"][:-3] + "".join(
+                        affix.strip("-") for affix in match["affixes"]))
+
 def test_the_committed_dictionary_loads():
     found = Dictionary.load().closest("ᠠᠪᡴᠠ")
     assert found[0]["abkai"] == "abka" and found[0]["distance"] == 0
     assert set(found[0]["sources"]) <= {"kaikki", "norman"}
+    found = Dictionary.load().closest("ᡤᡝᠨᡝᡶᡳ")[0]
+    assert (found["abkai"], found["distance"], found["affixes"]) == (
+        "genefi", 0, ["-fi"])
+    assert found["lemma"] == "ᡤᡝᠨᡝᠮᠪᡳ"

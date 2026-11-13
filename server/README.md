@@ -184,9 +184,9 @@ repository root. Locally, from the repository root:
       "confidence": 0.97, "low-confidence": false,
       "closest-words": [
         {"manchu": "ᠠᠪᡴᠠ", "abkai": "abka", "norman": "abka", "distance": 0,
-         "sources": ["kaikki", "norman"]},
+         "sources": ["kaikki", "norman"], "lemma": null, "affixes": null},
         {"manchu": "ᠠᠪᠰᠠ", "abkai": "absa", "norman": "absa", "distance": 1,
-         "sources": ["norman"]}
+         "sources": ["norman"], "lemma": null, "affixes": null}
       ]
     }]
   }
@@ -232,9 +232,18 @@ repository root. Locally, from the repository root:
   `aljara`, but `al.jara` stays as it is), and a tie goes to the entry nearer
   the reading's length. A box read as nothing has none (`[]`), and other
   boxes, or every box without a `dictionary`, have `null`. The
-  dictionaries list headwords, so an inflected reading (`genefi`) is
-  usually a few edits from its verb (`genembi`). Matching takes about 1
-  ms a box.
+  dictionaries list verbs by their `-mbi` form, so verbs' other forms are
+  matched too: the stem with up to two derivational infixes and a suffix
+  (`gene-fi`, `ara-bu-ha`), from the lists in `ocr/affixes.py`. Such a
+  match is the form itself (`genefi`), with its verb's entry as `lemma`
+  (`manchu`, `abkai` and `norman`, as `{"manchu": "ᡤᡝᠨᡝᠮᠪᡳ", "abkai":
+  "genembi", "norman": "genembi"}`) and the affixes on its stem, in
+  Norman's romanization, as `affixes` (`["-fi"]`); `sources` are the
+  verb's. Entries have `null` for both, and a form spelled like an entry
+  is that entry. Vowel harmony isn't checked, so `araho` matches as well
+  as `araha`. Each verb gives at most one form, its closest, and on a tie
+  entries come first, then forms with fewer infixes. Matching takes about
+  5 ms a box (up to 20 ms for long readings).
 
 - `POST /upload/multiple/boxes`: reads a page again in boxes the user has
   edited (removed, moved, resized or added), in the coordinates of the

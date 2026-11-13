@@ -370,10 +370,16 @@ def page_response(entry, page, original, dictionary=None, crops=True):
 
 def closest_words(dictionary, text):
     # The CLOSEST_WORDS dictionary entries closest to a reading, for the
-    # frontend to show beside it
+    # frontend to show beside it. A verb form (araha) has its verb's entry
+    # (arambi) as its "lemma" and the Norman affixes on its stem (["-ha"])
     return [{"manchu": match["manchu"], "abkai": match["abkai"],
              "norman": manchu_to_norman(match["manchu"]),
-             "distance": match["distance"], "sources": match["sources"]}
+             "distance": match["distance"], "sources": match["sources"],
+             "lemma": None if match["lemma"] is None else {
+                 "manchu": match["lemma"],
+                 "abkai": manchu_to_abkai(match["lemma"]),
+                 "norman": manchu_to_norman(match["lemma"])},
+             "affixes": match["affixes"]}
             for match in dictionary.closest(text, CLOSEST_WORDS)]
 
 def norman_text(text):

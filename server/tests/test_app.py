@@ -45,7 +45,7 @@ def client(tmp_path):
     make_classifier().save_weights(str(tmp_path / "classifier.npz"))
     (tmp_path / "dictionary.json").write_text(json.dumps(
         [["ᠠᠪᡴᠠ", ["kaikki", "norman"]], ["ᠨᠠ", ["kaikki"]],
-         ["ᠪᡝ", ["norman"]]], ensure_ascii=False), encoding="utf-8")
+         ["ᠪᡝ", ["norman"]], ["ᠠᠴᠠᠮᠪᡳ", ["norman"]]], ensure_ascii=False), encoding="utf-8")
     (tmp_path / "pages").mkdir()
     (tmp_path / "pages" / "page001.png").write_bytes(page_image())
     (tmp_path / "pages" / "page001.txt").write_text(
@@ -646,10 +646,12 @@ def test_page_boxes_have_closest_words(client):
     by_kind = {box["kind"]: box for box in body["boxes"]}
     assert by_kind["manchu"]["closest-words"] == [
         {"manchu": "ᠠᠪᡴᠠ", "abkai": "abka", "norman": "abka", "distance": 0,
-         "sources": ["kaikki", "norman"]},
-        # ᠨᠠ and ᠪᡝ are both 3 edits away: be comes first in romanized order
-        {"manchu": "ᠪᡝ", "abkai": "be", "norman": "be", "distance": 3,
-         "sources": ["norman"]}]
+         "sources": ["kaikki", "norman"], "lemma": None, "affixes": None},
+        # A form of ᠠᠴᠠᠮᠪᡳ (acambi), closer than ᠨᠠ and ᠪᡝ (3 edits)
+        {"manchu": "ᠠᠴᠠᡴᠠ", "abkai": "aqaka", "norman": "acaka", "distance": 2,
+         "sources": ["norman"],
+         "lemma": {"manchu": "ᠠᠴᠠᠮᠪᡳ", "abkai": "aqambi", "norman": "acambi"},
+         "affixes": ["-ka"]}]
     assert by_kind["other"]["closest-words"] is None
     for box in first["boxes"]:
         if box["kind"] == "manchu":
@@ -657,6 +659,19 @@ def test_page_boxes_have_closest_words(client):
                 2 if box["prediction-manchu"].strip(" ᠈᠉") else 0)
         else:
             assert box["closest-words"] is None
+
+def test_page_boxes_closest_verb_forms(client):
+    first = client.post("/upload/multiple", data={
+        "image": (io.BytesIO(page_image()), "page.png")}).get_json()
+    box = dict(first["boxes"][0], kind="manchu",
+               **{"prediction-manchu": "ᠠᠴᠠᠪᡠᡥᠠ", "confidence": 0.9})
+    body = client.post("/upload/multiple/boxes", json={
+        "image": first["image"], "boxes": [box]}).get_json()
+    assert body["boxes"][0]["closest-words"][0] == {
+        "manchu": "ᠠᠴᠠᠪᡠᡥᠠ", "abkai": "aqabuha", "norman": "acabuha",
+        "distance": 0, "sources": ["norman"],
+        "lemma": {"manchu": "ᠠᠴᠠᠮᠪᡳ", "abkai": "aqambi", "norman": "acambi"},
+        "affixes": ["-bu-", "-ha"]}
 
 def test_page_text_in_norman(client):
     first = client.post("/upload/multiple", data={
