@@ -171,6 +171,40 @@ shared benchmark.
   known words. Run 28's photo result on words in no lexicon (58.4% exact)
   measures something harder.
 
+## Is the 218-word set held out for CRNN v3?
+
+Added 2026-11-13. CRNN v3 is checkpoint 426284 of
+[mic7ch/crnn-manchu-ngsyd](https://huggingface.co/mic7ch/crnn-manchu-ngsyd).
+Its model card lists 96,053 training rows: the NGSYD handwritten archive
+(內國史院檔) merged with `mic7ch/cursive_v2`, and `HenryKingCN/scidb_manchu_v3`
+plus the 60k synthetic `manchu-2025-0033` train split. The card says the
+753-word set "stays held out", but it doesn't mention the 218-word set
+(`mic7ch/test_data_long`).
+
+**The public parts don't contain it.** `cursive_v2` (1,940 images from
+the manuscript *Talking Dead*) and both `scidb_manchu_v3` splits (23,665
+photos, our photo set) were checked against the 218 images:
+
+- **Exact copies:** none, comparing decoded pixels.
+- **Near copies:** none. Each image's ink was cropped, scaled to 128 × 16
+  and binarized, and test images were compared with training images by
+  Hamming distance over these 2,048 bits. Copies of test images that were
+  shrunk, shifted and saved as JPEG (quality 70) stayed within 113 bits of
+  the original. The nearest training image to any test image is 155 bits
+  away, and the closest pairs, checked by eye, are different hands.
+- **Words:** 162 of the 218 rows (74%) are words that appear in these sets.
+  Run 30 trained on 154 of them (71%), as renders or training photos, so
+  shared vocabulary favours neither model.
+
+**The NGSYD corpus couldn't be checked.** `mic7ch/manchu-ngsyd` is private
+or deleted on Hugging Face. The 218 words come from the *Neige Cangben
+Manwen Laodang*, another early Qing palace archive. If NGSYD shares pages
+or scribes with it, CRNN v3's 97.7% on this set is inflated. Its 97.3% on
+the 753-word set, which its card says was held out, is the safer figure.
+
+The scripts were run from a session scratchpad and aren't kept. `test_data_long`
+states no license, so only aggregate results are given.
+
 ## Conclusions
 
 1. On handwriting it has never seen, run 28 sits between the paper's
