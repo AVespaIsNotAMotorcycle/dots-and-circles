@@ -305,10 +305,10 @@ def test_upload_multiple(client):
     assert response.status_code == 200
     body = response.get_json()
     assert body["model"] == "Test"
-    assert body["image"].startswith("data:image/png;base64,")
+    assert body["image"].startswith("data:image/jpeg;base64,")
     page = Image.open(io.BytesIO(base64.b64decode(
         body["image"].partition(",")[2])))
-    assert page.mode == "RGB"
+    assert page.mode == "RGB" and page.format == "JPEG"
     # The untrained classifier may call bars other text, and split them
     # into square characters
     assert len(body["boxes"]) >= 9
@@ -378,8 +378,8 @@ def test_random_page(client):
     assert body["transcription"] == "abka , na\nbe"
     assert body["credit"] == "Somewhere"
     assert body["link"] == "https://example.org"
-    assert body["original-image"].startswith("data:image/png;base64,")
-    assert body["image"].startswith("data:image/png;base64,")
+    assert body["original-image"].startswith("data:image/jpeg;base64,")
+    assert body["image"].startswith("data:image/jpeg;base64,")
     assert 0 <= body["score"]["words"] <= 1
     assert body["score"]["characters"] <= 1
     # Everything /upload/multiple gives, too
@@ -684,3 +684,78 @@ def test_lexigraphs_have_norman(client):
     assert word["label-norman"] == manchu_to_norman("ᠠᠪᡴᠠ")
     assert word["prediction-norman"] == manchu_to_norman(
         word["prediction-manchu"])
+
+
+def skewed_page_image():
+    # page_image turned 3 degrees, so the layout straightens it
+    page = Image.open(io.BytesIO(page_image())).rotate(
+        3, expand=True, fillcolor=255)
+    buffer = io.BytesIO()
+    page.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+def test_page_crops_can_be_left_out(client):
+    for query, crops in (("", True), ("?crops=true", True),
+                         ("?crops=false", False), ("?crops=0", False)):
+        body = client.post(f"/upload/multiple{query}", data={
+            "image": (io.BytesIO(page_image()), "page.png")}).get_json()
+        assert body["boxes"]
+        for box in body["boxes"]:
+            assert (box["image"].startswith("data:image/png;base64,")
+                    if crops else box["image"] is None)
+    body = client.get("/random?source=page&crops=false").get_json()
+    assert all(box["image"] is None for box in body["boxes"])
+    response = client.post("/upload/multiple?crops=maybe", data={
+        "image": (io.BytesIO(page_image()), "page.png")})
+    assert response.status_code == 400
+
+def test_upload_multiple_boxes_with_the_upload_and_angle(client):
+    data = skewed_page_image()
+    first = client.post("/upload/multiple", data={
+        "image": (io.BytesIO(data), "page.png")}).get_json()
+    assert first["angle"] != 0
+    boxes = [{key: box[key] for key in ("x", "y", "w", "h", "kind")}
+             for box in first["boxes"]]
+    encoded = base64.b64encode(data).decode("ascii")
+    response = client.post("/upload/multiple/boxes", json={
+        "image": f"data:image/png;base64,{encoded}",
+        "angle": first["angle"], "boxes": boxes})
+    assert response.status_code == 200
+    body = response.get_json()
+    # Turned as before: the same page, the same boxes, and the same angle
+    # to send next time
+    assert body["angle"] == first["angle"]
+    size = lambda body: Image.open(io.BytesIO(base64.b64decode(
+        body["image"].partition(",")[2]))).size
+    assert size(body) == size(first)
+    key = lambda box: (box["x"], box["y"], box["w"], box["h"], box["image"])
+    assert sorted(map(key, body["boxes"])) == sorted(map(key, first["boxes"]))
+    # And as a form
+    response = client.post("/upload/multiple/boxes", data={
+        "image": (io.BytesIO(data), "page.png"),
+        "angle": str(first["angle"]), "boxes": json.dumps(boxes)})
+    assert response.status_code == 200
+    assert response.get_json()["angle"] == first["angle"]
+
+def test_upload_multiple_boxes_by_page_name(client):
+    first = client.get("/random?source=page&name=page001").get_json()
+    boxes = [{key: box[key] for key in ("x", "y", "w", "h", "kind")}
+             for box in first["boxes"]]
+    response = client.post("/upload/multiple/boxes", json={
+        "name": "page001", "angle": first["angle"], "boxes": boxes})
+    assert response.status_code == 200
+    body = response.get_json()
+    key = lambda box: (box["x"], box["y"], box["w"], box["h"], box["image"])
+    assert sorted(map(key, body["boxes"])) == sorted(map(key, first["boxes"]))
+    response = client.post("/upload/multiple/boxes", json={
+        "name": "page999", "boxes": boxes})
+    assert response.status_code == 400
+    assert "page001" in response.get_json()["error"]
+
+@pytest.mark.parametrize("angle", [90, -46, "3", True, float("nan")])
+def test_upload_multiple_boxes_bad_angle(client, angle):
+    encoded = base64.b64encode(page_image()).decode("ascii")
+    response = client.post("/upload/multiple/boxes", data=json.dumps({
+        "image": encoded, "angle": angle, "boxes": []}),
+        content_type="application/json")
+    assert response.status_code == 400

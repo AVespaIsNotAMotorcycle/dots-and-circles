@@ -155,14 +155,7 @@ class Page:
         lines up with self.image and the words' boxes. The corners the turn
         adds are filled with the image's paper colour.
         '''
-        if not self.angle:
-            return image.copy()
-        pixels = np.asarray(image)
-        paper = tuple(int(value) for value in np.median(
-            pixels.reshape(-1, pixels.shape[-1]) if pixels.ndim == 3
-            else pixels.reshape(-1, 1), axis=0))
-        return image.rotate(self.angle, resample=Image.BICUBIC, expand=True,
-                            fillcolor=paper if len(paper) > 1 else paper[0])
+        return straighten(image, self.angle)
 
     def to_input(self, box):
         '''
@@ -179,6 +172,21 @@ class Page:
         return [max(0, math.floor(min(xs))), max(0, math.floor(min(ys))),
                 min(width, math.ceil(max(xs))),
                 min(height, math.ceil(max(ys)))]
+
+def straighten(image, angle):
+    '''
+    A PIL image turned angle degrees anticlockwise, as Page.straighten
+    turns it, the corners the turn adds filled with the image's paper
+    colour.
+    '''
+    if not angle:
+        return image.copy()
+    pixels = np.asarray(image)
+    paper = tuple(int(value) for value in np.median(
+        pixels.reshape(-1, pixels.shape[-1]) if pixels.ndim == 3
+        else pixels.reshape(-1, 1), axis=0))
+    return image.rotate(angle, resample=Image.BICUBIC, expand=True,
+                        fillcolor=paper if len(paper) > 1 else paper[0])
 
 def unrotate_point(x, y, angle, input_size, output_size):
     '''

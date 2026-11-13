@@ -25,6 +25,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 from ocr.box_classifier import load_classifier
 from ocr.dictionary import Dictionary
+from ocr.layout import straighten
 from ocr.evaluate_real_pages import pages as real_pages
 from ocr.evaluate_real_pages import read_transcription
 from ocr.evaluate_real_pages import score_page as score_real_page
@@ -60,6 +61,12 @@ MAX_BOXES = 2000
 MAX_READING_LENGTH = 500
 # Dictionary entries given for each Manchu box of a page
 CLOSEST_WORDS = 2
+# Whole pages are sent back as JPEGs of this quality, to show: a tenth of
+# the PNG's size. They aren't for reading again, which JPEG changes (see
+# POST /upload/multiple/boxes, which takes the upload and angle instead).
+PAGE_JPEG_QUALITY = 85
+# The largest angle POST /upload/multiple/boxes turns a page by
+MAX_ANGLE = 45
 # Words per page of GET /lexigraphs, by default and at most
 DEFAULT_PER_PAGE = 50
 MAX_PER_PAGE = 100
@@ -137,6 +144,45 @@ def image_data_url(image):
     image.save(buffer, format="PNG")
     encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
     return f"data:image/png;base64,{encoded}"
+
+def jpeg_data_url(image, quality=PAGE_JPEG_QUALITY):
+    # A PIL image as a JPEG data: URL, for whole pages
+    buffer = io.BytesIO()
+    image.convert("RGB").save(buffer, format="JPEG", quality=quality)
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return f"data:image/jpeg;base64,{encoded}"
+
+def open_page_file(path):
+    # A real page from its file, as /random?source=page reads it
+    with Image.open(path) as image:
+        original = image.convert("RGB")
+    original.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
+    return original
+
+def crops_wanted():
+    # ?crops=: whether page boxes carry their own image (true by default)
+    value = (request.args.get("crops") or "true").lower()
+    if value not in ("true", "1", "yes", "false", "0", "no"):
+        raise RequestError("crops must be true or false.")
+    return value in ("true", "1", "yes")
+
+def read_angle(body):
+    # The "angle" of a JSON body or form, or None if it's left out or null
+    if "angle" in request.form:
+        try:
+            angle = float(request.form["angle"])
+        except ValueError:
+            raise RequestError("\"angle\" must be a number.")
+    else:
+        angle = body.get("angle") if isinstance(body, dict) else None
+        if angle is None:
+            return None
+        if isinstance(angle, bool) or not isinstance(angle, (int, float)):
+            raise RequestError("\"angle\" must be a number.")
+    if not math.isfinite(angle) or abs(angle) > MAX_ANGLE:
+        raise RequestError(f"\"angle\" must be from -{MAX_ANGLE} to "
+                          f"{MAX_ANGLE} degrees.")
+    return float(angle)
 
 def read_upload():
     '''
@@ -271,7 +317,7 @@ def read_boxes_field(size):
                        "reading": reading})
     return result
 
-def page_response(entry, page, original, dictionary=None):
+def page_response(entry, page, original, dictionary=None, crops=True):
     '''
     The JSON for POST /upload/multiple: the page, straightened as it was
     read, its text in Manchu and Abkai (a line per column with Manchu in
@@ -281,7 +327,8 @@ def page_response(entry, page, original, dictionary=None):
     no line. Manchu read with low confidence is left out of the text, and
     its box marked "low-confidence". original is the image as read, in
     colour. With a Dictionary, each Manchu box has its "closest-words"
-    (None without one, and for other boxes).
+    (None without one, and for other boxes). The page is a JPEG, and
+    without crops, boxes' "image" is None.
     '''
     lines = {}
     for word in page.words:
@@ -295,7 +342,8 @@ def page_response(entry, page, original, dictionary=None):
         manchu = word["kind"] == "manchu"
         boxes.append({
             "x": left, "y": top, "w": right - left, "h": bottom - top,
-            "image": image_data_url(straight.crop(word["box"])),
+            "image": (image_data_url(straight.crop(word["box"])) if crops
+                      else None),
             "line": lines.get(word["column"]),
             "position": word["position"],
             "kind": word["kind"],
@@ -310,7 +358,7 @@ def page_response(entry, page, original, dictionary=None):
                              if manchu and dictionary is not None else None,
         })
     return {"model": entry["name"],
-            "image": image_data_url(straight),
+            "image": jpeg_data_url(straight),
             "angle": page.angle,
             "manchu": page_text(page),
             "abkai": page_text(page, abkai=True),
@@ -440,16 +488,15 @@ def create_app(config_path=CONFIG_PATH):
                                    f"{', '.join(n for n, _, _ in real_pages(pages_folder))}.")
         name, image_path, transcription_path = random.choice(available)
         transcription = read_transcription(transcription_path)
-        with Image.open(image_path) as image:
-            original = image.convert("RGB")
-        original.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
+        original = open_page_file(image_path)
         page = read_original(entry, model, original)
         result = score_real_page(page, transcription)
-        response = page_response(entry, page, original, dictionary)
+        response = page_response(entry, page, original, dictionary,
+                                 crops_wanted())
         source = page_sources.get(name, {})
         response.update({
             "source": "page", "name": name,
-            "original-image": data_url(image_path),
+            "original-image": jpeg_data_url(original),
             "transcription": "\n".join(transcription),
             "score": {"characters": result["characters"],
                       "words": result["words"]},
@@ -592,26 +639,53 @@ def create_app(config_path=CONFIG_PATH):
         data, _ = read_upload()
         original = open_upload(data)
         page = read_original(entry, model, original)
-        return jsonify(page_response(entry, page, original, dictionary))
+        return jsonify(page_response(entry, page, original, dictionary,
+                                     crops_wanted()))
 
     @app.post("/upload/multiple/boxes")
     def upload_multiple_boxes():
         '''
-        Reads a page in boxes the user gave: the straightened page an
-        /upload/multiple response returned, with the boxes as edited (see
-        read_boxes_field). Returns the same JSON as /upload/multiple, with
-        the boxes in reading order.
+        Reads a page in boxes the user gave, with the boxes as edited (see
+        read_boxes_field). The page is either the image sent to
+        /upload/multiple, sent again with the "angle" that response gave
+        (turned here exactly as it was then); a real page by its "name",
+        with its "angle"; or, with no angle, a page already straightened.
+        Returns the same JSON as /upload/multiple, with the boxes in
+        reading order and the angle the page was turned by.
         '''
         if classifier is None:
             raise RequestError("This server doesn't read pages.", 404)
         entry, model = chosen_model()
-        data, _ = read_upload()
-        original = open_upload(data, shrink=False)
-        boxes = read_boxes_field(original.size)
+        body = request.get_json(silent=True)
+        name = body.get("name") if isinstance(body, dict) else None
+        if name is not None:
+            if not pages_folder or not isinstance(name, str):
+                raise RequestError("\"name\" must be one of the pages "
+                                  "GET /pages lists.")
+            paths = [path for page_name, path, _ in real_pages(pages_folder)
+                     if page_name == name]
+            if not paths:
+                raise RequestError(f"Unknown page {name!r}: use one of "
+                                   f"{', '.join(n for n, _, _ in real_pages(pages_folder))}.")
+            original = open_page_file(paths[0])
+            angle = read_angle(body) or 0.0
+        else:
+            data, _ = read_upload()
+            angle = read_angle(body)
+            # Sent with its angle, the upload is opened as /upload/multiple
+            # opened it; without, it's the straightened page, kept as it is
+            original = open_upload(data, shrink=angle is not None)
+            angle = angle or 0.0
+        straight = straighten(original, angle)
+        boxes = read_boxes_field(straight.size)
         preprocess = entry.get("preprocess", {})
-        page = read_boxes(original, boxes, model, classifier,
+        page = read_boxes(straight, boxes, model, classifier,
                           preprocess.get("crop", True),
                           preprocess.get("whiten", True))
-        return jsonify(page_response(entry, page, original, dictionary))
+        # The response turns original by the page's angle, as for
+        # /upload/multiple, so the next request can send the same again
+        page.angle = angle
+        return jsonify(page_response(entry, page, original, dictionary,
+                                     crops_wanted()))
 
     return app

@@ -117,7 +117,7 @@ repository root. Locally, from the repository root:
   ```json
   {
     "name": "page001",
-    "original-image": "data:image/png;base64,...",
+    "original-image": "data:image/jpeg;base64,...",
     "transcription": "genefi , jugvn asuru ...\ngemungge heqen i ...",
     "score": {"characters": 0.976, "words": 0.873},
     "credit": "Stabi Berlin (Public Domain Mark 1.0); transcription from manc.hu",
@@ -125,8 +125,10 @@ repository root. Locally, from the repository root:
   }
   ```
 
-  `original-image` is the page as saved, and `image` the page deskewed
-  as it was read (the boxes' coordinates are in it). `transcription` is the page's transcription
+  `original-image` is the page as saved (shrunk to 2000 pixels on its
+  longest side, as a JPEG), and `image` the page deskewed as it was read
+  (the boxes' coordinates are in it). `?crops=false` leaves out the
+  boxes' images, as for `/upload/multiple`. `transcription` is the page's transcription
   as written, a line per Manchu column, in Abkai with its punctuation.
   `score` compares the reading with it as `ocr.evaluate_real_pages` does
   (ignoring punctuation, each line matched to the closest line read).
@@ -155,10 +157,19 @@ repository root. Locally, from the repository root:
   `label` is ignored). `?model=` picks the model by its `name` in
   `config.json`, `default_model` by default; an unknown name gets a 400.
 
+  The server shrinks pages to 2000 pixels on their longest side, so a
+  frontend can save upload time by doing it first: a phone photo of
+  3-5 MB is about 0.3 MB at 2000 pixels as a JPEG. Use a quality of 0.92
+  or so. JPEG changes the readings a little (on the real pages, 87.9% of
+  characters right from the PNGs, 87.6% from JPEGs at 92 and 87.5% at
+  85, single pages moving a few points either way), so a page that's
+  already small, or a PNG scan, is best sent as it is. Whatever is sent,
+  keep it: `/upload/multiple/boxes` takes it back.
+
   ```json
   {
     "model": "Run 31",
-    "image": "data:image/png;base64,...",
+    "image": "data:image/jpeg;base64,...",
     "angle": -0.8,
     "manchu": "ᠠᠪᡴᠠ □ ᠨᠠ\nᠪᡝ",
     "abkai": "abka □ na\nbe",
@@ -186,10 +197,16 @@ repository root. Locally, from the repository root:
   text by the small classifier in `ocr/box_classifier.py`, and Manchu boxes
   are read by the model (see `ocr/page_reader.py`). `image` is the
   page in colour, deskewed by `angle` degrees anticlockwise as it was read,
-  with the corners that adds filled with the paper's colour. Nothing is
-  drawn on it: each box gives its top left corner (`x`, `y`) and size
-  (`w`, `h`) in that image, and its own `image`, the part of the page it
-  holds, as a PNG. `boxes` are in reading order. `manchu`, `abkai` and
+  with the corners that adds filled with the paper's colour, as a JPEG
+  (quality 85, `PAGE_JPEG_QUALITY` in `server/app.py`): it's for showing,
+  a tenth of the size of a PNG. Nothing is drawn on it: each box gives its
+  top left corner (`x`, `y`) and size (`w`, `h`) in that image, and its
+  own `image`, the part of the page it holds, as a PNG. `?crops=false`
+  leaves the boxes' images out (`null`): they're most of what's left of
+  the response, and a frontend can cut them from the page itself (on a
+  canvas, say). With them, a page's response is about 0.5-1 MB, and
+  without, 80-360 kB. Anything but `true`, `false`, `1`, `0`, `yes` or
+  `no` gets a 400. `boxes` are in reading order. `manchu`, `abkai` and
   `norman` (Norman's romanization, see `/random`) have a line per column
   with Manchu in it, words separated by spaces and `□` for each
   other box; columns with no Manchu (such as a column of Chinese) are left
@@ -220,13 +237,23 @@ repository root. Locally, from the repository root:
   ms a box.
 
 - `POST /upload/multiple/boxes`: reads a page again in boxes the user has
-  edited (removed, moved, resized or added). Send back the `image` an
-  `/upload/multiple` (or `/random?source=page`) response gave, which is
-  the page already straightened, and the boxes in its coordinates:
+  edited (removed, moved, resized or added), in the coordinates of the
+  page as the last response gave it. Send the page one of three ways:
+
+  - The image sent to `/upload/multiple`, again, with the `angle` its
+    response gave. The server opens and turns it exactly as it did then,
+    so the page is the same to the pixel.
+  - For a page from `/random?source=page`, its `name` and `angle`, and no
+    image: the server has the page already.
+  - With no `angle`, an image already straightened, taken as it is (not
+    turned or shrunk). This was the only way at first. Don't send back the
+    response's `image` like this: it's a JPEG, which reads a little
+    differently (about one box in seven on the real pages).
 
   ```json
   {
-    "image": "data:image/png;base64,...",
+    "image": "data:image/jpeg;base64,...the upload...",
+    "angle": -0.8,
     "boxes": [
       {"x": 120, "y": 40, "w": 46, "h": 210, "kind": "manchu",
        "prediction-manchu": "ᠠᠪᡴᠠ", "confidence": 0.97},
@@ -236,12 +263,13 @@ repository root. Locally, from the repository root:
   }
   ```
 
-  It can also be sent as `multipart/form-data`, with the file in `image`
-  and the boxes as a JSON string in a `boxes` field. `?model=` works as
-  for `/upload/multiple`. The response is the same as `/upload/multiple`'s,
-  with `angle` 0: the image isn't turned or shrunk again, so the boxes stay
-  where they were sent (cut to the image if they reach past it), in
-  reading order. The server finds the columns itself: boxes overlapping by
+  It can also be sent as `multipart/form-data`, with the file in `image`,
+  the angle in `angle` and the boxes as a JSON string in a `boxes` field
+  (`name` only works in JSON). `?model=` and `?crops=` work as for
+  `/upload/multiple`. The response is the same as `/upload/multiple`'s,
+  with the `angle` the page was turned by (the one sent, or 0), to send
+  next time. The boxes stay where they were sent (cut to the page if they
+  reach past it), in reading order. The server finds the columns itself: boxes overlapping by
   at least half the narrower one's width share one, read left to right,
   and each column is read top to bottom.
 
@@ -267,10 +295,12 @@ repository root. Locally, from the repository root:
   `"manchu"` it stays in `manchu` and `abkai`: the user asked for it.
   One sent back with its reading follows the usual rule.
 
-  An empty `boxes` gets a page with none. A page over 2829 pixels on a
-  side (2000 turned by 45°, more than `/upload/multiple` ever returns)
-  gets a 413, and more than 2000 boxes or a box that isn't valid gets a
-  400, as `{"error": "..."}`.
+  An empty `boxes` gets a page with none. An already straightened page
+  over 2829 pixels on a side (2000 turned by 45°, more than
+  `/upload/multiple` ever returns) gets a 413. More than 2000 boxes, a box
+  that isn't valid, an `angle` that isn't a number from -45 to 45, or a
+  `name` that isn't one of `GET /pages` gets a 400, as
+  `{"error": "..."}`.
 
 ## config.json
 
