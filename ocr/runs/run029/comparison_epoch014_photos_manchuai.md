@@ -164,7 +164,7 @@ The other models' figures are from `run028/comparison_manchuai_ocr.md`
 
 | Model | Paper set (218) | Repository set (753) |
 |---|---|---|
-| CRNN v3 (trained on real handwriting, incl. our photos) | 97.7% | 97.3% |
+| [CRNN v3](https://huggingface.co/mic7ch/crnn-manchu-ngsyd) (checkpoint 426284; trained on real handwriting, incl. our photos, plus 60k synthetic) | 97.7% | 97.3% |
 | LLaMA-3.2-11B (60k synthetic, LoRA) | 93.1%* | 87.4% |
 | **Run 29 D-12/64 ep 14** | 76.1% | **70.3%** |
 | **Run 29 D-8/64 ep 14** | **78.4%** | 69.9% |

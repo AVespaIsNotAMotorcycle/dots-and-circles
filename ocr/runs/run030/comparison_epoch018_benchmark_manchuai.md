@@ -113,7 +113,7 @@ Bold marks intervals that exclude zero. On the benchmark, run 30 D-12 reads
 
 | Model | Training data | Paper set (218) | Repository set (753) |
 |---|---|---|---|
-| CRNN v3 | real handwriting + our photos (split by image) | 97.7% | 97.3% |
+| [CRNN v3](https://huggingface.co/mic7ch/crnn-manchu-ngsyd) (checkpoint 426284) | real handwriting + our photos (split by image) + 60k synthetic | 97.7% | 97.3% |
 | LLaMA-3.2-11B | 60k synthetic, LoRA | 93.1%* | 87.4% |
 | **Run 30 D-12/64 ep 18** | renders + 85% of our photos (split by word) | **90.4%** | **85.5%** |
 | Run 30 D-8/64 ep 18 | the same | 89.0% | 81.1% |

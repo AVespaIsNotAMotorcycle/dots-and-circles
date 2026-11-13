@@ -260,7 +260,7 @@ A comparison against
 since my real-world test data is in their training data. For this comparison,
 I used their test sets, which are not in either my training or test data. Their
 CRNN-3M (72.5% exact) was roughly equivalent to Run 28 (73.9% exact), but their
-CRNN v3 (a later release) and LLaMA-3.2-11B models clearly beat Run 28, with
+[CRNN v3](https://huggingface.co/mic7ch/crnn-manchu-ngsyd) (a later release) and LLaMA-3.2-11B models clearly beat Run 28, with
 97.7% and 93.1% exact-word accuracy, respectively.
 
 Run 28 was still improving at the end of 10 epochs. One issue with the training

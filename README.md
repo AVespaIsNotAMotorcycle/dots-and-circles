@@ -8,7 +8,7 @@
 - [Try the live demo](https://dots-and-circles.sasha-m-ebersole.com/)
 
 ## Results
-| Test set | Run 30 | Run 29 | [ManchuOCR](https://github.com/tyotakuki/ManchuOCR) | CRNN-3M | LLaMA-3.2-11B | CRNN v3 |
+| Test set | Run 30 | Run 29 | [ManchuOCR](https://github.com/tyotakuki/ManchuOCR) | CRNN-3M | LLaMA-3.2-11B | [CRNN v3](https://huggingface.co/mic7ch/crnn-manchu-ngsyd) (checkpoint 426284) |
 |---|---|---|---|---|---|---|
 | Photographed words, held-out benchmark (Sun et al. 2026) | 92.9% | 72.1% | 69.2%\* | | | |
 | ManchuAI-OCR handwritten (218 words) | 90.4% | 76.1% | 60.6% | 72.5%† | 93.1%† | 97.7% |
