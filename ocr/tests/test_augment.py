@@ -3,7 +3,8 @@ import random
 import numpy as np
 from PIL import Image
 
-from ocr.photos import (abkai_to_manchu, manchu_to_abkai, manchu_to_roman,
+from ocr.photos import (abkai_to_manchu, manchu_to_abkai, manchu_to_norman,
+                        manchu_to_roman,
                         roman_to_manchu)
 from ocr.preprocess import crop_to_ink, prepare, stretch
 from ocr.training_data import HEIGHT, WIDTH, generate, lexicon, pad_top
@@ -98,6 +99,39 @@ class TestManchuToRoman:
     def test_round_trip(self):
         assert roman_to_manchu("inenggi") == "ᡳᠨᡝᠩᡤᡳ"
         assert roman_to_manchu("ts'ai") == "ᡮᠠᡳ"
+
+
+class TestManchuToNorman:
+    def test_letters(self):
+        assert manchu_to_norman("ᠠᠪᡴᠠ") == "abka"
+        assert manchu_to_norman("ᡧᡠᠸᡝ") == "šuwe"
+        assert manchu_to_norman("ᠠᠴᠠᠮᠪᡳ") == "acambi"
+        assert manchu_to_norman("ᠠᡴᡡ") == "akū"
+        assert manchu_to_norman("ᠺᠣ") == "k'o"
+        assert manchu_to_norman("ᡰᡳᠨ") == "žin"
+        assert manchu_to_norman("ᡮᠠᡳ") == "tsai"
+
+    def test_apical_vowel(self):
+        # As Norman prints them: sy, cy, jy, and ts and dz alone
+        assert manchu_to_norman("ᠰᡟ") == "sy"
+        assert manchu_to_norman("ᡱᡳ") == "cy"
+        assert manchu_to_norman("ᡷᡳ") == "jy"
+        assert manchu_to_norman("ᡨᠠᡳᡯᡳ\u180c") == "taidz"
+        assert manchu_to_norman("ᠮᡳᠶᠠᠨᡮᡟ") == "miyants"
+        # ᡯᡳ without FVS2 is dzi, and ᡱ before another vowel c'
+        assert manchu_to_norman("ᡯᡳ") == "dzi"
+        assert manchu_to_norman("ᡱᠠ") == "c'a"
+
+    def test_round_trips_norman_headwords(self):
+        # Norman as add_norman.py reads it comes back as he printed it
+        from ocr.training_data.add_norman import to_manchu
+        for word in ("hoošan", "šanyan", "gūnin", "jahūdai", "g'aosy",
+                     "cyming", "jyši", "dzung", "taidz", "k'amduri"):
+            assert manchu_to_norman(to_manchu(word)) == word
+
+    def test_punctuation_and_marks(self):
+        assert manchu_to_norman("ᠠᠯᠵᠠᡵᠠ\u1808") == "aljara,"
+        assert manchu_to_norman("ᡳ\u180bᠨᡝ") == "ine"
 
 
 class TestManchuToAbkai:

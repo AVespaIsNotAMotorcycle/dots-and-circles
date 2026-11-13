@@ -31,8 +31,9 @@ from ocr.evaluate_real_pages import score_page as score_real_page
 from ocr.page_reader import (in_text, low_confidence, page_text, read_boxes,
                              read_page)
 from ocr.photos import (abkai_to_manchu, load_photo, manchu_to_abkai,
-                        manchu_to_roman, spell_in_manchu)
+                        manchu_to_norman, manchu_to_roman, spell_in_manchu)
 from ocr.preprocess import prepare
+from ocr.training_data.pages import OTHER
 from ocr.train import (CONTEXT_LENGTH, TOKEN_DIM, alphabet,
                        character_accuracy, classes_in, ctc_decode,
                        image_to_array, predict, token_count)
@@ -113,6 +114,7 @@ def read_word(entry, model, image, label):
         "model": entry["model"],
         "prediction-manchu": guess,
         "prediction-abkai": manchu_to_abkai(guess),
+        "prediction-norman": manchu_to_norman(guess),
         "ctc": [None if index == model.blank else alphabet[index]
                 for index in indices],
         "probs": [float(probabilities[token, index])
@@ -300,6 +302,8 @@ def page_response(entry, page, original, dictionary=None):
             "manchu-probability": word["manchu"],
             "prediction-manchu": word["text"] if manchu else None,
             "prediction-abkai": word["abkai"] if manchu else None,
+            "prediction-norman": manchu_to_norman(word["text"])
+                                 if manchu else None,
             "confidence": word["confidence"] if manchu else None,
             "low-confidence": low_confidence(word) if manchu else None,
             "closest-words": closest_words(dictionary, word["text"])
@@ -310,14 +314,23 @@ def page_response(entry, page, original, dictionary=None):
             "angle": page.angle,
             "manchu": page_text(page),
             "abkai": page_text(page, abkai=True),
+            "norman": norman_text(page_text(page)),
             "boxes": boxes}
 
 def closest_words(dictionary, text):
     # The CLOSEST_WORDS dictionary entries closest to a reading, for the
     # frontend to show beside it
-    return [{key: match[key] for key in ("manchu", "abkai", "distance",
-                                          "sources")}
+    return [{"manchu": match["manchu"], "abkai": match["abkai"],
+             "norman": manchu_to_norman(match["manchu"]),
+             "distance": match["distance"], "sources": match["sources"]}
             for match in dictionary.closest(text, CLOSEST_WORDS)]
+
+def norman_text(text):
+    # A page's text (page_text) in Norman's romanization, OTHER kept
+    return "\n".join(" ".join(word if word == OTHER
+                              else manchu_to_norman(word)
+                              for word in line.split(" "))
+                     for line in text.split("\n"))
 
 def create_app(config_path=CONFIG_PATH):
     with open(config_path, "r", encoding="utf-8") as file:
@@ -477,6 +490,7 @@ def create_app(config_path=CONFIG_PATH):
         preprocessed = load_photo(path)
         return jsonify({"source": source, "font": photo.get("font"),
                         "label": manchu_to_abkai(photo["manchu"]),
+                        "label-norman": manchu_to_norman(photo["manchu"]),
                         "manchu": photo["manchu"],
                         "image": data_url(path),
                         "preprocessed-image": image_data_url(preprocessed),
@@ -525,11 +539,13 @@ def create_app(config_path=CONFIG_PATH):
             words.append({
                 "index": index,
                 "label": manchu_to_abkai(photo["manchu"]),
+                "label-norman": manchu_to_norman(photo["manchu"]),
                 "manchu": photo["manchu"],
                 "font": photo.get("font"),
                 "image": data_url(path),
                 "prediction-manchu": reading["prediction-manchu"],
                 "prediction-abkai": reading["prediction-abkai"],
+                "prediction-norman": reading["prediction-norman"],
                 "score": reading["score"],
             })
         return jsonify({"source": source, "model": entry["name"],
@@ -554,7 +570,10 @@ def create_app(config_path=CONFIG_PATH):
             label = manchu_to_abkai(manchu)
         original = open_upload(data)
         return jsonify({"source": "upload", "font": None,
-                        "label": label, "manchu": manchu,
+                        "label": label,
+                        "label-norman": (manchu_to_norman(manchu)
+                                         if manchu is not None else None),
+                        "manchu": manchu,
                         "image": image_data_url(original),
                         "preprocessed-image": image_data_url(
                             prepare(original)),

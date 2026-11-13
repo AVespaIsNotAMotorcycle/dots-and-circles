@@ -104,23 +104,53 @@ ABKAI_PAIRS = {
     "ᡯᡳ\u180c": "zy" + ABKAI_MARK,
 }
 
+def transliterate(word, table, pairs):
+    # Manchu script in a romanization: letter by letter with table, but
+    # pairs (two letters, or a letter and a variation selector) as a whole
+    spelled = ""
+    position = 0
+    while position < len(word):
+        for pair, spelling in pairs.items():
+            if word.startswith(pair, position):
+                spelled += spelling
+                position += len(pair)
+                break
+        else:
+            spelled += table[word[position]]
+            position += 1
+    return spelled
+
 def manchu_to_abkai(word):
     '''
     Transliterates a word in Manchu script to Abkai, e.g. ᠠᠪᡴᠠ -> abka,
     ᠠᠴᠠᠮᠪᡳ -> aqambi.
     '''
-    abkai = ""
-    position = 0
-    while position < len(word):
-        for pair, spelling in ABKAI_PAIRS.items():
-            if word.startswith(pair, position):
-                abkai += spelling
-                position += len(pair)
-                break
-        else:
-            abkai += MANCHU_TO_ABKAI[word[position]]
-            position += 1
-    return abkai
+    return transliterate(word, MANCHU_TO_ABKAI, ABKAI_PAIRS)
+
+# Jerry Norman's transliteration, as in his Comprehensive Manchu-English
+# Dictionary (see training_data/add_norman.py, which reads it): š, ū, ž,
+# and ' after the loanword letters. The apical vowel is y after s, c and j
+# (sy, cy, jy), and ts and dz are written alone (miyants, taidz). Every
+# headword but OCR slips comes back as printed through add_norman.py's
+# reading of it. The dictionary has no ᡱ or ᡷ before another vowel, so
+# those are spelled as add_norman.py reads them: c', j'.
+MANCHU_TO_NORMAN = {
+    **MANCHU_TO_ROMAN,
+    "ᡧ": "š", "ᡡ": "ū", "ᡰ": "ž", "ᡮ": "ts", "ᡱ": "c'", "ᡷ": "j'",
+}
+NORMAN_PAIRS = {
+    "ᡱᡳ": "cy",
+    "ᡷᡳ": "jy",
+    "ᡯᡳ᠌": "dz",
+    "ᡮᡟ": "ts",
+}
+
+def manchu_to_norman(word):
+    '''
+    Transliterates a word in Manchu script to Norman's romanization, e.g.
+    ᠠᡴᡡ -> akū, ᡧᡠᠨ -> šun.
+    '''
+    return transliterate(word, MANCHU_TO_NORMAN, NORMAN_PAIRS)
 
 ABKAI_TO_MANCHU = {**reverse(MANCHU_TO_ABKAI),
                    **{spelling: pair for pair, spelling in ABKAI_PAIRS.items()}}

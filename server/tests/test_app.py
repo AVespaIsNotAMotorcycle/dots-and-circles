@@ -12,7 +12,7 @@ from ocr.box_classifier import make_classifier
 from ocr.modelD import ModelD
 from ocr.training_data import WIDTH
 from ocr.train import CONTEXT_LENGTH, END, NUM_CLASSES, TOKEN_DIM, alphabet
-from ocr.photos import manchu_to_abkai, manchu_to_roman
+from ocr.photos import manchu_to_abkai, manchu_to_norman, manchu_to_roman
 from ocr.train import character_accuracy
 from server.app import create_app
 
@@ -80,6 +80,7 @@ def test_random(client):
     assert body["source"] == "photo"
     assert body["font"] is None
     assert body["label"] == "abka"
+    assert body["label-norman"] == "abka"
     assert body["manchu"] == "ᠠᠪᡴᠠ"
     assert body["image"].startswith("data:image/png;base64,")
     # The preprocessed photo is greyscale and WIDTH pixels wide
@@ -274,6 +275,10 @@ def test_upload_label_in_abkai(client):
         character_accuracy(guess, "acambi"))
     assert result["prediction-abkai"] == manchu_to_abkai(
         result["prediction-manchu"])
+    assert result["prediction-norman"] == manchu_to_norman(
+        result["prediction-manchu"])
+    # ᠴ is q in Abkai and c in Norman
+    assert body["label-norman"] == "acambi"
 
 
 def test_upload_label_marks_are_normalized(client):
@@ -320,6 +325,8 @@ def test_upload_multiple(client):
                 "prediction-abkai", "confidence"} <= set(box)
         if box["kind"] == "manchu":
             assert box["prediction-abkai"] == manchu_to_abkai(
+                box["prediction-manchu"])
+            assert box["prediction-norman"] == manchu_to_norman(
                 box["prediction-manchu"])
         else:
             assert box["prediction-manchu"] is None
@@ -451,8 +458,9 @@ def test_lexigraphs_photo_is_the_default(client):
         assert word["label"] == "abka" and word["manchu"] == "ᠠᠪᡴᠠ"
         assert word["font"] is None
         assert word["image"].startswith("data:image/png;base64,")
-        assert set(word) == {"index", "label", "manchu", "font", "image",
-                             "prediction-manchu", "prediction-abkai",
+        assert set(word) == {"index", "label", "label-norman", "manchu",
+                             "font", "image", "prediction-manchu",
+                             "prediction-abkai", "prediction-norman",
                              "score"}
 
 
@@ -637,10 +645,10 @@ def test_page_boxes_have_closest_words(client):
         "image": first["image"], "boxes": [box, other]}).get_json()
     by_kind = {box["kind"]: box for box in body["boxes"]}
     assert by_kind["manchu"]["closest-words"] == [
-        {"manchu": "ᠠᠪᡴᠠ", "abkai": "abka", "distance": 0,
+        {"manchu": "ᠠᠪᡴᠠ", "abkai": "abka", "norman": "abka", "distance": 0,
          "sources": ["kaikki", "norman"]},
         # ᠨᠠ and ᠪᡝ are both 3 edits away: be comes first in romanized order
-        {"manchu": "ᠪᡝ", "abkai": "be", "distance": 3,
+        {"manchu": "ᠪᡝ", "abkai": "be", "norman": "be", "distance": 3,
          "sources": ["norman"]}]
     assert by_kind["other"]["closest-words"] is None
     for box in first["boxes"]:
@@ -649,3 +657,30 @@ def test_page_boxes_have_closest_words(client):
                 2 if box["prediction-manchu"].strip(" ᠈᠉") else 0)
         else:
             assert box["closest-words"] is None
+
+def test_page_text_in_norman(client):
+    first = client.post("/upload/multiple", data={
+        "image": (io.BytesIO(page_image()), "page.png")}).get_json()
+    # Two columns: a Manchu word with ᡧ and ᡡ above other text, and one word
+    boxes = [
+        dict(first["boxes"][0], kind="manchu", x=40, y=30, w=40, h=90,
+             **{"prediction-manchu": "ᡧᡠᠨ ᠠᡴᡡ", "confidence": 0.9}),
+        dict(first["boxes"][1], kind="other", x=40, y=160, w=40, h=90),
+        dict(first["boxes"][2], kind="manchu", x=130, y=30, w=40, h=90,
+             **{"prediction-manchu": "ᠠᠴᠠᠮᠪᡳ", "confidence": 0.9}),
+    ]
+    body = client.post("/upload/multiple/boxes", json={
+        "image": first["image"], "boxes": boxes}).get_json()
+    assert body["abkai"] == "xun akv □\naqambi"
+    assert body["norman"] == "šun akū □\nacambi"
+    assert [box["prediction-norman"] for box in body["boxes"]] == [
+        "šun akū", None, "acambi"]
+    for box in body["boxes"]:
+        for match in box["closest-words"] or []:
+            assert match["norman"] == manchu_to_norman(match["manchu"])
+
+def test_lexigraphs_have_norman(client):
+    [word] = client.get("/lexigraphs").get_json()["words"]
+    assert word["label-norman"] == manchu_to_norman("ᠠᠪᡴᠠ")
+    assert word["prediction-norman"] == manchu_to_norman(
+        word["prediction-manchu"])

@@ -20,6 +20,7 @@ repository root. Locally, from the repository root:
     "source": "photo",
     "font": null,
     "label": "abka",
+    "label-norman": "abka",
     "manchu": "ᠠᠪᡴᠠ",
     "image": "data:image/png;base64,...",
     "preprocessed-image": "data:image/png;base64,...",
@@ -28,6 +29,7 @@ repository root. Locally, from the repository root:
       "model": "ModelD (8 transformers, ...)",
       "prediction-manchu": "ᠠᠪᡴᠠ",
       "prediction-abkai": "abka",
+      "prediction-norman": "abka",
       "ctc": [null, "ᠠ", "ᠠ", null, "ᠪ", "..."],
       "probs": [0.99, 0.97, 0.88, 0.99, 0.95, "..."],
       "score": 1.0
@@ -52,6 +54,17 @@ repository root. Locally, from the repository root:
   the photo dataset's own romanization (`ocr.photos.manchu_to_roman`), as
   in the run reports: the character accuracy of the prediction against the
   label, `max(0, 1 - edit distance / len(label))`.
+
+  `label-norman` and `prediction-norman` are the same in Jerry Norman's
+  romanization, as in his Comprehensive Manchu-English Dictionary
+  (`ocr.photos.manchu_to_norman`): ᡧ `š`, ᡡ `ū`, ᠴ `c`, ᡰ `ž`, ᡮ `ts`,
+  ᡯ `dz`, `'` after the loanword letters (`k'`, `g'`, `h'`), and the
+  apical vowel as he prints it (`sy`, `cy`, `jy`, and `ts` and `dz` alone,
+  as in `taidz`). ᡱ and ᡷ before another vowel, which his dictionary
+  never has, are `c'` and `j'`. Every field with Abkai in any response
+  has a Norman one beside it like this, except a real page's
+  `transcription`, which stays as written. Uploaded labels are still
+  typed in Abkai.
 - `GET /lexigraphs`: every word of a source, a page at a time, with one
   model's reading of each. `?source=photo` (the default) lists the
   photographed words in `photos/`, and `?source=synthetic` the rendered
@@ -73,11 +86,13 @@ repository root. Locally, from the repository root:
     "words": [{
       "index": 0,
       "label": "abkai",
+      "label-norman": "abkai",
       "manchu": "ᠠᠪᡴᠠᡳ",
       "font": null,
       "image": "data:image/png;base64,...",
       "prediction-manchu": "ᠠᠪᡴᠠᡳ",
       "prediction-abkai": "abkai",
+      "prediction-norman": "abkai",
       "score": 1.0
     }]
   }
@@ -147,17 +162,19 @@ repository root. Locally, from the repository root:
     "angle": -0.8,
     "manchu": "ᠠᠪᡴᠠ □ ᠨᠠ\nᠪᡝ",
     "abkai": "abka □ na\nbe",
+    "norman": "abka □ na\nbe",
     "boxes": [{
       "x": 120, "y": 40, "w": 46, "h": 210,
       "image": "data:image/png;base64,...",
       "line": 0, "position": 0, "kind": "manchu",
       "manchu-probability": 0.999,
       "prediction-manchu": "ᠠᠪᡴᠠ", "prediction-abkai": "abka",
+      "prediction-norman": "abka",
       "confidence": 0.97, "low-confidence": false,
       "closest-words": [
-        {"manchu": "ᠠᠪᡴᠠ", "abkai": "abka", "distance": 0,
+        {"manchu": "ᠠᠪᡴᠠ", "abkai": "abka", "norman": "abka", "distance": 0,
          "sources": ["kaikki", "norman"]},
-        {"manchu": "ᠠᠪᠰᠠ", "abkai": "absa", "distance": 1,
+        {"manchu": "ᠠᠪᠰᠠ", "abkai": "absa", "norman": "absa", "distance": 1,
          "sources": ["norman"]}
       ]
     }]
@@ -172,8 +189,9 @@ repository root. Locally, from the repository root:
   with the corners that adds filled with the paper's colour. Nothing is
   drawn on it: each box gives its top left corner (`x`, `y`) and size
   (`w`, `h`) in that image, and its own `image`, the part of the page it
-  holds, as a PNG. `boxes` are in reading order. `manchu` and `abkai` have a line
-  per column with Manchu in it, words separated by spaces and `□` for each
+  holds, as a PNG. `boxes` are in reading order. `manchu`, `abkai` and
+  `norman` (Norman's romanization, see `/random`) have a line per column
+  with Manchu in it, words separated by spaces and `□` for each
   other box; columns with no Manchu (such as a column of Chinese) are left
   out, and their boxes' `line` is `null`. `position` counts from the top of
   the box's column, and `manchu-probability` is the classifier's.
