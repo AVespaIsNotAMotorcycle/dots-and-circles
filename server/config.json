@@ -3,7 +3,7 @@
   "photos": "photos",
   "synthetic": "synthetic",
   "pages": "../ocr/real_pages",
-  "default_model": "Run 31",
+  "default_model": "Run 32",
   "box_classifier": "weights/box_classifier.npz",
   "dictionary": "../ocr/training_data/dictionary_words.json",
   "models": [
@@ -36,6 +36,15 @@
       "model": "ModelD (12 transformers, 64-dim embeddings), Run 30 fine-tuned for 4 epochs at 1e-3 on tight 2-3-word phrases, the lone genitive i and punctuated words besides, with the Manchu comma and full stop added to its alphabet, 22 epochs",
       "class": "ModelD",
       "weights": "weights/run031.npz",
+      "params": {"depth": 12, "emb_dim": 64},
+      "preprocess": {"crop": true, "whiten": true},
+      "stem_breaks": false
+    },
+    {
+      "name": "Run 32",
+      "model": "ModelD (12 transformers, 64-dim embeddings), Run 31 fine-tuned for 4 epochs at 1e-3 with the training crops of mic7ch's handwritten cursive_v2 added to every epoch, 26 epochs",
+      "class": "ModelD",
+      "weights": "weights/run032.npz",
       "params": {"depth": 12, "emb_dim": 64},
       "preprocess": {"crop": true, "whiten": true},
       "stem_breaks": false

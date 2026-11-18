@@ -1075,4 +1075,4 @@ def train_model(name, run, batches, monitor_sets, epochs,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=4, augment=True, start_from="run030")
+    train(epochs=4, augment=True, start_from="run031")

@@ -83,11 +83,13 @@ server (`/random?source=page`) to show beside it.
 
 ## Results
 
-Characters / words, as of 2026-11-12 (Run 31 with `stem_breaks` off, as in
-`server/config.json`; the others as of 2026-11-10):
+Characters / words, as of 2026-11-18 for Run 32 and 2026-11-12 for Run 31
+(both with `stem_breaks` off, as in `server/config.json`; the others as of
+2026-11-10):
 
 | Model | page001 | page002 | page003 | page004 (handwritten) | page005 | page006 | page007 |
 |---|---|---|---|---|---|---|---|
+| Run 32 | 98.3% / 92.4% | 96.8% / 86.2% | 97.0% / 92.1% | 45.7% / −2.4% | 90.7% / 80.3% | 99.5% / 97.4% | 88.2% / 68.4% |
 | Run 31 | 98.3% / 93.7% | 95.5% / 83.9% | 97.9% / 92.1% | 43.4% / −1.0% | 90.7% / 80.3% | 99.0% / 94.7% | 90.2% / 68.4% |
 | Run 30 | 98.1% / 91.1% | 94.0% / 78.2% | 99.1% / 97.4% | 48.8% / 4.3% | 90.5% / 78.9% | 98.6% / 92.1% | 86.3% / 42.1% |
 | Run 28 | 88.9% / 60.8% | 86.6% / 55.2% | 94.0% / 68.4% | 40.9% / 1.9% | 85.6% / 59.2% | 94.2% / 73.7% | 78.4% / 36.8% |
