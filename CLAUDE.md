@@ -107,6 +107,19 @@ pyarrow, which isn't a project dependency). `ocr/cursive.py` loads them.
 Test with `evaluate_non_synthetic.py --source cursive` (the v2 benchmark)
 or `--source cursive_v1`.
 
+## ManchuAI test sets
+
+`ocr/manchuai_data/` (gitignored; the datasets state no license) holds the
+two handwritten test sets of mic7ch's ManchuAI-OCR (arXiv 2507.06761):
+`218`, the paper's (`mic7ch/test_data_long`), and `753`, the repo's newer
+one (`mic7ch/manchu` test split). Fetch them with
+`python -m ocr.training_data.fetch_manchuai` (parquet, so it needs pyarrow
+too), which turns them upright and reads the datasets' ᠸᡳ (wi) as fi. Test
+with `evaluate_non_synthetic.py --source manchuai_218` or `manchuai_753`,
+which ignores the Manchu comma and full stop in the guesses (the labels
+have none). Only the test split is fetched: `mic7ch/manchu`'s real training
+data is our own photo set.
+
 ## Memory use
 
 The models keep their forward activations for the backward pass, so memory

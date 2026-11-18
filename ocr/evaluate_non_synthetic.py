@@ -16,7 +16,7 @@ from multiprocessing import Pool
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from ocr import cursive
+from ocr import cursive, manchuai
 from ocr.modelD import ModelD
 from ocr.photos import (DATA_DIRECTORY, all_images, load_photo,
                         manchu_to_roman, sample_images, set_images)
@@ -41,6 +41,8 @@ PASSES = {
     "whitened": (False, True),
     "whitened_cropped": (True, True),
 }
+# The Manchu comma and full stop, which some sources' labels never have
+PUNCTUATION = "\u1808\u1809"
 
 # Each worker process loads the model once, in init_worker
 model = None
@@ -60,7 +62,7 @@ def read_batch(job):
     Reads one batch of (path, label) pairs, returning a row of results for
     each image.
     '''
-    batch, crop, whiten = job
+    batch, crop, whiten, ignore_punctuation = job
     images = [load_photo(path, crop, whiten) for path, _ in batch]
     entries = [(image_to_array(image), None, token_count(image))
                for image in images]
@@ -68,6 +70,9 @@ def read_batch(job):
     rows = []
     for (path, label), image, guess in zip(batch, images,
                                            read_words(model, y, entries)):
+        if ignore_punctuation:
+            guess = "".join(c for c in guess
+                            if c not in PUNCTUATION).strip()
         roman = manchu_to_roman(guess)
         distance = edit_distance(roman, label)
         rows.append({"path": os.path.relpath(path, DATA_DIRECTORY),
@@ -77,12 +82,15 @@ def read_batch(job):
                      "exact": int(roman == label)})
     return rows
 
-def evaluate(pool, sample, crop, whiten, deadline):
+def evaluate(pool, sample, crop, whiten, deadline, ignore_punctuation=False):
     '''
     Reads every image in sample, stopping early if time.time() passes
-    deadline. Returns the rows of the images that were read.
+    deadline. Returns the rows of the images that were read. With
+    ignore_punctuation, the Manchu comma and full stop are left out of
+    the guesses.
     '''
-    jobs = [(sample[start:start + BATCH_SIZE], crop, whiten)
+    jobs = [(sample[start:start + BATCH_SIZE], crop, whiten,
+             ignore_punctuation)
             for start in range(0, len(sample), BATCH_SIZE)]
     rows = []
     for batch_rows in pool.imap(read_batch, jobs):
@@ -159,11 +167,13 @@ def main():
     parser.add_argument("--depth", type=int, default=8)
     parser.add_argument("--emb-dim", type=int, default=64)
     parser.add_argument("--source", default="photo",
-                        choices=["photo", "cursive", "cursive_v1"],
+                        choices=["photo", "cursive", "cursive_v1",
+                                 "manchuai_218", "manchuai_753"],
                         help="the printed photos (default), the handwritten "
-                        "cursive_v2 crops, or the cursive_v1 crops, which "
-                        "are only tested on, so --set is ignored (see "
-                        "ocr/cursive.py)")
+                        "cursive_v2 crops, the cursive_v1 crops, or "
+                        "ManchuAI-OCR's 218- or 753-word handwritten test "
+                        "sets; the last three are only tested on, so --set "
+                        "is ignored (see ocr/cursive.py, ocr/manchuai.py)")
     parser.add_argument("--set", default="benchmark",
                         choices=["benchmark", "monitor", "train", "all"],
                         help="which images to test: a set of the source's "
@@ -187,7 +197,9 @@ def main():
     args = parser.parse_args()
 
     deadline = time.time() + args.minutes * 60
-    if args.source == "cursive_v1":
+    if args.source.startswith("manchuai_"):
+        images = manchuai.all_images(args.source.split("_")[1])
+    elif args.source == "cursive_v1":
         images = cursive.all_images("v1")
     elif args.source == "cursive":
         images = (cursive.all_images("v2") if args.set == "all"
@@ -209,7 +221,9 @@ def main():
             if time.time() > deadline:
                 print(f"No time left for the {name} pass.")
                 break
-            rows = evaluate(pool, sample, crop, whiten, deadline)
+            # ManchuAI's labels have no punctuation
+            rows = evaluate(pool, sample, crop, whiten, deadline,
+                            args.source.startswith("manchuai_"))
             summarize(name, rows)
             path = os.path.join(out, f"{prefix}non_synthetic_eval_{name}.csv")
             with open(path, "w", newline="", encoding="utf-8") as file:
