@@ -16,6 +16,7 @@ from multiprocessing import Pool
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
+from ocr import cursive
 from ocr.modelD import ModelD
 from ocr.photos import (DATA_DIRECTORY, all_images, load_photo,
                         manchu_to_roman, sample_images, set_images)
@@ -110,7 +111,7 @@ def caption_font(size):
     except OSError:
         return ImageFont.load_default()
 
-def save_examples(rows, count, out, seed):
+def save_examples(rows, count, out, seed, prefix=""):
     '''
     Saves count random rows as images: the photo as it was before
     preprocessing on the left, the model's guess rendered as a lexigraph on
@@ -145,7 +146,8 @@ def save_examples(rows, count, out, seed):
             verdict, colour = f"{row['edit_distance']} edit(s) off", "#555555"
         draw.text((column, EXAMPLE_HEIGHT + 95), verdict, font=title_font,
                   fill=colour, anchor="mm")
-        path = os.path.join(out, f"non_synthetic_example_{number}.png")
+        path = os.path.join(out,
+                            f"{prefix}non_synthetic_example_{number}.png")
         sheet.save(path)
         print(f"Wrote {path}: {row['label']} -> "
               f"{row['guess_roman'] or '(empty)'}")
@@ -156,11 +158,17 @@ def main():
     parser.add_argument("weights", help="a weights .npz file")
     parser.add_argument("--depth", type=int, default=8)
     parser.add_argument("--emb-dim", type=int, default=64)
+    parser.add_argument("--source", default="photo",
+                        choices=["photo", "cursive", "cursive_v1"],
+                        help="the printed photos (default), the handwritten "
+                        "cursive_v2 crops, or the cursive_v1 crops, which "
+                        "are only tested on, so --set is ignored (see "
+                        "ocr/cursive.py)")
     parser.add_argument("--set", default="benchmark",
                         choices=["benchmark", "monitor", "train", "all"],
-                        help="which photos to test: a set of the photo split "
-                        "(see ocr/split.py), or all of them (default: the "
-                        "benchmark)")
+                        help="which images to test: a set of the source's "
+                        "split (see ocr/split.py), or all of them (default: "
+                        "the benchmark)")
     parser.add_argument("--sample", type=int,
                         help="test only this many random images of the set "
                         "(default: all of it)")
@@ -179,7 +187,16 @@ def main():
     args = parser.parse_args()
 
     deadline = time.time() + args.minutes * 60
-    images = all_images() if args.set == "all" else set_images(args.set)
+    if args.source == "cursive_v1":
+        images = cursive.all_images("v1")
+    elif args.source == "cursive":
+        images = (cursive.all_images("v2") if args.set == "all"
+                  else cursive.set_images(args.set))
+    else:
+        images = all_images() if args.set == "all" else set_images(args.set)
+    # Results files are named after the source, except the photos', which
+    # keep their old names
+    prefix = "" if args.source == "photo" else f"{args.source}_"
     sample = (sample_images(args.sample, args.seed, images) if args.sample
               else images)
     out = args.out or os.path.dirname(os.path.abspath(args.weights))
@@ -194,7 +211,7 @@ def main():
                 break
             rows = evaluate(pool, sample, crop, whiten, deadline)
             summarize(name, rows)
-            path = os.path.join(out, f"non_synthetic_eval_{name}.csv")
+            path = os.path.join(out, f"{prefix}non_synthetic_eval_{name}.csv")
             with open(path, "w", newline="", encoding="utf-8") as file:
                 writer = csv.DictWriter(file, fieldnames=list(rows[0]))
                 writer.writeheader()
@@ -202,7 +219,7 @@ def main():
             print(f"Wrote {path}")
 
     if args.examples and rows:
-        save_examples(rows, args.examples, out, args.seed)
+        save_examples(rows, args.examples, out, args.seed, prefix)
 
 if __name__ == "__main__":
     main()

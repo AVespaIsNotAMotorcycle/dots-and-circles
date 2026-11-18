@@ -24,7 +24,7 @@ from loss.CrossEntropyLoss import CrossEntropyLoss
 from loss.CTCLoss import CTCLoss
 from optim.SGD import SGD
 from optim.Adam import Adam
-from ocr import photos
+from ocr import cursive, photos
 from ocr.modelA import ModelA
 from ocr.modelB import ModelB
 from ocr.modelC import ModelC
@@ -70,12 +70,16 @@ PROGRESS_EVERY = 30
 # batches, and the monitor set is scored after every epoch to show how well
 # the models read real books. The monitor set is only watched, and its words
 # aren't in the benchmark, so the benchmark stays an honest test even if a
-# checkpoint is ever chosen by the monitor score.
+# checkpoint is ever chosen by the monitor score. The handwritten cursive
+# crops (see ocr/cursive.py) are used the same way, and their monitor set
+# is scored and logged separately, as "cursive".
 # Besides the latest weights, a copy is kept every this many epochs
 SNAPSHOT_EVERY = 5
 # Photos per batch when scoring them. The models keep every layer's
 # activations, so smaller batches use less memory.
 PHOTO_BATCH_SIZE = 16
+# The monitor sets' names in the log (see load_monitor_sets)
+MONITOR_SETS = ("photo", "cursive")
 
 def generate_seeds(validation_set = False, training_photos = True,
                    composites = True):
@@ -86,8 +90,8 @@ def generate_seeds(validation_set = False, training_photos = True,
     is the same either way, and the same every run.
 
     With training_photos (and the photos here), train also gets every
-    training photo, as a (path, label) pair in place of a seed (see
-    make_batch). With composites, train also gets phrases set close
+    training photo and training cursive crop, as a (path, label) pair in
+    place of a seed (see make_batch). With composites, train also gets phrases set close
     together, the genitive i alone and punctuated words, made from its own
     words (see training_data/compose.py), as Composites in place of seeds.
     Test stays single lexicon entries, comparable with earlier runs.
@@ -126,6 +130,13 @@ def generate_seeds(validation_set = False, training_photos = True,
         else:
             print(f"No photos in {photos.DATA_DIRECTORY}, so training is on "
                   f"rendered words only.")
+        if cursive.available():
+            training = cursive.set_images("train")
+            train_set += training
+            print(f"Training cursive crops: {len(training)}.")
+        else:
+            print(f"No cursive crops in {cursive.DATA_DIRECTORY}; see "
+                  f"ocr/training_data/fetch_cursive.py.")
 
     random.shuffle(train_set)
     random.shuffle(valid_set)
@@ -247,8 +258,8 @@ def make_batch(seeds, epoch=None):
     '''
     One batch of entries (see generate_batches) for seeds. With an epoch
     the images are augmented, differently for each epoch. A seed can also be
-    a training photo as a (path, label) pair: it's prepared as photos are
-    for testing, never augmented, and labelled with the label's Manchu
+    a training photo or cursive crop as a (path, label) pair: it's prepared
+    as photos are for testing, never augmented, and labelled with the label's Manchu
     spelling (see photos.spell_in_manchu). Or it can be a Composite (see
     training_data/compose.py).
     '''
@@ -364,19 +375,25 @@ class EpochBatches:
         if self.augment:
             self.pool.shutdown(cancel_futures=True)
 
-def load_photo_set():
+def load_monitor_sets():
     '''
-    The monitor set (see ocr/split.py) as entries (image array, label,
-    length), or None if the photos aren't here.
+    The monitor sets scored after every epoch (see ocr/split.py), as
+    {"photo": entries, "cursive": entries}, each entry (image array, label,
+    length). A set whose images aren't here is left out.
     '''
-    if not photos.available():
-        print(f"No photos in {photos.DATA_DIRECTORY}, so none will be scored.")
-        return None
-    photo_set = []
-    for path, label in photos.set_images("monitor"):
-        image = photos.load_photo(path)
-        photo_set.append((image_to_array(image), label, token_count(image)))
-    return photo_set
+    sources = {"photo": photos, "cursive": cursive}
+    monitor_sets = {}
+    for name, source in sources.items():
+        if not source.available():
+            print(f"No {name} images in {source.DATA_DIRECTORY}, so none "
+                  f"will be scored.")
+            continue
+        entries = []
+        for path, label in source.set_images("monitor"):
+            image = photos.load_photo(path)
+            entries.append((image_to_array(image), label, token_count(image)))
+        monitor_sets[name] = entries
+    return monitor_sets
 
 def score_photos(model, photo_set):
     '''
@@ -681,7 +698,7 @@ def trim_log(path, progress):
     for row in rows:
         finished = progress.get(row["model"], 0)
         epoch = float(row["epoch"])
-        if epoch < finished or (row["set"].startswith("photo")
+        if epoch < finished or (row["set"].split("_")[0] in MONITOR_SETS
                                 and epoch <= finished):
             kept.append(row)
     if len(kept) < len(rows):
@@ -697,8 +714,9 @@ def read_log(run_directory):
     '''
     Reads a run's log.csv into {model: {set: rows}}, where rows is an array
     of [epoch, accuracy, loss]. The sets are "train" and "test", plus
-    "photo" and "photo_exact" in runs that scored the photo set (their loss
-    is nan). Logs from before the epoch column was added give the step in
+    "photo" and "photo_exact" in runs that scored the photo set, and
+    "cursive" and "cursive_exact" in those that scored the cursive set
+    (their loss is nan). Logs from before the epoch column was added give the step in
     its place, so the second return value says which it is: "Epoch" or
     "Batch".
     '''
@@ -721,7 +739,8 @@ def graph(run_directory, window=5):
     Graphs a run from its log.csv, and saves the graph to the run's folder.
     Each model gets its own colour; train is solid and test is dashed. Photo
     scores, one per epoch, are dotted (char accuracy) and dash-dotted
-    (words read exactly), with markers. Works on any run folder, including
+    (words read exactly), with circles and squares; cursive scores are the
+    same with triangles and diamonds. Works on any run folder, including
     one from a run that crashed.
     '''
     histories, x_label = read_log(run_directory)
@@ -739,7 +758,9 @@ def graph(run_directory, window=5):
             loss_axis.plot(xs, moving_average(history[:, 2], window),
                            style, color=f"C{index}", label=f"{name} {label}")
         for label, style, marker in (("photo", ":", "o"),
-                                     ("photo_exact", "-.", "s")):
+                                     ("photo_exact", "-.", "s"),
+                                     ("cursive", ":", "^"),
+                                     ("cursive_exact", "-.", "D")):
             history = sets.get(label, [])
             if len(history) == 0:
                 continue
@@ -824,11 +845,11 @@ def run_models(run_directory, epochs, augment):
     Trains the models, one thread each, logging every batch's results to
     log.csv as it goes and saving each model's weights at the end of every
     epoch, so a crash loses at most the current epoch's training and none
-    of the log. After each epoch the photo set is scored too. Everything it
+    of the log. After each epoch the monitor sets are scored too. Everything it
     makes is local, so it's all freed when it returns.
     '''
     train_seeds, test_seeds = generate_seeds()
-    photo_set = load_photo_set()
+    monitor_sets = load_monitor_sets()
     # Epochs each model has finished, if this run is being resumed
     progress = read_progress(run_directory)
 
@@ -942,7 +963,7 @@ def run_models(run_directory, epochs, augment):
     for name, run in runs.items():
         thread = threading.Thread(
             target=train_model, daemon=True,
-            args=(name, run, batches, photo_set, epochs,
+            args=(name, run, batches, monitor_sets, epochs,
                   run_directory, log, log_file, log_lock, progress))
         thread.start()
         threads.append(thread)
@@ -982,13 +1003,13 @@ def epoch_schedule(train_set, test_set):
             train_index += 1
         yield batch_number, testing, batch
 
-def train_model(name, run, batches, photo_set, epochs,
+def train_model(name, run, batches, monitor_sets, epochs,
                 run_directory, log, log_file, log_lock, progress):
     '''
     Runs on its own thread: trains one model for epochs, starting after
     run["start"], logging each batch, then saving the weights, recording
     the finished epoch in progress (and progress.json) and scoring the
-    photo set (if there is one) after each epoch. An error stops only this
+    monitor sets (photo and cursive, those that are here) after each epoch. An error stops only this
     model; it's printed, and the other models carry on.
     '''
     batch_count = batches.batch_count()
@@ -1037,16 +1058,16 @@ def train_model(name, run, batches, photo_set, epochs,
                 progress[name] = epoch + 1
                 write_progress(run_directory, progress)
 
-            if photo_set:
-                accuracy, exact = score_photos(run["model"], photo_set)
+            for monitor, entries in monitor_sets.items():
+                accuracy, exact = score_photos(run["model"], entries)
                 with log_lock:
-                    # Photos have romanized labels, so there's no CTC loss
-                    for set_name, value in (("photo", accuracy),
-                                            ("photo_exact", exact)):
+                    # Labels are romanized, so there's no CTC loss
+                    for set_name, value in ((monitor, accuracy),
+                                            (f"{monitor}_exact", exact)):
                         log.writerow([name, (epoch + 1) * batch_count,
                                       epoch + 1, set_name, value, "nan"])
                     log_file.flush()
-                print(f"Model {name}, epoch {epoch + 1} | photos: char "
+                print(f"Model {name}, epoch {epoch + 1} | {monitor}: char "
                       f"accuracy {accuracy:.3f}, {exact:.1%} words exact")
     except Exception:
         run["failed"] = True

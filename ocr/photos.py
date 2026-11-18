@@ -23,7 +23,7 @@ DATA_DIRECTORY = os.path.join(directory, "non_synthetic_data")
 # scoring: Möllendorff written in ASCII (ts', dz, k', c'y, sy), but with x for
 # ᡧ and v for ᡡ as in Abkai. It isn't Abkai, which writes ᠴ as q (see
 # MANCHU_TO_ABKAI). Variation selectors and the other invisible marks have
-# no spelling, so they're dropped. The Mongolian letters (ᠢ, ᠤ, ᠭ, ᠳ) take
+# no spelling, so they're dropped. The Mongolian letters (ᠢ, ᠤ, ᠭ, ᠳ, ᠷ) take
 # the spelling of their Manchu counterparts. ᡰ is very rare, and r' is a
 # best guess. Punctuation is written as in Latin script.
 MANCHU_TO_ROMAN = {
@@ -31,7 +31,7 @@ MANCHU_TO_ROMAN = {
     "ᡡ": "v", "ᠨ": "n", "ᠩ": "ng", "ᠪ": "b", "ᡦ": "p", "ᡤ": "g", "ᠭ": "g",
     "ᡥ": "h", "ᡴ": "k", "ᠺ": "k'", "ᡬ": "g'", "ᡭ": "h'", "ᠮ": "m", "ᠯ": "l",
     "ᠰ": "s", "ᡧ": "x", "ᡨ": "t", "ᡩ": "d", "ᠳ": "d", "ᠴ": "c", "ᠵ": "j",
-    "ᠶ": "y", "ᠸ": "w", "ᡵ": "r", "ᡶ": "f", "ᡮ": "ts'", "ᡯ": "dz",
+    "ᠶ": "y", "ᠸ": "w", "ᡵ": "r", "ᠷ": "r", "ᡶ": "f", "ᡮ": "ts'", "ᡯ": "dz",
     "ᡰ": "r'", "ᡱ": "c'", "ᡷ": "z", "ᡟ": "y", " ": " ",
     "᠋": "", "᠌": "", "᠍": "", "᠏": "", "᠇": "",
     "᠊": "",

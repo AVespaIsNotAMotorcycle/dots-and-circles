@@ -1,12 +1,14 @@
+import collections
 import os
 
 import pytest
 
-from ocr import photos
+from ocr import cursive, photos
 from ocr.photos import manchu_to_roman
-from ocr.split import (MONITOR_PHOTOS, PHOTO_TEST_PROPORTION, group_key,
-                       load_photo_split, load_photo_words, split_photo_words,
-                       split_words)
+from ocr.split import (CURSIVE_TEST_PROPORTION, MONITOR_CURSIVE,
+                       MONITOR_PHOTOS, PHOTO_TEST_PROPORTION, group_key,
+                       load_cursive_split, load_photo_split, load_photo_words,
+                       split_cursive_words, split_photo_words, split_words)
 from ocr.training_data import lexicon
 
 
@@ -34,6 +36,16 @@ class TestSplitWords:
                     if manchu_to_roman(lexicon[index]) in test_photo_words]
         assert not [lexicon[index] for index in test
                     if manchu_to_roman(lexicon[index]) in photo_split["train"]]
+
+    def test_cursive_words_follow_the_cursive_split(self, lexicon_split):
+        train, _, test = lexicon_split
+        cursive_split = load_cursive_split()
+        test_words = cursive_split["monitor"] | cursive_split["benchmark"]
+        assert not [lexicon[index] for index in train
+                    if manchu_to_roman(lexicon[index]) in test_words]
+        assert not [lexicon[index] for index in test
+                    if manchu_to_roman(lexicon[index])
+                    in cursive_split["train"]]
 
     def test_training_photo_words_go_to_train(self):
         words = [f"ᠠ{'ᠨ' * n}" for n in range(1, 40)]
@@ -89,6 +101,58 @@ class TestSplitPhotoWords:
         assert not sets["train"] & sets["monitor"]
         assert not sets["train"] & sets["benchmark"]
         assert not sets["monitor"] & sets["benchmark"]
+
+
+class TestSplitCursiveWords:
+    counts = {f"word{number}": 1 + number % 7 for number in range(600)}
+    fixed_train = {f"word{number}" for number in range(0, 600, 3)}
+    fixed_test = {f"word{number}" for number in range(1, 60, 3)}
+
+    def split(self, counts=None):
+        return split_cursive_words(counts or self.counts, self.fixed_train,
+                                   self.fixed_test)
+
+    def test_every_word_in_exactly_one_set(self):
+        sets = self.split()
+        words = sets["train"] + sets["monitor"] + sets["benchmark"]
+        assert sorted(words) == sorted(self.counts)
+
+    def test_fixed_words_keep_their_sets(self):
+        sets = self.split()
+        assert self.fixed_train <= set(sets["train"])
+        assert self.fixed_test <= set(sets["monitor"] + sets["benchmark"])
+
+    def test_set_sizes(self):
+        sets = self.split()
+        crops = {name: sum(self.counts[word] for word in words)
+                 for name, words in sets.items()}
+        total = sum(self.counts.values())
+        assert MONITOR_CURSIVE <= crops["monitor"] < MONITOR_CURSIVE + 7
+        test_share = (crops["monitor"] + crops["benchmark"]) / total
+        assert (CURSIVE_TEST_PROPORTION <= test_share
+                < CURSIVE_TEST_PROPORTION + 0.01)
+
+    def test_is_repeatable(self):
+        assert self.split() == self.split(
+            dict(reversed(list(self.counts.items()))))
+
+    def test_committed_split_agrees_with_the_photo_split(self):
+        sets = load_cursive_split()
+        photo_sets = load_photo_split()
+        test = sets["monitor"] | sets["benchmark"]
+        photo_test = photo_sets["monitor"] | photo_sets["benchmark"]
+        assert not sets["train"] & test
+        assert not sets["monitor"] & sets["benchmark"]
+        assert not sets["train"] & photo_test
+        assert not test & photo_sets["train"]
+
+
+@pytest.mark.skipif(not cursive.available(), reason="no cursive data")
+def test_cursive_word_list_matches_the_crops():
+    # If this fails, rebuild it: python -m ocr.training_data.list_cursive_words
+    counts = collections.Counter(label for _, label
+                                 in cursive.all_images("v2"))
+    assert set().union(*load_cursive_split().values()) == set(counts)
 
 
 def photo_counts():

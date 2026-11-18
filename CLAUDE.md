@@ -88,6 +88,25 @@ different lexicon split. Earlier runs never saw any photo word, so they can
 be scored on the benchmark, but their synthetic test scores aren't
 comparable.
 
+## Cursive data
+
+`ocr/cursive_data/` (gitignored) holds handwritten cursive word crops from
+mic7ch's Hugging Face datasets (CC BY 4.0), fetched upright by
+`python -m ocr.training_data.fetch_cursive` (v2 is parquet, so that needs
+pyarrow, which isn't a project dependency). `ocr/cursive.py` loads them.
+
+- **v2** (1,940 crops, one manuscript) is split by word into train,
+  monitor and benchmark (`ocr/training_data/cursive_words.json`). Each word
+  keeps its photo set, or else its lexicon set, so the lexicon split doesn't
+  move. Training crops join every epoch like the training photos, and the
+  monitor set is logged as `cursive`/`cursive_exact`. Rebuild the list with
+  `python -m ocr.training_data.list_cursive_words` after the photo split or
+  lexicon changes.
+- **v1** (322 crops, another document and hand) is only tested on.
+
+Test with `evaluate_non_synthetic.py --source cursive` (the v2 benchmark)
+or `--source cursive_v1`.
+
 ## Memory use
 
 The models keep their forward activations for the backward pass, so memory
