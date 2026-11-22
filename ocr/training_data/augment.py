@@ -14,7 +14,7 @@ import random
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-from ocr.preprocess import prepare
+from ocr.preprocess import crop_to_ink, prepare, stretch
 from ocr.training_data import WIDTH, fonts, lexicon, pad_top, render
 
 # Stroke thickness, blur and geometry are applied at this width (4 times the
@@ -58,6 +58,30 @@ JPEG_QUALITY_RANGE = (30, 95)
 ATTEMPTS = 5
 # Pixel rows per model token (as in ocr/train.py)
 ROWS_PER_TOKEN = 4
+
+# Bending: the stem weaves sideways along a smooth random curve, as a
+# hand's does (augment(..., bend=True)). Run 32 read words bent ±4 model
+# pixels about half as well as straight ones (see the diagnostics of
+# 2026-11-21). Strengths are, like the rest, first guesses checked by eye
+# against the cursive crops, not tuned on any test set's score.
+BEND_CHANCE = 0.7
+# Largest sideways swing either way, as a share of the word's width (0.08
+# of WIDTH is about 4 model pixels)
+MAX_BEND = 0.12
+# Distance between the curve's control points, as multiples of the word's
+# width: about one and a half to four letters
+BEND_SPACING_RANGE = (0.6, 1.5)
+
+# Real crops (photos and cursive crops), augmented in training with
+# augment_crop: lighter than the rendered words, since they're photos
+# already, so no ink levels, noise, specks or JPEG. The same geometry and
+# bending, thinner stroke changes, and sometimes the word shrunk inside the
+# strip, as when a flourish or slant widens a crop.
+CROP_STROKE_CHANGES = [-1, 0, 1, 2]
+CROP_STROKE_WEIGHTS = [0.15, 0.45, 0.25, 0.15]
+CROP_MAX_BLUR = 1.0         # Gaussian radius at WORK_WIDTH
+SHRINK_CHANCE = 0.3
+SHRINK_WIDTH_RANGE = (26, 31)   # model pixels, of WIDTH
 
 def scale_to_width(image, width):
     height = max(1, round(image.height * width / image.width))
@@ -104,6 +128,31 @@ def distort(image, rng):
                            resample=Image.BICUBIC, fillcolor=255)
     return image.rotate(rng.uniform(-MAX_ROTATION, MAX_ROTATION),
                         resample=Image.BICUBIC, expand=True, fillcolor=255)
+
+def bend(image, rng):
+    '''
+    Shifts each row of the word sideways along a smooth random curve, as a
+    hand's stem weaves, widening the image so the ink stays inside it.
+    '''
+    width, height = image.size
+    swing = rng.uniform(0, MAX_BEND) * width
+    spacing = rng.uniform(*BEND_SPACING_RANGE) * width
+    points = max(2, int(np.ceil(height / spacing)) + 1)
+    # Control points, smoothly enlarged to one offset per row, as
+    # print_and_photograph's shading is
+    grid = rng.uniform(-1, 1, (points, 1)).astype(np.float32)
+    curve = np.asarray(Image.fromarray(grid, mode="F").resize(
+        (1, height), Image.BICUBIC))[:, 0]
+    curve = curve / max(1e-6, np.abs(curve).max()) * swing
+    room = int(np.ceil(swing)) + 1
+    pixels = np.asarray(image, dtype=np.float64)
+    columns = np.arange(width + 2 * room)
+    source = np.arange(width)
+    bent = np.empty((height, width + 2 * room))
+    for row in range(height):
+        bent[row] = np.interp(columns - room - curve[row], source,
+                              pixels[row], left=255, right=255)
+    return Image.fromarray(np.round(bent).astype(np.uint8))
 
 def add_margins(image, rng):
     '''
@@ -189,36 +238,89 @@ def tokens_needed(word):
     repeats = sum(a == b for a, b in zip(word, word[1:]))
     return len(word) + repeats
 
-def augment_once(canvas, rng):
-    return prepare(photograph(canvas, rng), crop=True, whiten=True)
+def augment_once(canvas, rng, bend_words=False):
+    return prepare(photograph(canvas, rng, bend_words), crop=True,
+                   whiten=True)
 
-def photograph(canvas, rng):
+def photograph(canvas, rng, bend_words=False):
     '''
     Makes a rendered word look like a photo of a print, before
-    preprocessing: greyscale, about PHOTO_WIDTH wide, on grey paper.
+    preprocessing: greyscale, about PHOTO_WIDTH wide, on grey paper. With
+    bend_words, some words are bent too (see bend).
     '''
     image = scale_to_width(canvas, WORK_WIDTH)
     image = vary_strokes(image, rng)
     image = distort(image, rng)
+    # Drawn only when bending, so without it every image is as before
+    if bend_words and rng.random() < BEND_CHANCE:
+        image = bend(image, rng)
     image = add_margins(image, rng)
     blur = rng.uniform(0, MAX_BLUR)
     if blur > 0.2:
         image = image.filter(ImageFilter.GaussianBlur(blur))
     return print_and_photograph(scale_to_width(image, PHOTO_WIDTH), rng)
 
-def augment(canvas, word, seed, epoch):
+def augment(canvas, word, seed, epoch, bend_words=False):
     '''
     Turns word, rendered by training_data.render, into a model input that
-    looks like a preprocessed photo of a print. The same seed and epoch
-    always give the same image.
+    looks like a preprocessed photo of a print, bent like handwriting
+    sometimes with bend_words. The same seed and epoch always give the
+    same image.
     '''
     minimum_height = tokens_needed(word) * ROWS_PER_TOKEN
     for attempt in range(ATTEMPTS):
         image = augment_once(canvas, np.random.default_rng([seed, epoch,
-                                                            attempt]))
+                                                            attempt]),
+                             bend_words)
         if image.height >= minimum_height:
             break
     else:
         image = scale_to_width(canvas, WIDTH)
     # The padding varies by epoch too, for more variety in where words sit
     return pad_top(image, random.Random(f"{seed}-{epoch}"))
+
+def shrink(image, rng):
+    # The WIDTH-wide word scaled narrower and set somewhere in the strip
+    width = int(rng.integers(SHRINK_WIDTH_RANGE[0],
+                             SHRINK_WIDTH_RANGE[1] + 1))
+    small = scale_to_width(image, width)
+    strip = Image.new("L", (WIDTH, small.height), 255)
+    strip.paste(small, (int(rng.integers(0, WIDTH - width + 1)), 0))
+    return strip
+
+def augment_crop_once(photo, rng):
+    '''
+    One augmented model input from a real word crop (a greyscale PIL image
+    of the photo as it is, before preprocessing).
+    '''
+    image = crop_to_ink(stretch(photo.convert("L"), whiten=True))
+    image = scale_to_width(image, WORK_WIDTH)
+    change = rng.choice(CROP_STROKE_CHANGES, p=CROP_STROKE_WEIGHTS)
+    image = change_strokes(image, change)
+    image = distort(image, rng)
+    if rng.random() < BEND_CHANCE:
+        image = bend(image, rng)
+    blur = rng.uniform(0, CROP_MAX_BLUR)
+    if blur > 0.2:
+        image = image.filter(ImageFilter.GaussianBlur(blur))
+    # Already whitened, so only cropped and scaled to WIDTH now
+    image = prepare(image, crop=True, whiten=False)
+    if rng.random() < SHRINK_CHANCE:
+        image = shrink(image, rng)
+    return image
+
+def augment_crop(photo, word, seed):
+    '''
+    A real word crop augmented for training, as augment does a rendered
+    word: seed (a list of ints, e.g. [path's checksum, copy, epoch]) always
+    gives the same image. Falls back to the crop prepared as for testing if
+    augmenting leaves too few tokens for CTC. Crops aren't padded at the
+    top, as the real ones aren't.
+    '''
+    minimum_height = tokens_needed(word) * ROWS_PER_TOKEN
+    for attempt in range(ATTEMPTS):
+        image = augment_crop_once(photo,
+                                  np.random.default_rng(seed + [attempt]))
+        if image.height >= minimum_height:
+            return image
+    return prepare(photo)

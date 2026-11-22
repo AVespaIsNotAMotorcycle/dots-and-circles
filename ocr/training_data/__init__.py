@@ -70,7 +70,7 @@ def pad_top(image, rng):
     padded.paste(image, (0, padding))
     return padded
 
-def generate(seed, epoch=None):
+def generate(seed, epoch=None, bend=False):
     '''
     Returns (image, word) for a seed. Each integer seed maps to one
     (word, font) pair, so seeds 0 to len(lexicon) * len(fonts) - 1 cover
@@ -79,7 +79,7 @@ def generate(seed, epoch=None):
     With epoch=None the image is clean, and a seed always gives the same
     one. With an epoch it's augmented to look like a photographed print
     (see augment.py), differently for each epoch but the same for the same
-    seed and epoch.
+    seed and epoch. bend also bends some words like handwriting.
     '''
     if not isinstance(seed, int):
         seed = random.Random(seed).randrange(len(lexicon) * len(fonts))
@@ -91,7 +91,7 @@ def generate(seed, epoch=None):
         # Imported here: augment.py uses ocr.preprocess, which needs this
         # module to have finished loading
         from ocr.training_data.augment import augment
-        return augment(canvas, word, seed, epoch), word
+        return augment(canvas, word, seed, epoch, bend), word
 
     height = max(1, round(canvas.height * WIDTH / canvas.width))
     image = canvas.resize((WIDTH, height), Image.LANCZOS)

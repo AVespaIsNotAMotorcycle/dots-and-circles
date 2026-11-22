@@ -193,16 +193,17 @@ def render_composite(composite):
         last = last if last > 0 else len(parts) - 1
         parts, images, gaps = parts[:last], images[:last], gaps[:last - 1]
 
-def generate_composite(composite, epoch=None):
+def generate_composite(composite, epoch=None, bend=False):
     '''
     (image, label) for a Composite, as training_data.generate gives them
-    for a seed: clean with epoch=None, otherwise augmented for that epoch.
+    for a seed: clean with epoch=None, otherwise augmented for that epoch
+    (and with bend, sometimes bent like handwriting).
     '''
     canvas, text = render_composite(composite)
     if epoch is not None:
         # Imported here, as in training_data.generate
         from ocr.training_data.augment import augment
-        return augment(canvas, text, composite.seed, epoch), text
+        return augment(canvas, text, composite.seed, epoch, bend), text
     height = max(1, round(canvas.height * WIDTH / canvas.width))
     image = canvas.resize((WIDTH, height), Image.LANCZOS)
     return pad_top(image, random.Random(composite.seed)), text

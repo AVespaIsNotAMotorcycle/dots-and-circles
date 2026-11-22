@@ -169,3 +169,90 @@ class TestManchuToAbkai:
         for word in lexicon:
             abkai = manchu_to_abkai(word)
             assert manchu_to_abkai(abkai_to_manchu(abkai)) == abkai
+
+
+class TestHandwriting:
+    '''Bending rendered words and augmenting real crops (train(handwriting=True)).'''
+
+    def word_image(self):
+        # A rendered word at WORK_WIDTH, as photograph bends it
+        from ocr.training_data import fonts, render
+        from ocr.training_data.augment import WORK_WIDTH, scale_to_width
+        return scale_to_width(render(lexicon[1234], fonts[0]), WORK_WIDTH)
+
+    def photo(self):
+        # A grey "photo": dark strokes weaving down a light page
+        pixels = np.full((120, 40), 200, dtype=np.uint8)
+        for row in range(10, 110):
+            column = 18 + round(4 * np.sin(row / 12))
+            pixels[row, column:column + 4] = 30
+        pixels[30:34, 8:32] = 30
+        return Image.fromarray(pixels)
+
+    def test_bend_keeps_all_the_ink(self):
+        from ocr.training_data.augment import bend
+        image = self.word_image()
+        ink = (255 - np.asarray(image, dtype=np.float64)).sum()
+        for seed in range(5):
+            bent = bend(image, np.random.default_rng(seed))
+            assert bent.height == image.height
+            assert bent.width > image.width
+            bent_ink = (255 - np.asarray(bent, dtype=np.float64)).sum()
+            assert abs(bent_ink - ink) / ink < 0.02
+
+    def test_bend_moves_rows_sideways(self):
+        from ocr.training_data.augment import bend
+        image = self.word_image()
+        bent = bend(image, np.random.default_rng(3))
+        # Each row's ink centre, relative to the image's middle
+        def centres(picture):
+            ink = 255 - np.asarray(picture, dtype=np.float64)
+            rows = ink.sum(axis=1) > 0
+            return ((ink[rows] * np.arange(picture.width)).sum(axis=1)
+                    / ink[rows].sum(axis=1) - picture.width / 2)
+        assert np.abs(centres(bent) - centres(image)).max() > 1
+
+    def test_words_without_bending_are_as_before(self):
+        # bend=False draws no extra random numbers, so earlier runs'
+        # images are unchanged
+        for seed in (5, 1234, 9999):
+            plain, _ = generate(seed, epoch=2)
+            unbent, _ = generate(seed, epoch=2, bend=False)
+            assert plain.tobytes() == unbent.tobytes()
+
+    def test_bent_words_are_model_inputs(self):
+        for seed in range(0, 21879, 499):
+            image, word = generate(seed, epoch=1, bend=True)
+            assert image.mode == "L" and image.width == WIDTH
+            assert -(-min(image.height, HEIGHT) // 4) >= tokens_needed(word)
+
+    def test_some_words_are_bent(self):
+        differ = sum(generate(seed, 1)[0].tobytes()
+                     != generate(seed, 1, bend=True)[0].tobytes()
+                     for seed in range(0, 21879, 997))
+        assert differ > 5
+
+    def test_augmented_crop_is_repeatable_and_varies(self):
+        from ocr.training_data.augment import augment_crop
+        photo, word = self.photo(), "ᠠᠪᡴᠠ"
+        first = augment_crop(photo, word, [7, 0, 3])
+        assert first.tobytes() == augment_crop(photo, word,
+                                               [7, 0, 3]).tobytes()
+        others = [augment_crop(photo, word, [7, copy, epoch]).tobytes()
+                  for copy, epoch in [(1, 3), (0, 4)]]
+        assert all(other != first.tobytes() for other in others)
+
+    def test_augmented_crops_are_model_inputs(self):
+        from ocr.training_data.augment import augment_crop
+        photo, word = self.photo(), "ᠠᠪᡴᠠ"
+        for seed in range(20):
+            image = augment_crop(photo, word, [seed, 0, 0])
+            assert image.mode == "L" and image.width == WIDTH
+            assert image.height >= tokens_needed(word) * 4
+
+    def test_crops_too_short_for_ctc_fall_back_to_the_prepared_crop(self):
+        from ocr.training_data.augment import augment_crop
+        photo = self.photo()
+        word = "ᠠ" * 40
+        assert (augment_crop(photo, word, [1, 0, 0]).tobytes()
+                == prepare(photo).tobytes())

@@ -14,6 +14,7 @@ import random
 import threading
 import time
 import traceback
+import zlib
 from concurrent.futures import ProcessPoolExecutor, wait
 
 import matplotlib.pyplot as plt
@@ -31,7 +32,7 @@ from ocr.modelC import ModelC
 from ocr.modelD import ModelD
 from ocr.split import split_words
 from ocr.training_data import HEIGHT, WIDTH, fonts, generate, lexicon
-from ocr.training_data.augment import tokens_needed
+from ocr.training_data.augment import augment_crop, tokens_needed
 from ocr.training_data.compose import (Composite, generate_composite,
                                        make_composites)
 
@@ -73,6 +74,15 @@ PROGRESS_EVERY = 30
 # checkpoint is ever chosen by the monitor score. The handwritten cursive
 # crops (see ocr/cursive.py) are used the same way, and their monitor set
 # is scored and logged separately, as "cursive".
+# Training for handwriting (train(handwriting=True)): the rendered words are
+# sometimes bent like a hand's stem, the real crops are augmented too (see
+# training_data/augment.py's augment_crop), and the cursive training crops
+# are repeated to make up about CURSIVE_SHARE of each epoch, each copy
+# augmented differently. The cursive crops are always augmented and the
+# photos PHOTO_AUGMENT_CHANCE of the time, since print already reads well.
+# The test batches stay as before, so their scores compare with other runs.
+CURSIVE_SHARE = 0.05
+PHOTO_AUGMENT_CHANCE = 0.5
 # Besides the latest weights, a copy is kept every this many epochs
 SNAPSHOT_EVERY = 5
 # Photos per batch when scoring them. The models keep every layer's
@@ -82,7 +92,7 @@ PHOTO_BATCH_SIZE = 16
 MONITOR_SETS = ("photo", "cursive")
 
 def generate_seeds(validation_set = False, training_photos = True,
-                   composites = True):
+                   composites = True, cursive_share = None):
     '''
     Returns (train seeds, test seeds), or (train, validation, test) with
     validation_set. The lexicon is split by word (see ocr/split.py), and
@@ -95,6 +105,10 @@ def generate_seeds(validation_set = False, training_photos = True,
     together, the genitive i alone and punctuated words, made from its own
     words (see training_data/compose.py), as Composites in place of seeds.
     Test stays single lexicon entries, comparable with earlier runs.
+
+    With a cursive_share, each training cursive crop is in train several
+    times, as (path, label, copy), so that they make up about that share of
+    it; make_batch augments each copy differently.
     '''
     test_proportion = 0.15
     valid_proportion = 0.15 if validation_set else 0
@@ -132,8 +146,15 @@ def generate_seeds(validation_set = False, training_photos = True,
                   f"rendered words only.")
         if cursive.available():
             training = cursive.set_images("train")
+            copies = 1
+            if cursive_share and training:
+                copies = max(1, round(cursive_share * len(train_set)
+                                      / ((1 - cursive_share) * len(training))))
+                training = [(path, label, copy) for copy in range(copies)
+                            for path, label in training]
             train_set += training
-            print(f"Training cursive crops: {len(training)}.")
+            print(f"Training cursive crops: {len(training) // copies}"
+                  + (f", {copies} copies of each." if copies > 1 else "."))
         else:
             print(f"No cursive crops in {cursive.DATA_DIRECTORY}; see "
                   f"ocr/training_data/fetch_cursive.py.")
@@ -254,30 +275,52 @@ def generate_batches(seeds, batch_size=64):
         batches.append(make_batch(seeds[start:start + batch_size]))
     return batches
 
-def make_batch(seeds, epoch=None):
+def crop_seed(path, copy, epoch):
+    # Seeds a real crop's augmentation: the same crop, copy and epoch
+    # always give the same image, wherever the repository is
+    name = os.path.relpath(path, directory).replace(os.sep, "/")
+    return [zlib.crc32(name.encode("utf-8")), copy, epoch]
+
+def augments_crop(path, copy, epoch):
+    # Whether a real crop is augmented this epoch (see CURSIVE_SHARE)
+    if os.path.abspath(path).startswith(cursive.DATA_DIRECTORY + os.sep):
+        return True
+    rng = np.random.default_rng(crop_seed(path, copy, epoch) + [1])
+    return rng.random() < PHOTO_AUGMENT_CHANCE
+
+def make_batch(seeds, epoch=None, handwriting=False):
     '''
     One batch of entries (see generate_batches) for seeds. With an epoch
-    the images are augmented, differently for each epoch. A seed can also be
-    a training photo or cursive crop as a (path, label) pair: it's prepared
-    as photos are for testing, never augmented, and labelled with the label's Manchu
-    spelling (see photos.spell_in_manchu). Or it can be a Composite (see
-    training_data/compose.py).
+    the images are augmented, differently for each epoch, and with
+    handwriting too some rendered words are bent like a hand's (see
+    CURSIVE_SHARE). A seed can also be a training photo or cursive crop as
+    a (path, label) pair, or (path, label, copy): it's prepared as photos
+    are for testing, augmented only with handwriting, and labelled with the
+    label's Manchu spelling (see photos.spell_in_manchu). Or it can be a
+    Composite (see training_data/compose.py).
     '''
     batch = []
+    bend = handwriting and epoch is not None
     for seed in seeds:
         if isinstance(seed, Composite):
-            image, word = generate_composite(seed, epoch)
+            image, word = generate_composite(seed, epoch, bend)
         elif isinstance(seed, tuple):
-            path, label = seed
-            image = photos.load_photo(path)
+            path, label = seed[:2]
+            copy = seed[2] if len(seed) > 2 else 0
             word = photos.spell_in_manchu(label)
+            if bend and augments_crop(path, copy, epoch):
+                with Image.open(path) as photo:
+                    image = augment_crop(photo, word,
+                                         crop_seed(path, copy, epoch))
+            else:
+                image = photos.load_photo(path)
             # CTC can't spell a word in fewer tokens than it needs, so a
             # photo that's too short is left out (none were when the
             # photos were split)
             if token_count(image) < tokens_needed(word):
                 continue
         else:
-            image, word = generate(seed, epoch)
+            image, word = generate(seed, epoch, bend)
         batch.append((image_to_array(image), word_to_array(word),
                       token_count(image)))
     return batch
@@ -291,7 +334,7 @@ class EpochBatches:
     next epoch's while the models train on the current one.
     '''
     def __init__(self, train_seeds, test_seeds, epochs, augment,
-                 batch_size=64):
+                 batch_size=64, handwriting=False):
         self.seeds = {
             "train": [train_seeds[start:start + batch_size]
                       for start in range(0, len(train_seeds), batch_size)],
@@ -300,6 +343,9 @@ class EpochBatches:
         }
         self.epochs = epochs
         self.augment = augment
+        # Only the training batches are made for handwriting, so the test
+        # batches compare with other runs'
+        self.handwriting = handwriting
         if augment:
             # Each epoch's futures, kept until every thread has moved on
             self.futures = {}
@@ -322,7 +368,8 @@ class EpochBatches:
     def _start(self, epoch):
         if epoch < self.epochs and epoch not in self.futures:
             self.futures[epoch] = {
-                name: [self.pool.submit(make_batch, seeds, epoch)
+                name: [self.pool.submit(make_batch, seeds, epoch,
+                                        self.handwriting and name == "train")
                        for seeds in batches]
                 for name, batches in self.seeds.items()}
 
@@ -802,11 +849,14 @@ def get_learn_rate(epoch, batch_number, step, initial_rate):
     if epoch >= 10: return initial_rate / 3
     return initial_rate
 
-def train(epochs = 3, augment = True, resume = None, start_from = None):
+def train(epochs = 3, augment = True, resume = None, start_from = None,
+          handwriting = None):
     '''
     Trains every model in run_models for epochs. With augment=True the
     images are augmented to look like photographed prints, afresh each
-    epoch; with augment=False they're the clean renders.
+    epoch; with augment=False they're the clean renders. handwriting=True
+    trains for handwriting too (see CURSIVE_SHARE). It's saved in the run's
+    settings.json, so a resumed run keeps it unless it's given.
 
     resume names an earlier run's folder, e.g. "run029", to carry on: each
     model loads its latest weights and trains epochs more, counting on from
@@ -834,13 +884,26 @@ def train(epochs = 3, augment = True, resume = None, start_from = None):
     else:
         run_directory = new_run_directory()
         print(f"Saving this run to {run_directory}")
-    run_models(run_directory, epochs, augment)
+    settings_path = os.path.join(run_directory, "settings.json")
+    settings = {}
+    if resume and os.path.exists(settings_path):
+        with open(settings_path, "r", encoding="utf-8") as file:
+            settings = json.load(file)
+    if handwriting is None:
+        handwriting = settings.get("handwriting", False)
+    settings["handwriting"] = handwriting
+    if start_from:
+        settings["start_from"] = start_from
+    with open(settings_path, "w", encoding="utf-8") as file:
+        json.dump(settings, file, indent=2)
+    print(f"Training for handwriting: {handwriting}.")
+    run_models(run_directory, epochs, augment, handwriting)
     # run_models has returned, so its batches and models are unreachable;
     # collect them now, before graphing
     gc.collect()
     graph(run_directory)
 
-def run_models(run_directory, epochs, augment):
+def run_models(run_directory, epochs, augment, handwriting=False):
     '''
     Trains the models, one thread each, logging every batch's results to
     log.csv as it goes and saving each model's weights at the end of every
@@ -848,7 +911,8 @@ def run_models(run_directory, epochs, augment):
     of the log. After each epoch the monitor sets are scored too. Everything it
     makes is local, so it's all freed when it returns.
     '''
-    train_seeds, test_seeds = generate_seeds()
+    train_seeds, test_seeds = generate_seeds(
+        cursive_share=CURSIVE_SHARE if handwriting else None)
     monitor_sets = load_monitor_sets()
     # Epochs each model has finished, if this run is being resumed
     progress = read_progress(run_directory)
@@ -938,7 +1002,8 @@ def run_models(run_directory, epochs, augment):
     # Models can stop an epoch apart, so the batches go up to the furthest
     end = max(run["start"] for run in runs.values()) + epochs
     print("Generating batches...")
-    batches = EpochBatches(train_seeds, test_seeds, end, augment)
+    batches = EpochBatches(train_seeds, test_seeds, end, augment,
+                           handwriting=handwriting)
 
     # One log for every model. Threads write rows to it in whatever order
     # they finish batches, so the lock stops two rows being written at once.
@@ -1075,4 +1140,4 @@ def train_model(name, run, batches, monitor_sets, epochs,
               f"{traceback.format_exc()}")
 
 if __name__ == "__main__":
-    train(epochs=4, augment=True, start_from="run031")
+    train(epochs=6, augment=True, start_from="run032", handwriting=True)
