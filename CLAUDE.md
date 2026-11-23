@@ -15,6 +15,12 @@ README.md for the architecture.
   transcribed real pages in `ocr/real_pages/`; see its README for sources).
 - `ocr/dictionary.py`: the server's closest dictionary words, also matching
   verb forms (stem, infixes, suffix) with the affixes in `ocr/affixes.py`.
+- `ocr/char_lm.py` and `ocr/beam_search.py`: a character language model
+  of Manchu spelling (Kneser-Ney, from the lexicon's training words) and
+  a CTC beam search that weighs it in as a tiebreaker; it never rules a
+  spelling out, so it keeps to the open-vocabulary decision.
+  `ocr/tune_lm.py` tunes its weight and letter bonus on the monitor sets
+  and scores the benchmarks. Greedy decoding is still the default.
 - `ocr/training_data/`: lexicon, word rendering (`__init__.py`) and print
   augmentation (`augment.py`). `fonts/` is gitignored for licensing reasons:
   never commit font files, and check it holds `.ttf` files before training.
@@ -34,6 +40,7 @@ Run from the repo root:
 - Train: `python -m ocr.train`
 - Evaluate on photographed words:
   `python -m ocr.evaluate_non_synthetic ocr/runs/runNNN/<weights>.npz`
+  (add `--lm-weight 0.6 --lm-bonus 1` to read with the language model)
 - Test: `python -m pytest -q nn loss optim utils ocr/tests server/tests`
   (the server tests skip without Flask)
 - Serve locally: `python -m flask --app server.app run`

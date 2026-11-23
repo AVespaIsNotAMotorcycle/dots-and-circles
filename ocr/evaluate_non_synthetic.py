@@ -16,7 +16,8 @@ from multiprocessing import Pool
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from ocr import cursive, manchuai
+from ocr import beam_search, cursive, manchuai
+from ocr.char_lm import load_lm
 from ocr.modelD import ModelD
 from ocr.photos import (DATA_DIRECTORY, all_images, load_photo,
                         manchu_to_roman, sample_images, set_images)
@@ -44,11 +45,18 @@ PASSES = {
 # The Manchu comma and full stop, which some sources' labels never have
 PUNCTUATION = "\u1808\u1809"
 
-# Each worker process loads the model once, in init_worker
+# Each worker process loads the model once, in init_worker, and the
+# language model if the beam search uses one (lm_weight above 0)
 model = None
+lm = None
+lm_weight = 0
+lm_bonus = 0
 
-def init_worker(weights, depth, emb_dim):
-    global model
+def init_worker(weights, depth, emb_dim, weight=0, bonus=0):
+    global model, lm, lm_weight, lm_bonus
+    lm_weight, lm_bonus = weight, bonus
+    if weight:
+        lm = load_lm()
     # Older models have fewer classes, with the blank last (see classes_in)
     classes = classes_in(weights)
     model = ModelD(token_dim=TOKEN_DIM, context_length=CONTEXT_LENGTH,
@@ -68,8 +76,10 @@ def read_batch(job):
                for image in images]
     _, y = predict(model, entries)
     rows = []
-    for (path, label), image, guess in zip(batch, images,
-                                           read_words(model, y, entries)):
+    guesses = (beam_search.read_words(model, y, entries, lm, lm_weight,
+                                      lm_bonus)
+               if lm_weight else read_words(model, y, entries))
+    for (path, label), image, guess in zip(batch, images, guesses):
         if ignore_punctuation:
             guess = "".join(c for c in guess
                             if c not in PUNCTUATION).strip()
@@ -191,6 +201,14 @@ def main():
                         "same sample (default: all of them)")
     parser.add_argument("--out", help="folder to write the results CSVs to "
                         "(default: the weights' folder)")
+    parser.add_argument("--lm-weight", type=float, default=0,
+                        help="read with the beam search and the character "
+                        "language model at this weight (see "
+                        "ocr/beam_search.py; ocr/tune_lm.py tunes it); 0, "
+                        "the default, reads greedily")
+    parser.add_argument("--lm-bonus", type=float, default=1,
+                        help="the beam search's bonus per letter, with "
+                        "--lm-weight")
     parser.add_argument("--examples", type=int, default=0,
                         help="also save this many random example images, "
                         "photo beside the model's guess, from the last pass")
@@ -209,13 +227,16 @@ def main():
     # Results files are named after the source, except the photos', which
     # keep their old names
     prefix = "" if args.source == "photo" else f"{args.source}_"
+    if args.lm_weight:
+        prefix += "lm_"
     sample = (sample_images(args.sample, args.seed, images) if args.sample
               else images)
     out = args.out or os.path.dirname(os.path.abspath(args.weights))
     rows = []
 
     with Pool(WORKERS, initializer=init_worker,
-              initargs=(args.weights, args.depth, args.emb_dim)) as pool:
+              initargs=(args.weights, args.depth, args.emb_dim,
+                        args.lm_weight, args.lm_bonus)) as pool:
         for name in args.passes:
             crop, whiten = PASSES[name]
             if time.time() > deadline:
