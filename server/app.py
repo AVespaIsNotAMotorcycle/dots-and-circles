@@ -1041,7 +1041,8 @@ def create_app(config_path=CONFIG_PATH, visitors_folder=None,
             "id": submission_id,
             "received": datetime.datetime.now(datetime.timezone.utc)
                 .isoformat(timespec="seconds"),
-            # Heroku sets it with runtime-dyno-build-metadata turned on
+            # Heroku sets HEROKU_SLUG_COMMIT with runtime-dyno-metadata
+            # turned on (see server/README.md)
             "server-commit": (os.environ.get("HEROKU_BUILD_COMMIT")
                               or os.environ.get("HEROKU_SLUG_COMMIT")),
             "model": model,

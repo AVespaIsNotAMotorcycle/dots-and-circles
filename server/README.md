@@ -539,9 +539,11 @@ deletes nothing from the store.
      R2_BUCKET=dots-and-circles-submissions
    ```
 
-   Optionally, `heroku labs:enable runtime-dyno-build-metadata -a
-   dots-and-circles` makes Heroku set `HEROKU_BUILD_COMMIT`, which each
-   submission records as `server-commit` (otherwise `null`).
+   Optionally, `heroku labs:enable runtime-dyno-metadata -a
+   dots-and-circles` makes Heroku set `HEROKU_SLUG_COMMIT` (from the next
+   restart or deploy), which each submission records as `server-commit`
+   (otherwise `null`). Not `runtime-dyno-build-metadata`, which sets
+   nothing the server reads. It's on for the deployed app.
 4. Download with the read-only token (boto3 needs installing in the venv
    first: `.venv/bin/pip install boto3`):
 
