@@ -4,7 +4,7 @@ import math
 import numpy as np
 import pytest
 
-from ocr.beam_search import beam_search, log_softmax
+from ocr.beam_search import Decoder, align, beam_search, log_softmax
 from ocr.char_lm import CharLM
 
 # Three letters and a blank, class 3
@@ -90,3 +90,63 @@ def test_bonus_keeps_letters(lm):
     logits = [A, GAP, [0, 4.0, 0, 4.2]]
     assert read(logits) == "a"
     assert read(logits, bonus=1.0) == "ab"
+
+
+# --- align and Decoder, over a small alphabet with a space and a mark ------
+
+
+SMALL = ["a", "b", " ", ".", None]
+SMALL_BLANK = 4
+
+
+def one_hot(*letters, sure=9.0):
+    # One token per letter (None for the blank)
+    rows = []
+    for letter in letters:
+        row = [0.0] * len(SMALL)
+        row[SMALL.index(letter)] = sure
+        rows.append(row)
+    return log_softmax(np.array(rows))
+
+
+def test_align_finds_each_letters_tokens():
+    log_probs = one_hot("a", "a", None, "b", None, None, "a")
+    assert align(log_probs, "aba", SMALL_BLANK, SMALL) == [(0, 1), (3, 3),
+                                                           (6, 6)]
+
+
+def test_align_doubled_letter_uses_its_blank():
+    log_probs = one_hot("a", None, "a")
+    assert align(log_probs, "aa", SMALL_BLANK, SMALL) == [(0, 0), (2, 2)]
+
+
+def test_align_empty():
+    assert align(one_hot(None, None), "", SMALL_BLANK, SMALL) == []
+
+
+def decoder(weight=0.0):
+    lm = CharLM(["ab", "ba", "a b"], ["a", "b", " ", "."], order=3)
+    return Decoder(lm, weight, 0.0, SMALL, marks=".")
+
+
+def test_decoder_keeps_a_mark_at_a_words_end():
+    output = one_hot("a", None, "b", None, ".", None, " ", None, "a")
+    text, spaces = decoder(0.5).read(output, len(output), SMALL_BLANK)
+    assert text == "ab. a"
+    assert spaces == [6]
+
+
+def test_decoder_keeps_a_mark_at_a_words_start():
+    output = one_hot(".", None, "a", None, "b")
+    assert decoder(0.5).read(output, len(output), SMALL_BLANK)[0] == ".ab"
+
+
+def test_decoder_drops_a_mark_inside_a_word():
+    output = one_hot("a", None, ".", None, "b")
+    assert decoder(0.5).read(output, len(output), SMALL_BLANK)[0] == "ab"
+
+
+def test_decoder_without_marks_matches_the_beam_search():
+    output = one_hot("a", None, "b", "b", None, "a")
+    assert (decoder().read(output, len(output), SMALL_BLANK)[0]
+            == beam_search(output, SMALL_BLANK, SMALL) == "aba")

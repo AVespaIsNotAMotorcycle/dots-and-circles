@@ -50,12 +50,15 @@ MIN_TEXT_SIZE = 8
 DRAWN_AS = {"ʻ": "‘"}
 
 
-def decode_words(output, length, blank):
+def decode_words(output, length, blank, decoder=None):
     '''
     Reads a CTC model's output for one image, as ctc_decode does, and finds
     where it puts spaces. Returns the reading and, for each run of spaces,
-    the token in its middle.
+    the token in its middle. With a decoder (ocr.beam_search.Decoder, set
+    on models whose config entry has a language model), reads with it.
     '''
+    if decoder is not None:
+        return decoder.read(output, length, blank)
     classes = np.argmax(output[:length], axis=-1)
     text = ""
     spaces = []
@@ -98,7 +101,8 @@ def read_crops(model, crops, crop=True, whiten=True):
         for index, output, (_, _, length) in zip(batch, y, entries):
             image = images[index]
             probabilities = softmax(output[:length])
-            text, spaces = decode_words(output, length, model.blank)
+            text, spaces = decode_words(output, length, model.blank,
+                                        getattr(model, "decoder", None))
             # Images taller than HEIGHT are squeezed into it
             rows = min(image.height, HEIGHT)
             letters = probabilities.argmax(axis=-1) != model.blank

@@ -25,6 +25,7 @@ import numpy as np
 from flask import Flask, jsonify, request
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from ocr.beam_search import load_decoder
 from ocr.box_classifier import load_classifier
 from ocr.dictionary import Dictionary
 from ocr.layout import straighten
@@ -103,6 +104,10 @@ def load_model(entry, root):
                          "since the response includes the CTC string")
     model.load_weights(weights)
     model.set_training(False)
+    # A "language_model" entry reads with the beam search and the
+    # character language model (see ocr/beam_search.py), else greedily
+    if "language_model" in entry:
+        model.decoder = load_decoder(entry["language_model"])
     return model
 
 def read_word(entry, model, image, label):
@@ -118,7 +123,9 @@ def read_word(entry, model, image, label):
     length = entries[0][2]
     probabilities = softmax(y[0][:length])
     indices = np.argmax(probabilities, axis=-1)
-    guess = ctc_decode(y[0], length, model.blank)
+    decoder = getattr(model, "decoder", None)
+    guess = (decoder.read(y[0], length, model.blank)[0] if decoder
+             else ctc_decode(y[0], length, model.blank))
     return {
         "name": entry["name"],
         "model": entry["model"],

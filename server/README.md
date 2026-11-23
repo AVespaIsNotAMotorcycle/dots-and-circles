@@ -400,6 +400,14 @@ repository root. Locally, from the repository root:
     trained on tight phrases (Run 31 on) write the spaces between close-set
     words themselves, and the stem breaks only cut lone letters off words,
     so they set it false.
+  - `language_model`: `{"weight": ..., "bonus": ...}` reads with a beam
+    search and a character language model of Manchu spelling as a
+    tiebreaker (see `ocr/beam_search.py`, tuned by `ocr/tune_lm.py`),
+    keeping the model's punctuation at the start or end of a word. Without
+    it, the model reads greedily. It never rules a spelling out, so words
+    in no lexicon are still read. It changes the `prediction-*` fields and
+    pages' readings; `ctc` and `probs` stay the model's own most likely
+    classes. The language model takes about 27 MB, built once at startup.
 
 ## Visitors
 

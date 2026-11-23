@@ -114,6 +114,135 @@ def beam_search(log_probs, blank, alphabet, lm=None, weight=0.0, bonus=0.0,
     return max(beams, key=final)
 
 
+def align(log_probs, text, blank, alphabet):
+    '''
+    The likeliest CTC path through log_probs that spells text (Viterbi):
+    for each letter of text, its (first, last) token. text must be
+    spellable in that many tokens.
+    '''
+    if not text:
+        return []
+    # The path's states: a blank before, between and after the letters
+    states = [blank]
+    for letter in text:
+        states += [alphabet.index(letter), blank]
+    states = np.array(states)
+    count = len(states)
+    emit = log_probs[:, states]
+    # A letter state may skip the blank before it, unless the letter
+    # before is the same (a doubled letter needs its blank)
+    can_skip = np.zeros(count, dtype=bool)
+    can_skip[2:] = (states[2:] != blank) & (states[2:] != states[:-2])
+    score = np.full(count, -np.inf)
+    score[:2] = emit[0, :2]
+    back = np.zeros((len(log_probs), count), dtype=int)
+    for t in range(1, len(log_probs)):
+        stay = score
+        step = np.concatenate([[-np.inf], score[:-1]])
+        skip = np.where(can_skip, np.concatenate([[-np.inf] * 2,
+                                                  score[:-2]]), -np.inf)
+        options = np.stack([stay, step, skip])
+        best = options.argmax(axis=0)
+        back[t] = np.arange(count) - best
+        score = options.max(axis=0) + emit[t]
+    state = count - 1 if score[-1] >= score[-2] else count - 2
+    spans = {}
+    for t in range(len(log_probs) - 1, -1, -1):
+        if state % 2:
+            first, last = spans.get(state // 2, (t, t))
+            spans[state // 2] = (t, last)
+        state = back[t, state]
+    return [spans[k] for k in range(len(text))]
+
+
+class Decoder:
+    '''
+    Reads model outputs with the beam search and language model, keeping
+    the model's own punctuation where it marks a word's start or end:
+
+    1. The letters are read with the marks taken out of the model's
+       output, since the language model, trained on lexicon words, has
+       seen no punctuation and would drop every mark.
+    2. Each mark the greedy reading has at a word's start or end goes back
+       in, after the letters the model saw above it. Marks inside a word
+       are dropped.
+
+    On the real pages this read as many marks as greedy decoding and the
+    letters as well as the language model alone.
+    '''
+    def __init__(self, lm, weight, bonus, alphabet, marks="᠈᠉",
+                 width=WIDTH):
+        self.lm, self.weight, self.bonus = lm, weight, bonus
+        self.alphabet, self.marks, self.width = alphabet, marks, width
+
+    def read(self, output, length, blank):
+        '''
+        The reading of one image's output (its first length tokens), and
+        for each space in it, the token in its middle, as
+        page_reader.decode_words gives them.
+        '''
+        log_probs = log_softmax(np.asarray(output[:length], dtype=float))
+        mark_classes = [self.alphabet.index(mark) for mark in self.marks
+                        if self.alphabet.index(mark) < log_probs.shape[1]]
+        kept = self.edge_marks(log_probs, blank)
+        letters_only = log_probs.copy()
+        letters_only[:, mark_classes] = -np.inf
+        letters_only = log_softmax(letters_only)
+        text = beam_search(letters_only, blank, self.alphabet, self.lm,
+                           self.weight, self.bonus, self.width)
+        starts = [first for first, _ in align(letters_only, text, blank,
+                                               self.alphabet)]
+        # From the last mark back, so earlier places don't move
+        for place, mark in sorted(((sum(s < token for s in starts), mark)
+                                   for token, mark in kept), reverse=True):
+            text = text[:place] + mark + text[place:]
+        spaces = [(first + last) / 2 for letter, (first, last) in
+                  zip(text, align(log_probs, text, blank, self.alphabet))
+                  if letter == " "]
+        return text, spaces
+
+    def edge_marks(self, log_probs, blank):
+        # (middle token, mark) for each mark the greedy reading has at a
+        # word's start or end
+        classes = log_probs.argmax(axis=-1)
+        greedy, middles, start = "", [], 0
+        for token in range(1, len(classes) + 1):
+            if token < len(classes) and classes[token] == classes[start]:
+                continue
+            if classes[start] != blank:
+                greedy += self.alphabet[classes[start]]
+                middles.append((start + token - 1) / 2)
+            start = token
+        kept = []
+        for i, letter in enumerate(greedy):
+            if letter not in self.marks:
+                continue
+            before = greedy[:i].rstrip(self.marks)
+            after = greedy[i + 1:].lstrip(self.marks)
+            if (not before or before.endswith(" ") or not after
+                    or after.startswith(" ")):
+                kept.append((middles[i], letter))
+        return kept
+
+
+# The language model, built once however many decoders use it
+_lm = None
+
+
+def load_decoder(settings):
+    '''
+    A Decoder from a server/config.json entry's "language_model" settings,
+    {"weight": ..., "bonus": ...}.
+    '''
+    global _lm
+    from ocr.char_lm import load_lm
+    from ocr.train import alphabet
+    if _lm is None:
+        _lm = load_lm()
+    return Decoder(_lm, settings["weight"], settings.get("bonus", 0),
+                   alphabet)
+
+
 def read_words(model, y, entries, lm=None, weight=0.0, bonus=0.0,
                width=WIDTH):
     '''

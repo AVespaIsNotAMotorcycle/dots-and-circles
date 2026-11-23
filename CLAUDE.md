@@ -20,7 +20,9 @@ README.md for the architecture.
   a CTC beam search that weighs it in as a tiebreaker; it never rules a
   spelling out, so it keeps to the open-vocabulary decision.
   `ocr/tune_lm.py` tunes its weight and letter bonus on the monitor sets
-  and scores the benchmarks. Greedy decoding is still the default.
+  and scores the benchmarks. A model reads with it where its
+  `server/config.json` entry has `language_model` (Run 33 does), on the
+  server and in `evaluate_real_pages`; elsewhere decoding is greedy.
 - `ocr/training_data/`: lexicon, word rendering (`__init__.py`) and print
   augmentation (`augment.py`). `fonts/` is gitignored for licensing reasons:
   never commit font files, and check it holds `.ttf` files before training.

@@ -56,7 +56,8 @@
       "weights": "weights/run033.npz",
       "params": {"depth": 12, "emb_dim": 64},
       "preprocess": {"crop": true, "whiten": true},
-      "stem_breaks": false
+      "stem_breaks": false,
+      "language_model": {"weight": 0.6, "bonus": 1}
     }
   ]
 }
