@@ -30,6 +30,8 @@ from ocr.beam_search import load_decoder
 from ocr.box_classifier import load_classifier
 from ocr.dictionary import Dictionary
 from ocr.layout import straighten
+from server.submissions import (JSON_NAME, PAGE_NAME, PREFIX, RateLimiter,
+                                new_id, store_from_env)
 from server.visitors import VisitorCounter
 from ocr.evaluate_real_pages import pages as real_pages
 from ocr.evaluate_real_pages import read_transcription
@@ -75,6 +77,14 @@ MAX_ANGLE = 45
 # Words per page of GET /lexigraphs, by default and at most
 DEFAULT_PER_PAGE = 50
 MAX_PER_PAGE = 100
+# POST /submissions: the longest note it takes, and how many submissions
+# an address may send a day (to each gunicorn worker: see RateLimiter)
+MAX_NOTE_LENGTH = 2000
+SUBMISSIONS_PER_DAY = 20
+# What a user did with a Manchu box they submit: changed its reading,
+# said the model's reading is right, left it as it was (it wasn't
+# flagged), or said it isn't Manchu
+SUBMISSION_STATUSES = ("corrected", "confirmed", "unflagged", "not-manchu")
 
 class RequestError(Exception):
     '''
@@ -279,6 +289,30 @@ def open_upload(data, shrink=True):
         image.thumbnail((MAX_UPLOAD_SIDE, MAX_UPLOAD_SIDE), Image.LANCZOS)
     return image
 
+def box_rect(box, size, name):
+    '''
+    A box sent as {"x", "y", "w", "h"} in pixels of an image of the given
+    (width, height), as [left, top, right, bottom], cut to the image. name
+    ("Box 3") is what an error calls it.
+    '''
+    if not isinstance(box, dict):
+        raise RequestError(f"{name} isn't an object.")
+    values = [box.get(key) for key in ("x", "y", "w", "h")]
+    if not all(isinstance(value, (int, float))
+               and not isinstance(value, bool) and math.isfinite(value)
+               for value in values):
+        raise RequestError(f"{name} needs numbers \"x\", \"y\", \"w\" "
+                          "and \"h\".")
+    x, y, w, h = values
+    if w <= 0 or h <= 0:
+        raise RequestError(f"{name} must have a positive width and height.")
+    width, height = size
+    left, top = max(0, round(x)), max(0, round(y))
+    right, bottom = min(width, round(x + w)), min(height, round(y + h))
+    if right <= left or bottom <= top:
+        raise RequestError(f"{name} is outside the image.")
+    return [left, top, right, bottom]
+
 def read_boxes_field(size):
     '''
     The boxes of a POST /upload/multiple/boxes request, for read_boxes: a
@@ -304,25 +338,9 @@ def read_boxes_field(size):
                           "\"w\", \"h\"} and optionally \"kind\".")
     if len(boxes) > MAX_BOXES:
         raise RequestError(f"Send at most {MAX_BOXES} boxes.")
-    width, height = size
     result = []
     for number, box in enumerate(boxes):
-        if not isinstance(box, dict):
-            raise RequestError(f"Box {number} isn't an object.")
-        values = [box.get(key) for key in ("x", "y", "w", "h")]
-        if not all(isinstance(value, (int, float))
-                   and not isinstance(value, bool) and math.isfinite(value)
-                   for value in values):
-            raise RequestError(f"Box {number} needs numbers \"x\", "
-                              "\"y\", \"w\" and \"h\".")
-        x, y, w, h = values
-        if w <= 0 or h <= 0:
-            raise RequestError(f"Box {number} must have a positive width "
-                              "and height.")
-        left, top = max(0, round(x)), max(0, round(y))
-        right, bottom = min(width, round(x + w)), min(height, round(y + h))
-        if right <= left or bottom <= top:
-            raise RequestError(f"Box {number} is outside the image.")
+        left, top, right, bottom = box_rect(box, size, f"Box {number}")
         kind = box.get("kind")
         if kind not in (None, "manchu", "other"):
             raise RequestError(f"Box {number}'s \"kind\" must be "
@@ -343,6 +361,97 @@ def read_boxes_field(size):
         result.append({"box": [left, top, right, bottom], "kind": kind,
                        "reading": reading})
     return result
+
+def as_xywh(rect):
+    # [left, top, right, bottom] as the {"x", "y", "w", "h"} the API sends
+    left, top, right, bottom = rect
+    return {"x": left, "y": top, "w": right - left, "h": bottom - top}
+
+def optional_text(box, key, name):
+    # box[key], a string of at most MAX_READING_LENGTH, or None if it's
+    # left out or null
+    text = box.get(key)
+    if text is not None and not (isinstance(text, str)
+                                 and len(text) <= MAX_READING_LENGTH):
+        raise RequestError(f"{name}'s \"{key}\" must be a string of at "
+                          f"most {MAX_READING_LENGTH} characters, or null.")
+    return text
+
+def read_submission_boxes(boxes, size):
+    '''
+    The final boxes of a POST /submissions body, in the straightened
+    page's coordinates (of the given size), as they're kept: each
+    {"x", "y", "w", "h"}, its "kind", "manchu" or "other", and for a
+    Manchu box its "status" (one of SUBMISSION_STATUSES), its "text" (the
+    reading the user settled on, in Manchu script: null only if it isn't
+    Manchu) and the model's "prediction-manchu", if it was sent.
+    '''
+    if not isinstance(boxes, list):
+        raise RequestError("Send \"boxes\", the page's boxes as the user "
+                          "left them.")
+    if len(boxes) > MAX_BOXES:
+        raise RequestError(f"Send at most {MAX_BOXES} boxes.")
+    result = []
+    for number, box in enumerate(boxes):
+        name = f"Box {number}"
+        kept = as_xywh(box_rect(box, size, name))
+        kind = box.get("kind")
+        if kind not in ("manchu", "other"):
+            raise RequestError(f"{name}'s \"kind\" must be \"manchu\" or "
+                              "\"other\".")
+        kept["kind"] = kind
+        if kind == "manchu":
+            status = box.get("status")
+            if status not in SUBMISSION_STATUSES:
+                raise RequestError(f"{name}'s \"status\" must be one of "
+                                   f"{', '.join(SUBMISSION_STATUSES)}.")
+            text = optional_text(box, "text", name)
+            if (text is None) != (status == "not-manchu"):
+                raise RequestError(f"{name} needs a \"text\" unless its "
+                                  "status is not-manchu, and then none.")
+            kept.update({"status": status, "text": text,
+                         "prediction-manchu": optional_text(
+                             box, "prediction-manchu", name)})
+        result.append(kept)
+    return result
+
+def read_initial_boxes(boxes, size):
+    '''
+    The boxes the page reader first drew on a submitted page, as
+    /upload/multiple gave them, or None if they're left out: each
+    {"x", "y", "w", "h"}, its "kind" and its "prediction-manchu".
+    '''
+    if boxes is None:
+        return None
+    if not isinstance(boxes, list):
+        raise RequestError("\"initial-boxes\" must be a list of boxes.")
+    if len(boxes) > MAX_BOXES:
+        raise RequestError(f"Send at most {MAX_BOXES} initial boxes.")
+    result = []
+    for number, box in enumerate(boxes):
+        name = f"Initial box {number}"
+        kept = as_xywh(box_rect(box, size, name))
+        kind = box.get("kind")
+        if kind not in ("manchu", "other", None):
+            raise RequestError(f"{name}'s \"kind\" must be \"manchu\", "
+                              "\"other\" or null.")
+        kept["kind"] = kind
+        kept["prediction-manchu"] = optional_text(box, "prediction-manchu",
+                                                  name)
+        result.append(kept)
+    return result
+
+def png_bytes(image):
+    # A PIL image as PNG bytes, with nothing from the upload's metadata
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+def client_ip():
+    # The address a request came from. Heroku's router adds the address it
+    # saw last; earlier ones can be made up by the client.
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    return forwarded.split(",")[-1].strip() or request.remote_addr
 
 def page_response(entry, page, original, dictionary=None, crops=True):
     '''
@@ -488,7 +597,14 @@ def cors_origin(origin, allowed, local):
         return origin
     return None
 
-def create_app(config_path=CONFIG_PATH, visitors_folder=None):
+def create_app(config_path=CONFIG_PATH, visitors_folder=None,
+               submissions=None):
+    '''
+    The app, with the models and data config_path lists. visitors_folder
+    is where visitor counts are kept (/tmp by default), and submissions the
+    store POST /submissions writes to (server/submissions.py), by default
+    the one the environment names, if any.
+    '''
     with open(config_path, "r", encoding="utf-8") as file:
         config = json.load(file)
     root = os.path.dirname(os.path.abspath(config_path))
@@ -528,8 +644,10 @@ def create_app(config_path=CONFIG_PATH, visitors_folder=None):
     # Heroku sets DYNO on its dynos. Anywhere else the server is running
     # locally, and answers pages on localhost too (see cors_origin).
     local = "DYNO" not in os.environ
-    # Room for a MAX_UPLOAD_BYTES image as base64, plus the rest of the body
-    app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES * 4 // 3 + 2**16
+    # Room for a MAX_UPLOAD_BYTES image as base64, plus the rest of the
+    # body: up to a megabyte of boxes, as a submission's two lists of
+    # MAX_BOXES can be
+    app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES * 4 // 3 + 2**20
     # Send Manchu as itself rather than as \u escapes
     app.json.ensure_ascii = False
 
@@ -559,18 +677,18 @@ def create_app(config_path=CONFIG_PATH, visitors_folder=None):
         if (counter is None or request.method == "OPTIONS"
                 or request.headers.get("Origin") != config["allowed_origin"]):
             return response
-        # Heroku's router adds the address it saw last; earlier ones can be
-        # made up by the client
-        forwarded = request.headers.get("X-Forwarded-For", "")
-        ip = forwarded.split(",")[-1].strip() or request.remote_addr
         try:
-            counter.record(ip, request.headers.get("User-Agent", ""),
+            counter.record(client_ip(), request.headers.get("User-Agent", ""),
                            request.endpoint in reading_views
                            and response.status_code < 400)
         except OSError as error:
             # Counting must never break a request
             print(f"visitor count failed: {error}", flush=True)
         return response
+
+    if submissions is None:
+        submissions = store_from_env()
+    submission_limit = RateLimiter(SUBMISSIONS_PER_DAY, 24 * 60 * 60)
 
     @app.errorhandler(RequestError)
     def upload_error(error):
@@ -801,6 +919,18 @@ def create_app(config_path=CONFIG_PATH, visitors_folder=None):
         return jsonify(page_response(entry, page, original, dictionary,
                                      crops_wanted()))
 
+    def open_named_page(name):
+        # A real page by the name GET /pages gives it
+        if not pages_folder or not isinstance(name, str):
+            raise RequestError("\"name\" must be one of the pages "
+                              "GET /pages lists.")
+        paths = [path for page_name, path, _ in real_pages(pages_folder)
+                 if page_name == name]
+        if not paths:
+            raise RequestError(f"Unknown page {name!r}: use one of "
+                               f"{', '.join(n for n, _, _ in real_pages(pages_folder))}.")
+        return open_page_file(paths[0])
+
     @app.post("/upload/multiple/boxes")
     def upload_multiple_boxes():
         '''
@@ -818,15 +948,7 @@ def create_app(config_path=CONFIG_PATH, visitors_folder=None):
         body = request.get_json(silent=True)
         name = body.get("name") if isinstance(body, dict) else None
         if name is not None:
-            if not pages_folder or not isinstance(name, str):
-                raise RequestError("\"name\" must be one of the pages "
-                                  "GET /pages lists.")
-            paths = [path for page_name, path, _ in real_pages(pages_folder)
-                     if page_name == name]
-            if not paths:
-                raise RequestError(f"Unknown page {name!r}: use one of "
-                                   f"{', '.join(n for n, _, _ in real_pages(pages_folder))}.")
-            original = open_page_file(paths[0])
+            original = open_named_page(name)
             angle = read_angle(body) or 0.0
         else:
             data, _ = read_upload()
@@ -846,5 +968,109 @@ def create_app(config_path=CONFIG_PATH, visitors_folder=None):
         page.angle = angle
         return jsonify(page_response(entry, page, original, dictionary,
                                      crops_wanted()))
+
+    def submission_body():
+        # A POST /submissions request as a dict: its JSON body, or a form
+        # with the page in an "image" file and the boxes as JSON strings
+        if "image" in request.files:
+            form = request.form
+            body = {"consent": form.get("consent") == "true",
+                    "model": form.get("model"), "note": form.get("note")}
+            for key in ("boxes", "initial-boxes"):
+                try:
+                    body[key] = (json.loads(form[key]) if key in form
+                                 else None)
+                except ValueError:
+                    raise RequestError(f"\"{key}\" isn't valid JSON.")
+            return body
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict):
+            raise RequestError("Send the submission as a JSON body, or as a "
+                              "form with the page in an \"image\" file.")
+        return body
+
+    @app.post("/submissions")
+    def submit():
+        '''
+        Keeps a page the user has checked, with its boxes and their
+        corrections, for improving the page reader (see server/README.md
+        and server/submissions.py). The page is sent as for
+        /upload/multiple/boxes: the upload with its angle, a real page's
+        name, or an already straightened page.
+        '''
+        if submissions is None:
+            raise RequestError("This server doesn't take submissions.", 404)
+        body = submission_body()
+        if body.get("consent") is not True:
+            raise RequestError("\"consent\" must be true: the user agrees "
+                              "to the page being kept and used for training.")
+        note = body.get("note")
+        if note is not None and not (isinstance(note, str)
+                                     and len(note) <= MAX_NOTE_LENGTH):
+            raise RequestError(f"\"note\" must be a string of at most "
+                               f"{MAX_NOTE_LENGTH} characters.")
+        note = note.strip() if note else None
+        model = body.get("model") or default_model
+        if model not in [entry["name"] for entry, _ in models]:
+            raise RequestError(f"Unknown model {model!r}: use one of "
+                               f"{', '.join(e['name'] for e, _ in models)}.")
+        name = body.get("name")
+        if name is not None:
+            original, image = open_named_page(name), None
+            angle = read_angle(body) or 0.0
+            page = {"source": "page", "name": name}
+        else:
+            data, _ = read_upload()
+            angle = read_angle(body)
+            # Opened as /upload/multiple/boxes opens it, so the boxes are
+            # in the same place
+            original = open_upload(data, shrink=angle is not None)
+            image = original
+            page = {"source": "upload",
+                    "straightened": angle is None}
+            angle = angle or 0.0
+        width, height = straighten(original, angle).size
+        boxes = read_submission_boxes(body.get("boxes"), (width, height))
+        initial = read_initial_boxes(body.get("initial-boxes"),
+                                     (width, height))
+        if not submission_limit.allow(client_ip()):
+            raise RequestError("That's the most submissions one address can "
+                              "send in a day. Thank you!", 429)
+        submission_id = new_id()
+        record = {
+            "id": submission_id,
+            "received": datetime.datetime.now(datetime.timezone.utc)
+                .isoformat(timespec="seconds"),
+            # Heroku sets it with runtime-dyno-build-metadata turned on
+            "server-commit": (os.environ.get("HEROKU_BUILD_COMMIT")
+                              or os.environ.get("HEROKU_SLUG_COMMIT")),
+            "model": model,
+            "page": page,
+            "image": PAGE_NAME if image is not None else None,
+            "image-size": list(original.size),
+            "angle": angle,
+            "straight-size": [width, height],
+            "boxes": boxes,
+            "initial-boxes": initial,
+            "note": note or None,
+            "consent": True,
+        }
+        folder = f"{PREFIX}{submission_id}/"
+        try:
+            if image is not None:
+                submissions.put(folder + PAGE_NAME, png_bytes(image),
+                                "image/png")
+            # Last, so a submission with its JSON is whole
+            submissions.put(folder + JSON_NAME,
+                            json.dumps(record, ensure_ascii=False,
+                                       indent=1).encode("utf-8"),
+                            "application/json")
+        except Exception as error:
+            print(f"submission {submission_id} failed: {error!r}",
+                  flush=True)
+            raise RequestError("The submission couldn't be saved. Please "
+                              "try again later.", 503)
+        print(f"submission {submission_id}: {len(boxes)} boxes", flush=True)
+        return jsonify({"id": submission_id}), 201
 
     return app

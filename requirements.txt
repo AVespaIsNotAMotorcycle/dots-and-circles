@@ -1,5 +1,7 @@
 # For the server (server/app.py). matplotlib is only used by training, but
-# the server imports ocr.train, which imports it.
+# the server imports ocr.train, which imports it. boto3 is only used to
+# keep POST /submissions in Cloudflare R2.
+boto3==1.44.10
 flask==3.1.3
 gunicorn==26.2.0
 matplotlib==3.11.2

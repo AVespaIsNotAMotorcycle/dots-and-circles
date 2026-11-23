@@ -951,3 +951,213 @@ def test_only_frontend_requests_are_counted(tmp_path, monkeypatch, capsys):
     client.get("/random?source=nope", headers=dict(frontend, **{
         "X-Forwarded-For": "5.6.7.8"}))
     assert "visitors" not in capsys.readouterr().out
+
+
+# POST /submissions
+
+from server.submissions import FolderStore
+
+
+@pytest.fixture
+def store(tmp_path):
+    return FolderStore(str(tmp_path / "store"))
+
+
+@pytest.fixture
+def submit_client(client, tmp_path, store):
+    # The client fixture's server, keeping submissions in a folder
+    return create_app(str(tmp_path / "config.json"),
+                      submissions=store).test_client()
+
+
+def data_url_of(data, mime="image/png"):
+    return f"data:{mime};base64,{base64.b64encode(data).decode('ascii')}"
+
+
+SUBMITTED_BOXES = [
+    {"x": 40, "y": 30, "w": 40, "h": 90, "kind": "manchu",
+     "status": "corrected", "text": "ᠠᠪᡴᠠ", "prediction-manchu": "ᠠᠪᡴ"},
+    {"x": 130, "y": 30, "w": 40, "h": 90, "kind": "manchu",
+     "status": "confirmed", "text": "ᠨᠠ"},
+    {"x": 220, "y": 30, "w": 40, "h": 90, "kind": "manchu",
+     "status": "not-manchu", "text": None},
+    # Reaching past the page, so cut to it; extra keys are ignored
+    {"x": 220, "y": 290, "w": 500, "h": 90, "kind": "other",
+     "image": "data:...", "flags": []},
+]
+
+
+def saved(store, response):
+    # The JSON and page a 201 response's submission was kept as
+    assert response.status_code == 201, response.get_json()
+    submission_id = response.get_json()["id"]
+    folder = f"submissions/{submission_id}/"
+    record = json.loads(store.get(folder + "submission.json"))
+    keys = store.keys()
+    page = (Image.open(io.BytesIO(store.get(folder + "page.png")))
+            if folder + "page.png" in keys else None)
+    return record, page
+
+
+def test_submission_of_an_upload(submit_client, store):
+    exif = Image.Exif()
+    exif[0x010E] = "secret description"  # ImageDescription
+    image = Image.open(io.BytesIO(page_image()))
+    buffer = io.BytesIO()
+    image.convert("RGB").save(buffer, format="JPEG", exif=exif.tobytes())
+    response = submit_client.post("/submissions", json={
+        "image": data_url_of(buffer.getvalue(), "image/jpeg"),
+        "angle": 0, "model": "Test", "consent": True,
+        "boxes": SUBMITTED_BOXES, "note": "  Second column is Chinese.  ",
+        "initial-boxes": [{"x": 40, "y": 30, "w": 40, "h": 220,
+                           "kind": "manchu", "prediction-manchu": "ᠠ"}]})
+    record, page = saved(store, response)
+    assert record["id"] == response.get_json()["id"]
+    assert record["model"] == "Test" and record["consent"] is True
+    assert record["page"] == {"source": "upload", "straightened": False}
+    assert record["image"] == "page.png" and record["angle"] == 0
+    assert record["image-size"] == [300, 400]
+    assert record["straight-size"] == [300, 400]
+    assert record["note"] == "Second column is Chinese."
+    assert record["boxes"] == [
+        {"x": 40, "y": 30, "w": 40, "h": 90, "kind": "manchu",
+         "status": "corrected", "text": "ᠠᠪᡴᠠ", "prediction-manchu": "ᠠᠪᡴ"},
+        {"x": 130, "y": 30, "w": 40, "h": 90, "kind": "manchu",
+         "status": "confirmed", "text": "ᠨᠠ", "prediction-manchu": None},
+        {"x": 220, "y": 30, "w": 40, "h": 90, "kind": "manchu",
+         "status": "not-manchu", "text": None, "prediction-manchu": None},
+        {"x": 220, "y": 290, "w": 80, "h": 90, "kind": "other"}]
+    assert record["initial-boxes"] == [
+        {"x": 40, "y": 30, "w": 40, "h": 220, "kind": "manchu",
+         "prediction-manchu": "ᠠ"}]
+    # The page as the server read it, with none of the upload's metadata
+    assert page.format == "PNG" and page.size == (300, 400)
+    assert not page.getexif() and "exif" not in page.info
+
+
+def test_submission_keeps_the_page_unturned(submit_client, store):
+    # A turned upload is kept as it came, with the angle to turn it by
+    upload = skewed_page_image()
+    angle = submit_client.post("/upload/multiple", data={
+        "image": (io.BytesIO(upload), "page.png")}).get_json()["angle"]
+    response = submit_client.post("/submissions", json={
+        "image": data_url_of(upload), "angle": angle, "consent": True,
+        "boxes": SUBMITTED_BOXES[:1]})
+    record, page = saved(store, response)
+    original = Image.open(io.BytesIO(upload))
+    assert page.size == original.size
+    assert record["image-size"] == list(original.size)
+    assert record["angle"] == angle
+    # The model defaults to default_model
+    assert record["model"] == "Test" and record["initial-boxes"] is None
+
+
+def test_submission_of_a_straightened_page(submit_client, store):
+    image, _ = straight_page(submit_client)
+    response = submit_client.post("/submissions", json={
+        "image": image, "consent": True, "boxes": []})
+    record, page = saved(store, response)
+    assert record["page"] == {"source": "upload", "straightened": True}
+    assert record["angle"] == 0 and record["boxes"] == []
+
+
+def test_submission_of_a_real_page(submit_client, store):
+    response = submit_client.post("/submissions", json={
+        "name": "page001", "angle": 0, "consent": True,
+        "boxes": SUBMITTED_BOXES[:2]})
+    record, page = saved(store, response)
+    assert page is None and record["image"] is None
+    assert record["page"] == {"source": "page", "name": "page001"}
+    assert [key.rsplit("/", 1)[1] for key in store.keys()] == [
+        "submission.json"]
+
+
+@pytest.mark.parametrize("change, message", [
+    ({"consent": False}, "consent"),
+    ({"consent": None}, "consent"),
+    ({"model": "Nope"}, "Unknown model"),
+    ({"note": "x" * 2001}, "note"),
+    ({"boxes": None}, "boxes"),
+    ({"boxes": [{"x": 1, "y": 1, "w": 5, "h": 5}]}, "kind"),
+    ({"boxes": [{"x": 1, "y": 1, "w": 5, "h": 5, "kind": "manchu"}]},
+     "status"),
+    ({"boxes": [{"x": 1, "y": 1, "w": 5, "h": 5, "kind": "manchu",
+                 "status": "corrected"}]}, "text"),
+    ({"boxes": [{"x": 1, "y": 1, "w": 5, "h": 5, "kind": "manchu",
+                 "status": "not-manchu", "text": "ᠠ"}]}, "text"),
+    ({"boxes": [{"x": 1, "y": 1, "w": 5, "h": 5, "kind": "manchu",
+                 "status": "confirmed", "text": 3}]}, "text"),
+    ({"boxes": [{"x": 900, "y": 1, "w": 5, "h": 5, "kind": "other"}]},
+     "outside"),
+    ({"initial-boxes": {}}, "initial-boxes"),
+    ({"initial-boxes": [{"x": 1, "y": 1, "w": 5, "h": 5, "kind": "x"}]},
+     "Initial box 0"),
+    ({"name": "page999"}, "Unknown page"),
+    ({"angle": 90}, "angle"),
+])
+def test_submission_bad_request(submit_client, store, change, message):
+    body = {"image": data_url_of(page_image()), "angle": 0,
+            "consent": True, "boxes": SUBMITTED_BOXES}
+    body.update(change)
+    if "name" in change:
+        del body["image"]
+    response = submit_client.post("/submissions", json=body)
+    assert response.status_code == 400
+    assert message in response.get_json()["error"]
+    # Nothing is kept
+    assert store.keys() == []
+
+
+def test_submission_as_a_form(submit_client, store):
+    response = submit_client.post("/submissions", data={
+        "image": (io.BytesIO(page_image()), "page.png"), "angle": "0",
+        "consent": "true", "model": "Test", "note": "Hi",
+        "boxes": json.dumps(SUBMITTED_BOXES, ensure_ascii=False),
+        "initial-boxes": json.dumps([{"x": 1, "y": 1, "w": 5, "h": 5}])})
+    record, page = saved(store, response)
+    assert page.size == (300, 400) and len(record["boxes"]) == 4
+    assert record["note"] == "Hi" and record["initial-boxes"][0]["w"] == 5
+    assert record["page"]["straightened"] is False
+
+
+@pytest.mark.parametrize("data", [
+    {"consent": "yes", "boxes": "[]"},
+    {"consent": "true", "boxes": "[nope"},
+    {"consent": "true"},
+])
+def test_submission_bad_form(submit_client, store, data):
+    data = {"image": (io.BytesIO(page_image()), "page.png"), **data}
+    response = submit_client.post("/submissions", data=data)
+    assert response.status_code == 400 and store.keys() == []
+
+
+def test_submission_needs_a_body(submit_client):
+    response = submit_client.post("/submissions", data={"consent": "true"})
+    assert response.status_code == 400
+
+
+def test_submissions_without_a_store(client, monkeypatch):
+    for name in ("R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID",
+                 "R2_SECRET_ACCESS_KEY", "R2_BUCKET", "SUBMISSIONS_FOLDER"):
+        monkeypatch.delenv(name, raising=False)
+    response = client.post("/submissions", json={
+        "image": data_url_of(page_image()), "consent": True, "boxes": []})
+    assert response.status_code == 404
+
+
+def test_submissions_are_rate_limited(submit_client):
+    body = {"name": "page001", "consent": True, "boxes": []}
+    statuses = [submit_client.post("/submissions", json=body).status_code
+                for _ in range(21)]
+    assert statuses[:20] == [201] * 20 and statuses[20] == 429
+
+
+def test_submission_store_failure(client, tmp_path):
+    class Broken:
+        def put(self, key, data, content_type):
+            raise OSError("down")
+    broken = create_app(str(tmp_path / "config.json"),
+                        submissions=Broken()).test_client()
+    response = broken.post("/submissions", json={
+        "name": "page001", "consent": True, "boxes": []})
+    assert response.status_code == 503

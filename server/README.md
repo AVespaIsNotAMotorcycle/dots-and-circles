@@ -373,6 +373,73 @@ repository root. Locally, from the repository root:
   `name` that isn't one of `GET /pages` gets a 400, as
   `{"error": "..."}`.
 
+- `POST /submissions`: keeps a page the user has checked, with its boxes
+  and their corrections, so the page reader can be improved with it
+  (mostly how it draws boxes). Submissions aren't public, and nothing
+  trains on them until they've been looked over. It needs a store (see
+  [Submissions](#submissions)); without one it gets a 404. The page is sent as
+  for `/upload/multiple/boxes`: the upload again with its `angle`, a real
+  page's `name` and `angle`, or with no `angle` a page already
+  straightened. Boxes are in the straightened page's
+  coordinates, as `/upload/multiple` and `/upload/multiple/boxes` give
+  them.
+
+  ```json
+  {
+    "image": "data:image/jpeg;base64,...the upload...",
+    "angle": -0.8,
+    "model": "Run 33",
+    "consent": true,
+    "note": "The second column is Chinese.",
+    "boxes": [
+      {"x": 120, "y": 40, "w": 46, "h": 210, "kind": "manchu",
+       "status": "corrected", "text": "ᠠᠪᡴᠠ", "prediction-manchu": "ᠠᠪᡴ"},
+      {"x": 180, "y": 40, "w": 44, "h": 120, "kind": "manchu",
+       "status": "confirmed", "text": "ᠨᠠ", "prediction-manchu": "ᠨᠠ"},
+      {"x": 180, "y": 170, "w": 44, "h": 90, "kind": "manchu",
+       "status": "not-manchu", "text": null},
+      {"x": 230, "y": 60, "w": 40, "h": 40, "kind": "other"}
+    ],
+    "initial-boxes": [
+      {"x": 120, "y": 40, "w": 46, "h": 330, "kind": "manchu",
+       "prediction-manchu": "ᠠᠪᡴ ᠪᡝ"}
+    ]
+  }
+  ```
+
+  - `consent` must be `true`: the user agrees to the page and their
+    corrections being kept and used to train the model.
+  - `boxes`: the page's boxes as the user left them. Each needs `x`, `y`,
+    `w`, `h` and a `kind`, `"manchu"` or `"other"`. A Manchu box also
+    needs a `status`, what the user did with it: `corrected` (they gave
+    the reading), `confirmed` (they said the model's reading is right),
+    `unflagged` (it wasn't flagged, and they left it) or `not-manchu`
+    (they said it isn't Manchu: its `kind` stays `"manchu"`, as the model
+    had it). Its `text` is the reading settled on, in Manchu script, or
+    `null` for `not-manchu`. `prediction-manchu`, the model's reading, is
+    optional. Other keys are ignored, so boxes can be sent as they came.
+  - `initial-boxes` (optional): the boxes `/upload/multiple` first gave
+    the page, before the user changed any, each with its `kind` and
+    `prediction-manchu`. The difference between them and `boxes` is
+    what's most useful for drawing boxes better.
+  - `model` (optional): the `name` of the model that read it,
+    `default_model` by default.
+  - `note` (optional): anything the user wants to say about the page, at
+    most 2000 characters.
+
+  It can also be sent as `multipart/form-data`, with the page in an
+  `image` file, `boxes` and `initial-boxes` as JSON strings, `consent`
+  `"true"`, and `angle`, `model` and `note` as fields (`name` only works
+  in JSON). That saves base64's third more for a big upload.
+
+  Whether the user has checked every flagged box is up to the frontend:
+  the server takes the boxes as they're sent. It answers `201` with the
+  submission's `{"id": "2026-11-23T120000Z-1a2b3c4d"}`. Anything not valid
+  gets a 400, as for `/upload/multiple/boxes`, and more than 20 from one
+  address in a day a 429 (see below). A store that can't be reached gets
+  a 503, and the frontend should keep what the user sent so they can try
+  again.
+
 ## config.json
 
 - `allowed_origin`: the one origin whose pages may read the server's
@@ -426,6 +493,70 @@ repository root. Locally, from the repository root:
     in no lexicon are still read. It changes the `prediction-*` fields and
     pages' readings; `ctc` and `probs` stay the model's own most likely
     classes. The language model takes about 27 MB, built once at startup.
+
+## Submissions
+
+`POST /submissions` keeps each submission under `submissions/<id>/` in a
+store (`server/submissions.py`): `page.png`, the page as the server opened
+it (upright by its EXIF orientation, shrunk to 2000 pixels, before it's
+turned by `angle`, with none of the upload's metadata), left out for a
+real page; and `submission.json`, written last, with everything sent and
+when it came. No IP or browser is kept. The store is, by the environment:
+
+- Cloudflare R2, when `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+  `R2_SECRET_ACCESS_KEY` and `R2_BUCKET` are all set (only some is an
+  error at startup). Heroku's dyno disk is wiped on every restart, so
+  this is what it uses.
+- A folder, when `SUBMISSIONS_FOLDER` is set instead: for running the
+  server locally.
+- None, otherwise: `POST /submissions` gets a 404.
+
+Each address may send 20 a day. That's counted in memory by each gunicorn
+worker, so it's really up to 40, and a restart forgets it: it's there to
+stop a script filling the bucket.
+
+Download them with `python -m ocr.fetch_submissions` (below), into the
+gitignored `ocr/submitted_data/`. It skips those it already has, and
+deletes nothing from the store.
+
+### Setting up R2
+
+1. In the Cloudflare dashboard, go to R2 Object Storage and create a
+   bucket (say `dots-and-circles-submissions`), with no public access.
+   The free tier is 10 GB, about 2,000 submissions at a few MB each.
+2. Under R2 > Manage API tokens, make two tokens, each scoped to that
+   bucket only:
+   - one with **Object Read & Write**, for the server;
+   - one with **Object Read** only, for downloading.
+
+   Each gives an Access Key ID and a Secret Access Key, shown once. The
+   account ID is on the R2 overview page.
+3. Give the server its token:
+
+   ```
+   heroku config:set -a dots-and-circles R2_ACCOUNT_ID=... \
+     R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... \
+     R2_BUCKET=dots-and-circles-submissions
+   ```
+
+   Optionally, `heroku labs:enable runtime-dyno-build-metadata -a
+   dots-and-circles` makes Heroku set `HEROKU_BUILD_COMMIT`, which each
+   submission records as `server-commit` (otherwise `null`).
+4. Download with the read-only token (boto3 needs installing in the venv
+   first: `.venv/bin/pip install boto3`):
+
+   ```
+   R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... \
+     R2_BUCKET=dots-and-circles-submissions \
+     .venv/bin/python -m ocr.fetch_submissions
+   ```
+
+To try it locally without R2:
+
+```
+SUBMISSIONS_FOLDER=/tmp/submissions .venv/bin/python -m flask --app server.app run
+.venv/bin/python -m ocr.fetch_submissions --folder /tmp/submissions
+```
 
 ## Visitors
 

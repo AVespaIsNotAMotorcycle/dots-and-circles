@@ -34,6 +34,10 @@ README.md for the architecture.
 - `server/`: the Flask server Heroku runs (`Procfile`, `requirements.txt`
   at the root). Its models, weights and photos are listed in
   `server/config.json`; see `server/README.md`.
+- `ocr/submitted_data/` (gitignored): pages users sent with their
+  corrections (`POST /submissions`, kept in Cloudflare R2), downloaded by
+  `python -m ocr.fetch_submissions`. They're private: never commit or
+  publish them, and look them over before anything trains on them.
 
 ## Commands
 
