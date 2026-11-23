@@ -102,6 +102,22 @@ repository root. Locally, from the repository root:
   place in the whole list. Each worker reads a word the first time it's
   asked for and keeps the reading, so a page is slow (about 0.6 s locally
   for 50) only the first time.
+- `GET /updates`: what's changed in the model, newest first, from
+  `updates.json`, so the frontend can tell visitors it's still being
+  improved:
+
+  ```json
+  {"updates": [{"date": "2026-11-23",
+                "summary": ["Trained the model on ...", "Added a ..."]}]}
+  ```
+
+  `summary` is a list of paragraphs. `?since=YYYY-MM-DD` keeps only the
+  updates after that date (any other value gets a 400). The frontend can
+  save the newest date it has shown (e.g. in `localStorage`) and ask with
+  it on the next visit: an empty list means nothing's new. Saving the
+  newest update's date rather than the day of the visit means an update
+  posted later on the day of a visit is still shown. To add one, put a new
+  entry in `updates.json`; a malformed date stops the server starting.
 - `GET /pages`: the names of the real pages `/random?source=page&name=`
   takes, in order: `{"pages": ["page001", "page002", ...]}`. Each is the
   page's filename without its extension (`page001.png` and its
@@ -385,6 +401,8 @@ repository root. Locally, from the repository root:
   Rebuild it with `python -m ocr.training_data.list_dictionary_words`
   after either dictionary changes. Optional: without it, `closest-words`
   is `null`. Loading it takes about 13 MB a worker.
+- `updates`: the list `GET /updates` serves, relative to this folder
+  (`updates.json`). Optional: without it, the list is empty.
 - `models`: one entry per model, in the order they're returned:
   - `name`, `model`: the short and long names sent to the frontend.
   - `class`: a CTC model class in `ocr/`, e.g. `ModelD`.

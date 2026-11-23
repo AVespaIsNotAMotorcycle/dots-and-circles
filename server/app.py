@@ -12,6 +12,7 @@ os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 import base64
 import binascii
+import datetime
 import importlib
 import io
 import json
@@ -83,6 +84,22 @@ class RequestError(Exception):
         super().__init__(message)
         self.message = message
         self.status = status
+
+
+def load_updates(path):
+    '''
+    The updates in an updates.json, newest first: each a "date"
+    (YYYY-MM-DD) and a "summary", a list of paragraphs.
+    '''
+    with open(path, "r", encoding="utf-8") as file:
+        updates = json.load(file)
+    for update in updates:
+        # Raises on a malformed date, so a typo stops the server starting
+        datetime.date.fromisoformat(update["date"])
+        if not isinstance(update["summary"], list):
+            raise ValueError(f"The update of {update['date']}'s summary "
+                             f"must be a list of paragraphs")
+    return sorted(updates, key=lambda update: update["date"], reverse=True)
 
 def load_model(entry, root):
     '''
@@ -484,6 +501,9 @@ def create_app(config_path=CONFIG_PATH, visitors_folder=None):
     # The entries each page box's closest words come from: optional
     dictionary = (Dictionary.load(os.path.join(root, config["dictionary"]))
                   if "dictionary" in config else None)
+    # The model's updates GET /updates lists: optional
+    updates = (load_updates(os.path.join(root, config["updates"]))
+               if "updates" in config else [])
     # The real pages GET /random?source=page picks from, with their
     # transcriptions: optional in config.json
     pages_folder = (os.path.join(root, config["pages"]) if "pages" in config
@@ -574,6 +594,21 @@ def create_app(config_path=CONFIG_PATH, visitors_folder=None):
     def awake():
         # Lets the frontend know the dyno is up before it asks for more
         return "", 200
+
+    @app.get("/updates")
+    def list_updates():
+        # The updates, newest first; ?since=YYYY-MM-DD keeps only those
+        # after that date, e.g. the newest one a visitor has already seen
+        since = request.args.get("since")
+        if since:
+            try:
+                datetime.date.fromisoformat(since)
+            except ValueError:
+                raise RequestError(f"since must be a date, YYYY-MM-DD, "
+                                   f"not {since!r}.")
+            return jsonify({"updates": [update for update in updates
+                                        if update["date"] > since]})
+        return jsonify({"updates": updates})
 
     def chosen_model():
         # The (entry, model) ?model= names, default_model by default

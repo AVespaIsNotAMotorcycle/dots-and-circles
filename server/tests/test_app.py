@@ -54,6 +54,9 @@ def client(tmp_path):
     (tmp_path / "pages" / "page002.txt").write_text("be\n", encoding="utf-8")
     (tmp_path / "pages" / "sources.json").write_text(json.dumps(
         {"page001": {"credit": "Somewhere", "link": "https://example.org"}}))
+    (tmp_path / "updates.json").write_text(json.dumps([
+        {"date": "2026-11-01", "summary": ["Older."]},
+        {"date": "2026-11-23", "summary": ["Newer.", "Second paragraph."]}]))
     (tmp_path / "config.json").write_text(json.dumps({
         "allowed_origin": "*",
         "photos": "photos",
@@ -61,6 +64,7 @@ def client(tmp_path):
         "box_classifier": "classifier.npz",
         "dictionary": "dictionary.json",
         "pages": "pages",
+        "updates": "updates.json",
         "models": [{"name": "Test", "model": "Untrained ModelD",
                     "class": "ModelD", "weights": "model.npz",
                     "params": params}],
@@ -429,6 +433,39 @@ def test_pages(client):
         assert client.get(f"/random?source=page&name={name}").status_code \
             == 200
 
+def test_updates_newest_first(client):
+    response = client.get("/updates")
+    assert response.status_code == 200
+    updates = response.get_json()["updates"]
+    assert [u["date"] for u in updates] == ["2026-11-23", "2026-11-01"]
+    assert updates[0]["summary"] == ["Newer.", "Second paragraph."]
+
+
+def test_updates_since(client):
+    def dates(since):
+        return [u["date"] for u in
+                client.get(f"/updates?since={since}").get_json()["updates"]]
+    assert dates("2026-10-31") == ["2026-11-23", "2026-11-01"]
+    # Only those after the date: the newest seen isn't shown again
+    assert dates("2026-11-01") == ["2026-11-23"]
+    assert dates("2026-11-23") == []
+
+
+def test_updates_since_not_a_date(client):
+    response = client.get("/updates?since=yesterday")
+    assert response.status_code == 400
+    assert "YYYY-MM-DD" in response.get_json()["error"]
+
+
+def test_server_updates_file_loads():
+    from server.app import CONFIG_PATH, load_updates
+    import os
+    with open(CONFIG_PATH, encoding="utf-8") as file:
+        name = json.load(file)["updates"]
+    updates = load_updates(os.path.join(os.path.dirname(CONFIG_PATH), name))
+    assert updates and all(u["summary"] for u in updates)
+
+
 def test_pages_without_pages(tmp_path):
     np.random.seed(0)
     params = {"depth": 1, "emb_dim": 8}
@@ -442,6 +479,8 @@ def test_pages_without_pages(tmp_path):
                     "params": params}]}))
     client = create_app(str(tmp_path / "config.json")).test_client()
     assert client.get("/pages").get_json() == {"pages": []}
+    # And no updates without "updates" in config.json
+    assert client.get("/updates").get_json() == {"updates": []}
 
 
 def test_lexigraphs_photo_is_the_default(client):
