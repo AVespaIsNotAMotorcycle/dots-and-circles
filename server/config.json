@@ -3,7 +3,7 @@
   "photos": "photos",
   "synthetic": "synthetic",
   "pages": "../ocr/real_pages",
-  "default_model": "Run 32",
+  "default_model": "Run 33",
   "box_classifier": "weights/box_classifier.npz",
   "dictionary": "../ocr/training_data/dictionary_words.json",
   "models": [
@@ -45,6 +45,15 @@
       "model": "ModelD (12 transformers, 64-dim embeddings), Run 31 fine-tuned for 4 epochs at 1e-3 with the training crops of mic7ch's handwritten cursive_v2 added to every epoch, 26 epochs",
       "class": "ModelD",
       "weights": "weights/run032.npz",
+      "params": {"depth": 12, "emb_dim": 64},
+      "preprocess": {"crop": true, "whiten": true},
+      "stem_breaks": false
+    },
+    {
+      "name": "Run 33",
+      "model": "ModelD (12 transformers, 64-dim embeddings), Run 32 trained 6 more epochs at 1e-3 for handwriting: rendered words bent along the stem, half the training photos and every cursive_v2 crop augmented, cursive crops repeated to 5% of each epoch, 32 epochs",
+      "class": "ModelD",
+      "weights": "weights/run033.npz",
       "params": {"depth": 12, "emb_dim": 64},
       "preprocess": {"crop": true, "whiten": true},
       "stem_breaks": false

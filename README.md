@@ -28,7 +28,7 @@ Accuracy figures are from [this report](ocr/runs/run030/comparison_epoch018_benc
 `POST /upload/multiple` (see [the server README](server/README.md)) reads a
 page of print: it finds the columns and words with classical image
 processing (`ocr/layout.py`), tells Manchu from Chinese with a small MLP
-(`ocr/box_classifier.py`), and reads each Manchu word with Run 32.
+(`ocr/box_classifier.py`), and reads each Manchu word with Run 33.
 
 On 60 synthetic pages (`python -m ocr.evaluate_pages`) of words no model
 trained on, a third each of all-Manchu, alternating Manchu and Chinese

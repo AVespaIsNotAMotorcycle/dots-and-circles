@@ -71,14 +71,14 @@ repository root. Locally, from the repository root:
   ones in `synthetic/`, both in the order of their `manifest.json`.
   `?page=` counts from 1 (the default), and `?per_page=` is 50 by default
   and at most 100; a page past the last has no `words`. `?model=` picks
-  the model, as for `/upload/multiple` (`default_model`, Run 32, by
+  the model, as for `/upload/multiple` (`default_model`, Run 33, by
   default). An unknown source or model, or a bad page or `per_page`, gets
   a 400.
 
   ```json
   {
     "source": "photo",
-    "model": "Run 32",
+    "model": "Run 33",
     "page": 1,
     "per-page": 50,
     "total": 300,
@@ -168,7 +168,7 @@ repository root. Locally, from the repository root:
 
   ```json
   {
-    "model": "Run 32",
+    "model": "Run 33",
     "image": "data:image/jpeg;base64,...",
     "angle": -0.8,
     "manchu": "ᠠᠪᡴᠠ □ ᠨᠠ\nᠪᡝ",
