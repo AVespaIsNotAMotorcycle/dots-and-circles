@@ -4,7 +4,8 @@
     "summary": [
       "Trained the model on real-world cursive words, with heavier augmentation of real and synthetic words, including mid-word bends in the stem.",
       "Added a language model which evaluates how much possible readings match \"normal\" Manchu, acting as a soft enforcer of syllable structure and vowel harmony.",
-      "Combined, these changes increase accuracy from 34.5% to 61.5% on cursive in a hand the model never trained on, and from 94.9% to 96.8% on Sun et al.'s printed dataset."
+      "Combined, these changes increase accuracy from 34.5% to 61.5% on cursive in a hand the model never trained on, and from 94.9% to 96.8% on Sun et al.'s printed dataset.",
+      "Additionally, there's a new feedback form and users can now submit their scans to be used to improve the site."
     ]
   }
 ]
